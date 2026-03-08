@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Support both strict ownership and transition for older documents
+    function isOwner(data) {
+      return isAuthenticated() && (
+        !('userId' in data) || 
+        data.userId == request.auth.uid
+      );
+    }
+
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    match /simulations/{simId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && (
+        resource == null || 
+        resource.data.userId == request.auth.uid
+      );
+      
+      // Nested chats
+      match /chats/{target}/messages/{msgId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+node_modules
+.env
+.DS_Store
+dist
+build
+
+# Entire migration scripts folder (contains large data files and one-off scripts)
+backend/persona-database-migration-scripts/
+
+# Deployment temp folders
+deploy_temp/
+flat_deploy/
+percura_deploy.zip
+
+#Deployment zip folder
+deploy_package

@@ -1,0 +1,23 @@
+{
+    "name": "ai-simulation-lab",
+    "version": "1.0.0",
+    "private": true,
+    "workspaces": [
+        "backend",
+        "percura-ui"
+    ],
+    "scripts": {
+        "setup": "npm install",
+        "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w percura-ui\"",
+        "build": "npm install && npm run build -w percura-ui",
+        "start": "npm run start -w backend",
+        "dev:ui": "npm run dev -w percura-ui",
+        "dev:api": "npm run dev -w backend"
+    },
+    "dependencies": {
+        "concurrently": "^8.2.2"
+    },
+    "engines": {
+        "node": ">=22.0.0"
+    }
+}
