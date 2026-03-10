@@ -363,6 +363,20 @@ function PersonaBox({ segment, index, isSelected, onToggle }) {
                 </div>
             </div>
 
+            {/* Strategic Resonance Bar */}
+            <div className="mb-8 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                <div className="flex justify-between items-center mb-2.5">
+                    <span className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Strategic Resonance</span>
+                    <span className="text-xs font-black italic text-purple-400">{segment.resonance_score || 0}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div 
+                        className="h-full bg-gradient-to-r from-purple-500 via-purple-400 to-blue-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+                        style={{ width: `${segment.resonance_score || 0}%` }}
+                    />
+                </div>
+            </div>
+
             {/* Tactical Badges */}
             <div className="flex flex-wrap gap-2 mb-8">
                 <div className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 flex items-center gap-2">

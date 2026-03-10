@@ -18,7 +18,7 @@ const ShaderPageBackground = dynamic(
     { ssr: false }
 );
 
-const TEST_TYPES = ["Concept Validation", "Product/Market Fit", "Feature Prioritization", "Pricing Strategy"];
+const TEST_TYPES = ["Idea Validation"];
 
 // Premium Custom Dropdown Component
 function PremiumSelect({ label, value, options, onChange, placeholder = "Select option" }) {
@@ -95,7 +95,7 @@ export default function ValidatePage() {
         industry: idea?.industry || "",
         businessModel: idea?.businessModel || "",
         targetAudience: idea?.targetAudience || "",
-        testType: idea?.testType || "Concept Validation",
+        testType: idea?.testType || "Idea Validation",
         duration: idea?.duration || 12,
     });
     const [loading, setLoading] = useState(false);
@@ -242,22 +242,6 @@ export default function ValidatePage() {
                         Input your vision. Our engine will synthesize the <span className="text-white/90 font-bold">50 best-fit personas</span> from 1M+ Indian profiles for testing.
                     </p>
 
-                    {/* Backend Status Badge */}
-                    <div className="mt-8 flex justify-center">
-                        {backendStatus === "ready" ? (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold">Engine Ready</span>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold">
-                                    {backendStatus === "warming_up" ? "Engine Warming Up (Loading 1M+ Personas...)" : "Checking Engine..."}
-                                </span>
-                            </div>
-                        )}
-                    </div>
                 </div>
 
                 {/* Form Card */}
@@ -341,13 +325,13 @@ export default function ValidatePage() {
                         </div>
 
                         <div className="md:col-span-2">
-                            <PremiumSelect
-                                label="What to Test"
-                                value={form.testType}
-                                options={TEST_TYPES}
-                                onChange={(val) => setForm({ ...form, testType: val })}
-                                placeholder="Select Test Type"
-                            />
+                            <label className="block text-[10px] text-white/70 mb-3 uppercase tracking-[0.15em] font-bold ml-1">
+                                What to Test
+                            </label>
+                            <div className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-6 py-4 flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                                <span className="text-white/90 text-sm font-medium tracking-wide">Idea Validation</span>
+                            </div>
                         </div>
 
                         {/* Simulation Duration Slider */}
