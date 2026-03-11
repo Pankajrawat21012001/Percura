@@ -1,16 +1,37 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const IdeaContext = createContext(null);
 
+const STORAGE_KEY = "percura_last_simulation_id";
+
 export function IdeaProvider({ children }) {
-    const [idea, setIdea] = useState(null);          // Form data (idea, industry, state, etc.)
-    const [validation, setValidation] = useState(null); // Segments + personas from retrieval
-    const [personas, setPersonas] = useState(null);     // Raw persona list
-    const [simulationResults, setSimulationResults] = useState(null); // Results from simulation runs
-    const [selectedSegment, setSelectedSegment] = useState(null); // Currently selected segment
-    const [currentSimulationId, setCurrentSimulationId] = useState(null);
+    const [idea, setIdea] = useState(null);
+    const [validation, setValidation] = useState(null);
+    const [personas, setPersonas] = useState(null);
+    const [simulationResults, setSimulationResults] = useState(null);
+    const [selectedSegment, setSelectedSegment] = useState(null);
+
+    // Initialize from localStorage so page refreshes restore the last session
+    const [currentSimulationId, setCurrentSimulationIdRaw] = useState(() => {
+        if (typeof window !== "undefined") {
+            return localStorage.getItem(STORAGE_KEY) || null;
+        }
+        return null;
+    });
+
+    // Wrapper that also saves to localStorage
+    const setCurrentSimulationId = (id) => {
+        setCurrentSimulationIdRaw(id);
+        if (typeof window !== "undefined") {
+            if (id) {
+                localStorage.setItem(STORAGE_KEY, id);
+            } else {
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+    };
 
     const reset = () => {
         setIdea(null);

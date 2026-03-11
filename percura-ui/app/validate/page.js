@@ -228,13 +228,13 @@ export default function ValidatePage() {
             {/* Neural shader background */}
             <ShaderPageBackground overlayOpacity={0.75} blur={true} />
 
-            <div className="relative z-10 w-full max-w-3xl mx-auto px-6 pt-20 pb-24">
+            <div className="relative z-10 w-full max-w-3xl mx-auto px-6 pt-40 pb-24">
                 {/* Header */}
                 <div className="text-center mb-12 fade-in-blur">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
+                    {/* <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6">
                         <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
                         <span className="text-[10px] uppercase tracking-widest text-purple-400 font-medium">Persona Testing Engine</span>
-                    </div>
+                    </div> */}
                     <h1 className="text-4xl md:text-5xl lg:text-7xl font-light tracking-tight mb-6 text-white">
                         Validate Your <span className="text-gradient">Startup Idea</span>
                     </h1>

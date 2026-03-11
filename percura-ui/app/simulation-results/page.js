@@ -10,6 +10,7 @@ import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import Button from "../../components/ui/Button";
 import DashboardLayout from "../../components/DashboardLayout";
 import ChatPanel from "../../components/ChatPanel";
+import PremiumChatPanel from "../../components/PremiumChatPanel";
 import API_BASE_URL from "../../lib/apiConfig";
 
 const ShaderPageBackground = dynamic(
@@ -20,18 +21,29 @@ const ShaderPageBackground = dynamic(
 export default function SimulationResultsPage() {
     const router = useRouter();
     const { currentSimulationId, idea, simulationResults, setSimulationResults, setIdea } = useIdea();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     
     const [simDoc, setSimDoc] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isInterrogationOpen, setIsInterrogationOpen] = useState(false);
     
     const reportRef = useRef(null);
 
     // Listen to the simulation document
     useEffect(() => {
-        if (!currentSimulationId || !user) {
-            if (!currentSimulationId) setLoading(false);
+        // Wait for Firebase Auth to resolve before doing anything
+        if (authLoading) return;
+
+        // If no simulation ID (e.g. fresh load with no localStorage), stop loading
+        if (!currentSimulationId) {
+            setLoading(false);
+            return;
+        }
+
+        // If user is not logged in, stop loading
+        if (!user) {
+            setLoading(false);
             return;
         }
 
@@ -42,6 +54,7 @@ export default function SimulationResultsPage() {
                     // Permission check fallback
                     if (data.userId !== user.uid) {
                         console.error("[FIRESTORE] Security policy violation: User mismatch.");
+                        setLoading(false);
                         return;
                     }
                     setSimDoc(data);
@@ -49,6 +62,9 @@ export default function SimulationResultsPage() {
                     if (data.results?.segmentsWithResults) {
                         setSimulationResults(data.results.segmentsWithResults);
                     }
+                } else {
+                    // Document doesn't exist — maybe deleted
+                    setSimDoc(null);
                 }
                 setLoading(false);
             },
@@ -59,7 +75,14 @@ export default function SimulationResultsPage() {
         );
 
         return () => unsubscribe();
-    }, [currentSimulationId, user]);
+    }, [currentSimulationId, user, authLoading]);
+
+    // Listen for custom event to open interrogation lab
+    useEffect(() => {
+        const handler = () => setIsInterrogationOpen(true);
+        window.addEventListener('open-interrogation', handler);
+        return () => window.removeEventListener('open-interrogation', handler);
+    }, []);
 
     // Background processing of simulation if not finished
     useEffect(() => {
@@ -86,22 +109,34 @@ export default function SimulationResultsPage() {
                     if (data.success) {
                         results.push({ ...segment, testResult: data.testResult });
                         
-                        // Update Firestore with partial results using setDoc with merge for better permissions compatibility
-                        await setDoc(doc(db, "simulations", currentSimulationId), {
-                            results: {
-                                segmentsWithResults: results
-                            }
-                        }, { merge: true });
+                        // Update local state immediately so UI reflects progress
+                        setSimulationResults([...results]);
+
+                        // Try to persist to Firestore — but don't crash if it fails
+                        try {
+                            await setDoc(doc(db, "simulations", currentSimulationId), {
+                                results: {
+                                    segmentsWithResults: results
+                                }
+                            }, { merge: true });
+                        } catch (permErr) {
+                            console.warn("[FIRESTORE] Could not persist partial results (permission issue). Using local state.", permErr.message);
+                        }
                     }
                 } catch (err) {
                     console.error("Error testing segment:", segment.segment_name, err);
                 }
             }
 
-            // Finalize status
-            await setDoc(doc(db, "simulations", currentSimulationId), {
-                status: "completed"
-            }, { merge: true });
+            // Try to finalize status in Firestore
+            try {
+                await setDoc(doc(db, "simulations", currentSimulationId), {
+                    status: "completed"
+                }, { merge: true });
+            } catch (permErr) {
+                console.warn("[FIRESTORE] Could not update simulation status:", permErr.message);
+            }
+
             setIsProcessing(false);
         };
 
@@ -113,6 +148,29 @@ export default function SimulationResultsPage() {
         const html2pdf = (await import("html2pdf.js")).default;
         const element = reportRef.current;
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+        // ── Sanitize unsupported CSS color functions (oklab, oklch, color()) ──
+        // html2canvas cannot parse modern color spaces. We walk the DOM and replace
+        // any computed inline style or class-applied color that uses these functions
+        // with a safe fallback before rendering, then restore after.
+        const patchedElements = [];
+        const colorProps = ["color", "backgroundColor", "borderColor", "borderTopColor", "borderBottomColor", "borderLeftColor", "borderRightColor", "outlineColor", "boxShadow", "textDecorationColor"];
+        const unsafePattern = /oklab|oklch|lab\(|lch\(|hwb\(|color-mix\(|color\(display-p3/i;
+
+        const allEls = element.querySelectorAll("*");
+        allEls.forEach(el => {
+            const computed = window.getComputedStyle(el);
+            const patches = {};
+            colorProps.forEach(prop => {
+                const val = computed[prop];
+                if (val && unsafePattern.test(val)) {
+                    patches[prop] = { original: el.style[prop], safe: "#1a1a2e" };
+                    el.style[prop] = "#1a1a2e"; // dark navy fallback
+                }
+            });
+            if (Object.keys(patches).length > 0) patchedElements.push({ el, patches });
+        });
+
         const opt = {
             margin: 10,
             filename: `Percura_Validation_${idea?.industry || 'Idea'}_${timestamp}.pdf`,
@@ -123,20 +181,47 @@ export default function SimulationResultsPage() {
                 useCORS: true,
                 logging: false,
                 letterRendering: true,
-                allowTaint: true
+                allowTaint: true,
+                onclone: (clonedDoc) => {
+                    // Global safety net: find all style tags and strip lab/oklch/lch/hwb/color-mix
+                    const styles = clonedDoc.querySelectorAll('style');
+                    styles.forEach(s => {
+                        const content = s.textContent;
+                        if (/lab\(|oklab\(|lch\(|oklch\(|color-mix\(|hwb\(/i.test(content)) {
+                            // Replace complex color functions with basic transparent or inheritance
+                            s.textContent = content.replace(/(lab|oklab|lch|oklch|color-mix|hwb)\([^)]+\)/gi, 'inherit');
+                        }
+                    });
+                    
+                    const style = clonedDoc.createElement("style");
+                    style.textContent = `
+                        * {
+                            color: inherit !important;
+                            border-color: rgba(255,255,255,0.1) !important;
+                            box-shadow: none !important;
+                            text-shadow: none !important;
+                        }
+                    `;
+                    clonedDoc.head.appendChild(style);
+                }
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
         try {
-            // Temporarily add a class to body to override potential CSS issues like lab() colors
             document.body.classList.add('is-exporting-pdf');
             await html2pdf().set(opt).from(element).save();
             console.log("[PDF] Generation Successful");
         } catch (err) {
             console.error("[PDF] Generation Failed:", err);
-            alert("Report Export Failed: One or more graphics elements are using unsupported high-gamut color spaces (LAB/OKLCH). System is attempting fallback.");
+            alert("PDF export failed. Please try again or use browser Print → Save as PDF (Ctrl+P) as an alternative.");
         } finally {
+            // Restore patched inline styles
+            patchedElements.forEach(({ el, patches }) => {
+                Object.entries(patches).forEach(([prop, { original }]) => {
+                    el.style[prop] = original;
+                });
+            });
             document.body.classList.remove('is-exporting-pdf');
         }
     };
@@ -186,7 +271,7 @@ export default function SimulationResultsPage() {
 
     return (
         <DashboardLayout rightPanel={<ChatPanel />}>
-            <div className="relative min-h-screen text-white selection:bg-blue-500/30 overflow-x-hidden pt-20">
+            <div className="relative min-h-screen text-white selection:bg-blue-500/30 overflow-x-hidden pt-40">
                 <ShaderPageBackground overlayOpacity={0.9} blur={true} />
 
                 {/* Progress Bar (Sticky Top) */}
@@ -219,11 +304,20 @@ export default function SimulationResultsPage() {
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                 Download Report
                             </Button>
+                            <Button 
+                                onClick={() => setIsInterrogationOpen(true)}
+                                variant="primary"
+                                size="sm"
+                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 shadow-xl shadow-purple-600/20"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                                Interrogation Lab
+                            </Button>
                         </div>
                     </div>
 
                     {/* Summary Card */}
-                    <div className="sticky top-10 z-30 mb-12">
+                    <div className="relative z-30 mb-12">
                         <div className="bg-[#0D0D0D]/80 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 md:p-12 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)]">
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                                  {/* Primary Stats Grid */}
@@ -303,6 +397,10 @@ export default function SimulationResultsPage() {
                     </div>
                 </div>
             </div>
+
+            {isInterrogationOpen && (
+                <PremiumChatPanel onClose={() => setIsInterrogationOpen(false)} />
+            )}
         </DashboardLayout>
     );
 }
@@ -392,7 +490,7 @@ function PersonaResultCard({ result, index }) {
                         {/* Individual Persona Voices */}
                         <div className="mt-10 pt-8 border-t border-white/5">
                             <h4 className="text-[11px] uppercase tracking-[0.2em] text-white/40 font-bold mb-6">Individual Persona Voices</h4>
-                            <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-2">
                                 {(result.personas || []).map((p, pIdx) => {
                                     const individualFeedback = result.testResult?.personaFeedbacks?.[pIdx];
                                     const m = p.metadata || {};
@@ -403,12 +501,25 @@ function PersonaResultCard({ result, index }) {
                                                  {pIdx + 1}
                                              </div>
                                              <div className="truncate">
-                                                 <div className="text-[10px] font-bold text-white/80 truncate">{m.occupation || "Persona"}</div>
-                                                 <div className="text-[8px] text-white/30 uppercase tracking-tighter truncate">{m.state || "Market"}</div>
+                                                 <div className="text-[10px] font-bold text-white/80 truncate">
+                                                     {(() => {
+                                                         const rawName = m.name || (m.occupation ? `Persona of ${m.occupation}` : `Persona ${p.persona_id || p.id}`);
+                                                         if (rawName.includes("Persona")) {
+                                                             const seed = parseInt((p.persona_id || p.id).toString().replace(/\D/g, '')) || 0;
+                                                             const names = ["Aarav", "Arjun", "Aditya", "Amit", "Alok", "Ananya", "Aavya", "Bhavna", "Ishani", "Jiya"];
+                                                             const surnames = ["Sharma", "Verma", "Gupta", "Malhotra", "Kapoor", "Patel", "Shah", "Kumar", "Singh", "Yadav"];
+                                                             const firstName = names[seed % names.length];
+                                                             const lastName = surnames[(seed * 7) % surnames.length];
+                                                             return `${firstName} ${lastName} (${m.age || '??'})`;
+                                                         }
+                                                         return `${rawName} (${m.age || '??'})`;
+                                                     })()}
+                                                 </div>
+                                                 <div className="text-[8px] text-white/30 uppercase tracking-tighter truncate">{m.occupation || "Market"} &middot; {m.state || "India"}</div>
                                              </div>
                                          </div>
                                          <div className="flex-grow border-l border-white/5 pl-4 overflow-hidden">
-                                             <p className="text-[10px] italic text-white/50 truncate group-hover:text-white/70 transition-colors">
+                                             <p className="text-[10px] italic text-white/50 group-hover:text-white/70 transition-colors leading-relaxed">
                                                  "{individualFeedback?.feedback || "Synthesizing individual reaction..."}"
                                              </p>
                                          </div>
@@ -418,7 +529,7 @@ function PersonaResultCard({ result, index }) {
                                              </div>
                                          </div>
                                      </div>
-                                   );
+                                    );
                                 })}
                             </div>
                         </div>

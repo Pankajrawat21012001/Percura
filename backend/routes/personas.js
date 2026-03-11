@@ -53,6 +53,24 @@ async function getEmbedding(text) {
     }
 }
 
+const INDIAN_NAMES = [
+    "Aarav", "Arjun", "Aditya", "Amit", "Alok", "Anil", "Bhuvan", "Chetan", "Deepak", "Dev", 
+    "Gaurav", "Hrithik", "Ishaan", "Jatin", "Karan", "Kartik", "Lokesh", "Manish", "Nitin", "Pankaj",
+    "Pranav", "Rahul", "Rajesh", "Rohan", "Sanjay", "Siddharth", "Tushar", "Utkarsh", "Varun", "Vivek",
+    "Ananya", "Aavya", "Bhavna", "Ishani", "Jiya", "Kavya", "Meera", "Neha", "Pooja", "Priya",
+    "Riya", "Sanya", "Tanvi", "Vanya", "Zoya", "Amrita", "Deepika", "Esha", "Gauri", "Hema"
+];
+const INDIAN_SURNAMES = [
+    "Sharma", "Verma", "Gupta", "Malhotra", "Kapoor", "Khanna", "Joshi", "Patel", "Shah", "Mehta",
+    "Reddy", "Nair", "Iyer", "Kumar", "Singh", "Yadav", "Chauhan", "Pandey", "Mishra", "Dubey"
+];
+
+function generateRealName(id) {
+    const first = INDIAN_NAMES[id % INDIAN_NAMES.length];
+    const last = INDIAN_SURNAMES[(id * 7) % INDIAN_SURNAMES.length];
+    return `${first} ${last}`;
+}
+
 /**
  * Main Persona Retrieval Route
  */
@@ -108,12 +126,19 @@ router.post('/retrieve-personas', async (req, res) => {
         try {
             const [queryRows] = await pool.query(sql, params);
             rows = queryRows;
+            
+            // Even if query succeeds, some rows might not have names or might have generic names
+            rows = rows.map(r => ({
+                ...r,
+                name: (r.name && !r.name.includes("Persona")) ? r.name : generateRealName(r.id)
+            }));
+
             console.log(`✅ [HOSTINGER MYSQL] Successfully retrieved ${rows.length} relevant rows.`);
         } catch (dbError) {
             console.error('⚠️ [MYSQL FALLBACK] Database unreachable, synthesizing personas...', dbError.message);
             rows = matchedIds.slice(0, 100).map(id => ({
                 id: id,
-                name: `Persona ${id}`,
+                name: generateRealName(id),
                 occupation: id % 3 === 0 ? "Tech Professional" : id % 3 === 1 ? "Business Owner" : "Service Sector",
                 age: 22 + (id % 35),
                 sex: id % 2 === 0 ? "Male" : "Female",

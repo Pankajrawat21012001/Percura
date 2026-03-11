@@ -46,7 +46,8 @@ export default function SegmentPage() {
         zone: "Urban",
         occupation: "",
         education_level: "Graduate",
-        summary: ""
+        summary: "",
+        name: ""
     });
 
     if (!validation) {
@@ -83,7 +84,8 @@ export default function SegmentPage() {
         const personaWithId = {
             persona_id: `custom_${Date.now()}`,
             metadata: { 
-                ...newPersona, 
+                ...newPersona,
+                name: newPersona.name || "Custom Persona",
                 summary: newPersona.summary || `A ${newPersona.age || "Unknown"} year old ${newPersona.occupation || "professional"} from ${newPersona.state}.` 
             },
             similarity_score: 1.0
@@ -94,7 +96,7 @@ export default function SegmentPage() {
             personas: [...prev.personas, personaWithId]
         }));
         
-        setNewPersona(prev => ({ ...prev, occupation: "", age: "", summary: "" }));
+        setNewPersona(prev => ({ ...prev, occupation: "", age: "", summary: "", name: "" }));
         setIsCreatingCustom(false);
         // Automatically select custom segment on adding first persona
         if (customSegment.personas.length === 0) {
@@ -244,7 +246,7 @@ export default function SegmentPage() {
                                         <div key={idx} className="p-3 rounded-xl bg-white/[0.03] border border-white/5 flex gap-3 text-[10px] items-center">
                                             <div className="w-6 h-6 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-white/40">👤</div>
                                             <div className="flex-1 truncate">
-                                                <p className="text-white/80 font-bold truncate">{p.metadata.occupation}</p>
+                                                <p className="text-white/80 font-bold truncate">{p.metadata.name || p.metadata.occupation}</p>
                                                 <p className="text-white/30 truncate">{p.metadata.age}Y · {p.metadata.state}</p>
                                             </div>
                                             <button 
@@ -310,6 +312,10 @@ export default function SegmentPage() {
                         <button onClick={() => setIsCreatingCustom(false)} className="absolute top-8 right-8 text-white/30 hover:text-white">✕</button>
                         <h2 className="text-2xl font-light text-white mb-2">Create Target Persona</h2>
                         <div className="grid grid-cols-2 gap-6 mb-8 mt-8">
+                            <div className="col-span-2">
+                                <label className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Full Name</label>
+                                <input type="text" placeholder="e.g. Ramesh Singh" value={newPersona.name} onChange={e => setNewPersona({...newPersona, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20" />
+                            </div>
                             <div>
                                 <label className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Occupation</label>
                                 <input type="text" placeholder="e.g. Software Engineer" value={newPersona.occupation} onChange={e => setNewPersona({...newPersona, occupation: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20" />
@@ -324,7 +330,7 @@ export default function SegmentPage() {
                             </div>
                         </div>
                         <Button 
-                            disabled={!newPersona.occupation || !newPersona.age || !newPersona.summary}
+                            disabled={!newPersona.occupation || !newPersona.age || !newPersona.summary || !newPersona.name}
                             onClick={handleAddCustomPersona} 
                             className="w-full"
                         >
@@ -422,11 +428,22 @@ function PersonaBox({ segment, index, isSelected, onToggle }) {
                         {segment.personas?.map((p, pIdx) => (
                             <div key={p.persona_id || pIdx} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="text-[11px] font-bold text-white/80">{p.metadata?.occupation || "Unknown Profile"}</h4>
+                                    <h4 className="text-[11px] font-bold text-white/80">
+                                        {(() => {
+                                            const rawName = p.metadata?.name || (p.metadata?.occupation ? `Persona of ${p.metadata.occupation}` : `Persona ${p.persona_id}`);
+                                            if (rawName.includes("Persona")) {
+                                                const seed = parseInt((p.persona_id).toString().replace(/\D/g, '')) || 0;
+                                                const names = ["Aarav", "Arjun", "Aditya", "Amit", "Alok", "Ananya", "Aavya", "Bhavna", "Ishani", "Jiya"];
+                                                const surnames = ["Sharma", "Verma", "Gupta", "Malhotra", "Kapoor", "Patel", "Shah", "Kumar", "Singh", "Yadav"];
+                                                return `${names[seed % names.length]} ${surnames[(seed * 7) % surnames.length]}`;
+                                            }
+                                            return rawName;
+                                        })()}
+                                    </h4>
                                     <span className="text-[9px] text-purple-400 font-bold">{Math.round((p.similarity_score || 0) * 100)}% Match</span>
                                 </div>
                                 <p className="text-[10px] text-white/40 leading-relaxed font-normal">
-                                    {p.metadata?.age}Y · {p.metadata?.state} · {p.metadata?.education_level}
+                                    {p.metadata?.age}Y · {p.metadata?.occupation} · {p.metadata?.state}
                                 </p>
                             </div>
                         ))}

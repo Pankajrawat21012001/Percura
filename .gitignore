@@ -14,3 +14,6 @@ percura_deploy.zip
 
 #Deployment zip folder
 deploy_package
+
+# Firebase config / rules (managed via Firebase Console)
+firestore.rules

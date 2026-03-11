@@ -18,10 +18,7 @@ router.post('/chat', async (req, res) => {
 
         const reply = await handlePersonaChat(simulationId, target, message, history, context);
         
-        res.json({
-            success: true,
-            reply: reply
-        });
+        res.json(reply);
     } catch (error) {
         console.error('[CHAT-ROUTE ERROR]', error.message);
         res.status(500).json({ success: false, error: 'Neural Engine failed to respond. Please try again.' });

@@ -64,17 +64,22 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const handleSelectSimulation = (sim) => {
         setCurrentSimulationId(sim.id);
         setIdea(sim.ideaData);
-        setSimulationResults(sim.results?.segmentsWithResults || sim.results?.segments || []);
+
+        // Only set results if they actually exist (segments with testResult)
+        const actualResults = sim.results?.segmentsWithResults || [];
+        setSimulationResults(actualResults);
+
         setValidation({
             segments: sim.results?.segments || [],
             personas: sim.results?.personas || [],
             totalMatched: sim.results?.totalMatched || 0,
         });
 
-        if (sim.status === "ready") {
-            router.push("/segment");
-        } else {
+        // Go to results if it's already run/running, or if it has any results saved
+        if (actualResults.length > 0 || sim.status === "completed" || sim.status === "in progress") {
             router.push("/simulation-results");
+        } else {
+            router.push("/segment");
         }
 
         if (window.innerWidth < 1024) setIsOpen(false);

@@ -8,12 +8,12 @@ export default function DashboardLayout({ children, rightPanel }) {
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
 
     return (
-        <div className="flex h-screen bg-black overflow-hidden font-sans">
+        <div className="flex min-h-screen bg-black font-sans selection:bg-purple-500/30">
             {/* Left Sidebar */}
             <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col relative overflow-hidden">
+            <main className="flex-1 w-full relative">
                 {/* Header for small screens */}
                 <header className="lg:hidden flex items-center justify-between p-4 border-b border-white/10 bg-black/50 backdrop-blur-md z-30">
                     <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-white/60">
@@ -25,23 +25,21 @@ export default function DashboardLayout({ children, rightPanel }) {
                     </button>
                 </header>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {children}
-                </div>
+                {children}
 
-                {/* Floating Sidebar Toggle (Left Side) */}
+                {/* Floating Sidebar Toggle — Top Left */}
                 <button
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     className={`
-                        fixed bottom-8 left-8 z-40 p-4 rounded-2xl bg-white text-black shadow-2xl transition-all duration-500 hover:scale-105 active:scale-95
-                        ${isSidebarOpen ? "-translate-x-32" : "translate-x-0"}
+                        fixed top-6 left-6 z-[80] p-4 rounded-2xl bg-white text-black shadow-2xl transition-all duration-500 hover:scale-110 active:scale-95
+                        ${isSidebarOpen ? "-translate-x-32 pointer-events-none" : "translate-x-0 pointer-events-auto"}
                     `}
                     title="Menu"
                 >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
 
-                {/* Floating Chat Toggle (Right Side) */}
+                {/* Floating Chat Toggle — Bottom Right */}
                 <button
                     onClick={() => setIsRightPanelOpen(!isRightPanelOpen)}
                     className={`

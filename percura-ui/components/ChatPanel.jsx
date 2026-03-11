@@ -129,26 +129,33 @@ export default function ChatPanel({ onClose }) {
 
             const data = await response.json();
 
-            if (data.success && data.reply) {
-                console.log(`[CHAT] Received response from AI: ${data.reply.substring(0, 50)}...`);
+            // Extract reply text - handle both single and panel responses
+            let responseText = "";
+            let aiName = "Audience";
 
-                const aiName = selectedTargets.includes("all")
-                    ? "Collective Response"
-                    : selectedTargets.length > 1
-                        ? `Collective (${selectedTargets.length})`
-                        : (targets.find(t => t.id === selectedTargets[0])?.name || "Persona");
+            if (data.replies && Array.isArray(data.replies)) {
+                // For panel responses in the mini-chat, we join them or just show they are discussing
+                responseText = data.replies.map(r => `${r.name}: ${r.reply}`).join("\n\n");
+                aiName = "Panel Discussion";
+            } else if (data.reply) {
+                responseText = data.reply;
+                aiName = data.name || (selectedTargets.includes("all") ? "Collective Response" : "Persona");
+            }
+
+            if (responseText) {
+                console.log(`[CHAT] Received response from AI: ${responseText.substring(0, 50)}...`);
 
                 // Attempt to save AI message to Firestore
                 try {
                     await addDoc(collection(db, "simulations", currentSimulationId, "chats", chatInstanceId, "messages"), {
-                        text: data.reply,
+                        text: responseText,
                         sender: "ai",
                         senderName: aiName,
                         timestamp: serverTimestamp()
                     });
                 } catch (dbErr) {
                     setMessages(prev => [...prev, {
-                        text: data.reply,
+                        text: responseText,
                         sender: "ai",
                         senderName: aiName,
                         timestamp: { toDate: () => new Date() }
@@ -241,6 +248,21 @@ export default function ChatPanel({ onClose }) {
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
+
+                <button
+                    onClick={() => {
+                        // We need a way to trigger the full screen view from here.
+                        // Since they are siblings or shared via state, I'll assume 
+                        // the user will prefer the button in the main page, 
+                        // but I can add a hint here.
+                        window.dispatchEvent(new CustomEvent('open-interrogation'));
+                        onClose();
+                    }}
+                    className="w-full mb-6 py-3 bg-purple-600/20 border border-purple-500/30 rounded-2xl text-[10px] uppercase tracking-widest font-black text-purple-400 hover:bg-purple-600/30 transition-all flex items-center justify-center gap-2"
+                >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                    Expand to Full View
+                </button>
 
                 {/* Premium Custom Dropdown */}
                 <div className="relative group z-50" ref={dropdownRef}>
