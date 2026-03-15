@@ -3,9 +3,21 @@ const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
 const { Pinecone } = require('@pinecone-database/pinecone');
-const axios = require('axios');
+const { pipeline } = require('@xenova/transformers');
 const { testSegmentResonance } = require('../engine/segmentTest');
+const { generateAIResponse } = require('../engine/groqService');
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+
+// Singleton embedder — initialised once on first call, reused for all subsequent calls
+let _embedder = null;
+async function getEmbedder() {
+    if (!_embedder) {
+        console.log('🔧 [LOCAL] Loading embedding model (first run only)...');
+        _embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+        console.log('✅ [LOCAL] Embedding model ready.');
+    }
+    return _embedder;
+}
 
 // --- CONFIG ---
 const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
@@ -26,30 +38,22 @@ const pool = mysql.createPool({
     connectTimeout: 20000, // 20 seconds timeout
 });
 
-const HF_TOKEN = process.env.HF_TOKEN;
-const EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2";
 
 /**
  * Helper: Generate Embedding via Hugging Face API
  */
 async function getEmbedding(text) {
     try {
-        console.log(`🧠 [CLOUD] Requesting AI Vector from Hugging Face...`);
-        // The standard feature-extraction endpoint for sentence-transformers
-        const response = await axios.post(
-            `https://api-inference.huggingface.co/pipeline/feature-extraction/${EMBED_MODEL}`,
-            { inputs: text }, // Note: passing just text instead of [text] array
-            { headers: { Authorization: `Bearer ${HF_TOKEN}` } }
-        );
-        
-        // HF can return an array of arrays when providing a list of inputs
-        const vector = Array.isArray(response.data[0]) ? response.data[0] : response.data;
-        console.log(`✅ [CLOUD] Successfully generated ${vector.length}-dimension vector.`);
+        console.log(`🧠 [LOCAL] Generating embedding vector...`);
+        const embedder = await getEmbedder();
+        const output = await embedder(text, { pooling: 'mean', normalize: true });
+        const vector = Array.from(output.data);
+        console.log(`✅ [LOCAL] Successfully generated ${vector.length}-dimension vector.`);
         return vector;
     } catch (err) {
-        console.error('❌ HF Embedding Error:', err.message, err.response?.data || '');
-        console.log('⚠️ Using Fallback Zero-Vector due to API error.');
-        return Array(384).fill(0); // Fallback
+        console.error('❌ Embedding Error:', err.message);
+        console.log('⚠️ Using Fallback Zero-Vector due to error.');
+        return Array(384).fill(0);
     }
 }
 
@@ -72,6 +76,151 @@ function generateRealName(id) {
 }
 
 /**
+ * Ask Groq to interpret the target audience and return a structured scoring rubric.
+ * Result is cached in-memory so repeat searches with the same inputs skip the LLM call.
+ */
+const criteriaCache = new Map();
+
+async function getCriteriaFromGroq(idea, targetAudience, industry, businessModel) {
+    const cacheKey = `${idea}::${targetAudience}::${industry}::${businessModel}`;
+    if (criteriaCache.has(cacheKey)) {
+        console.log('⚡ [CRITERIA] Using cached scoring rubric.');
+        return criteriaCache.get(cacheKey);
+    }
+
+    console.log('🎯 [CRITERIA] Asking Groq to interpret target audience...');
+
+    const systemPrompt = `You are a persona-matching engine for an Indian market research platform.
+Given a startup idea and its target audience description, return a JSON scoring rubric
+that will be used to score Indian consumer personas from a database.
+
+The persona database has these fields: occupation (string), zone (Urban/Semi-Urban/Rural),
+education_level (string like "Graduate", "Postgraduate", "Below Graduate", "Illiterate"),
+age (number), sex (Male/Female), state (Indian state name).
+
+RESPONSE FORMAT (JSON only, no markdown, no explanation):
+{
+  "occupation_keywords": ["keyword1", "keyword2"],
+  "occupation_weight": 0.0 to 1.0,
+  "zone_scores": { "Urban": 0.0-1.0, "Semi-Urban": 0.0-1.0, "Rural": 0.0-1.0 },
+  "zone_weight": 0.0 to 1.0,
+  "education_keywords": ["Graduate", "Postgraduate"],
+  "education_weight": 0.0 to 1.0,
+  "age_min": number or null,
+  "age_max": number or null,
+  "age_weight": 0.0 to 1.0,
+  "preferred_sex": "Male" or "Female" or "Any",
+  "sex_weight": 0.0 to 1.0,
+  "preferred_states": [],
+  "state_weight": 0.0 to 1.0
+}
+
+RULES:
+- If target audience does not mention age, set age_min and age_max to null and age_weight to 0.
+- If target audience does not mention gender/sex, set preferred_sex to "Any" and sex_weight to 0.
+- If target audience does not mention a state or region, set preferred_states to [] and state_weight to 0.
+- occupation_keywords should be 3-6 words that describe relevant job roles (in lowercase).
+- zone_scores must always have all three keys with values summing to around 2.0.
+- All weights must sum to 1.0 across: occupation_weight + zone_weight + education_weight + age_weight + sex_weight + state_weight.`;
+
+    const userPrompt = `STARTUP IDEA: ${idea}
+TARGET AUDIENCE: ${targetAudience}
+INDUSTRY: ${industry || 'General'}
+BUSINESS MODEL: ${businessModel || 'Not specified'}`;
+
+    try {
+        const criteria = await generateAIResponse(systemPrompt, userPrompt, 0.1);
+        if (!criteria) throw new Error('Groq returned null');
+
+        console.log('✅ [CRITERIA] Scoring rubric ready:', JSON.stringify(criteria));
+        criteriaCache.set(cacheKey, criteria);
+        return criteria;
+    } catch (err) {
+        console.error('⚠️ [CRITERIA] Groq failed, using default rubric:', err.message);
+        // Fallback rubric — weights persona by occupation + zone only
+        return {
+            occupation_keywords: targetAudience.toLowerCase().split(/[\s,]+/).filter(w => w.length > 3),
+            occupation_weight: 0.5,
+            zone_scores: { "Urban": 1.0, "Semi-Urban": 0.7, "Rural": 0.3 },
+            zone_weight: 0.2,
+            education_keywords: ["Graduate", "Postgraduate"],
+            education_weight: 0.15,
+            age_min: null,
+            age_max: null,
+            age_weight: 0.0,
+            preferred_sex: "Any",
+            sex_weight: 0.0,
+            preferred_states: [],
+            state_weight: 0.15
+        };
+    }
+}
+
+/**
+ * Ask Groq to name all 5 segments in one call based on persona profiles + the idea.
+ * Returns an array of 5 name strings in the same order as the input segments.
+ */
+async function nameSegmentsWithGroq(idea, targetAudience, rawSegments) {
+    console.log('🏷️ [NAMING] Asking Groq to name segments...');
+
+    // Build a compact summary of each segment to send to Groq
+    const segmentSummaries = rawSegments.map((g, i) => {
+        const topPersonas = g.personas.slice(0, 5);
+        const occupations = [...new Set(topPersonas.map(p => p.metadata.occupation || 'Unknown'))];
+        const ages = topPersonas.map(p => p.metadata.age).filter(Boolean);
+        const ageRange = ages.length ? `${Math.min(...ages)}-${Math.max(...ages)}` : 'Unknown';
+        const states = [...new Set(topPersonas.map(p => p.metadata.state || 'Unknown'))].slice(0, 2);
+        const edu = [...new Set(topPersonas.map(p => p.metadata.education_level || 'Unknown'))].slice(0, 2);
+        return {
+            index: i,
+            zone: g.zone,
+            age_range: ageRange,
+            top_occupations: occupations.slice(0, 3),
+            top_states: states,
+            education_levels: edu,
+            avg_relevance_score: Math.round(g.avgScore * 100)
+        };
+    });
+
+    const systemPrompt = `You are naming audience segments for a startup idea validation tool.
+Given an idea, its target audience, and demographic summaries of 5 persona clusters,
+return a short descriptive name for each cluster that:
+- Reflects WHO these people are in relation to the idea (not just their location or job title)
+- Is 3-5 words max
+- Sounds like a real audience archetype (e.g. "Young Urban Professionals", "Aspiring First-time Buyers", "Budget-Conscious Students")
+- Is distinct from the other segment names
+
+RESPONSE FORMAT (JSON only, no markdown):
+{
+  "segment_names": ["Name for segment 0", "Name for segment 1", "Name for segment 2", "Name for segment 3", "Name for segment 4"]
+}
+
+Return exactly 5 names in the same order as the input segments.`;
+
+    const userPrompt = `IDEA: ${idea}
+TARGET AUDIENCE: ${targetAudience}
+
+SEGMENT SUMMARIES:
+${JSON.stringify(segmentSummaries, null, 2)}`;
+
+    try {
+        const result = await generateAIResponse(systemPrompt, userPrompt, 0.4);
+        if (!result?.segment_names || result.segment_names.length < rawSegments.length) {
+            throw new Error('Groq returned incomplete segment names');
+        }
+        console.log('✅ [NAMING] Segment names:', result.segment_names);
+        return result.segment_names;
+    } catch (err) {
+        console.error('⚠️ [NAMING] Groq naming failed, using fallback names:', err.message);
+        // Fallback: zone + education label (better than occupation word)
+        return rawSegments.map(g => {
+            const eduLabel = (g.feature || 'General');
+            return `${g.zone} ${eduLabel} Audience`;
+        });
+    }
+}
+
+/**
  * Main Persona Retrieval Route
  */
 router.post('/retrieve-personas', async (req, res) => {
@@ -79,17 +228,18 @@ router.post('/retrieve-personas', async (req, res) => {
         const { idea, targetAudience, industry, businessModel, state, sex, ageMin, ageMax } = req.body;
         console.log(`[CLOUD-SEARCH] Idea: "${idea.substring(0, 50)}..." | Target: "${targetAudience?.substring(0, 30)}..."`);
 
-        // 1. Get AI Vector (384 Dimensions)
-        // We give more weight to the Target Audience by repeating it in the query string
-        // and including industry/business model context.
+        // 0. Get Groq scoring rubric — runs in parallel with embedding for speed
         const weightedQueryText = `
             TARGET AUDIENCE: ${targetAudience} ${targetAudience} ${targetAudience}
             CORE IDEA: ${idea}
             INDUSTRY: ${industry || 'General'}
             BUSINESS MODEL: ${businessModel || 'Any'}
         `.trim();
-        
-        const vector = await getEmbedding(weightedQueryText);
+
+        const [vector, criteria] = await Promise.all([
+            getEmbedding(weightedQueryText),
+            getCriteriaFromGroq(idea, targetAudience, industry, businessModel)
+        ]);
 
         // 2. Search Pinecone
         console.log(`🌲 [PINECONE] Searching Cloud Brain for top weighted matches...`);
@@ -118,9 +268,6 @@ router.post('/retrieve-personas', async (req, res) => {
         const params = [matchedIds];
 
         if (state && state !== "All India") { sql += " AND state = ?"; params.push(state); }
-        if (sex && sex !== "All") { sql += " AND sex = ?"; params.push(sex); }
-        if (ageMin) { sql += " AND age >= ?"; params.push(ageMin); }
-        if (ageMax) { sql += " AND age <= ?"; params.push(ageMax); }
 
         let rows = [];
         try {
@@ -149,21 +296,58 @@ router.post('/retrieve-personas', async (req, res) => {
             }));
         }
 
-        // 4. WEIGHTED RESONANCE CALCULATOR
+        // 4. GROQ-GUIDED RESONANCE CALCULATOR
         const calculateResonance = (persona) => {
-            let score = (matchScores[persona.id] || 0.4) * 25;
-            const pText = `${persona.occupation} ${persona.summary} ${persona.education_level}`.toLowerCase();
-            const targetLower = (targetAudience || "").toLowerCase();
-            
-            const targetKeywords = targetLower.split(/[,\s]+/).filter(k => k.length > 3);
-            let targetMatches = 0;
-            targetKeywords.forEach(k => { if (pText.includes(k)) targetMatches++; });
-            score += Math.min(50, (targetMatches / (targetKeywords.length || 1)) * 100);
+            // Pinecone semantic score — always 40% of total (floor of relevance)
+            const pineconeScore = (matchScores[persona.id] || 0.3) * 40;
 
-            if (industry && pText.includes(industry.toLowerCase())) score += 15;
-            if (businessModel && pText.includes(businessModel.toLowerCase())) score += 10;
+            // Remaining 60% split by criteria weights from Groq
+            const c = criteria;
+            let criteriaScore = 0;
 
-            return Math.min(100, Math.round(score));
+            // --- Occupation match (up to occupation_weight × 60 points) ---
+            if (c.occupation_weight > 0 && c.occupation_keywords?.length > 0) {
+                const occText = (persona.occupation || '').toLowerCase();
+                const matched = c.occupation_keywords.filter(k => occText.includes(k.toLowerCase())).length;
+                const occMatch = matched / c.occupation_keywords.length;
+                criteriaScore += occMatch * c.occupation_weight * 60;
+            }
+
+            // --- Zone match ---
+            if (c.zone_weight > 0) {
+                const zoneScore = c.zone_scores?.[persona.zone] ?? 0.5;
+                criteriaScore += zoneScore * c.zone_weight * 60;
+            }
+
+            // --- Education match ---
+            if (c.education_weight > 0 && c.education_keywords?.length > 0) {
+                const eduText = (persona.education_level || '').toLowerCase();
+                const eduMatch = c.education_keywords.some(k => eduText.includes(k.toLowerCase())) ? 1 : 0;
+                criteriaScore += eduMatch * c.education_weight * 60;
+            }
+
+            // --- Age match ---
+            if (c.age_weight > 0 && (c.age_min !== null || c.age_max !== null)) {
+                const age = persona.age || 0;
+                const minOk = c.age_min === null || age >= c.age_min;
+                const maxOk = c.age_max === null || age <= c.age_max;
+                const ageMatch = (minOk && maxOk) ? 1 : 0.2; // 0.2 partial credit for outside range
+                criteriaScore += ageMatch * c.age_weight * 60;
+            }
+
+            // --- Sex match ---
+            if (c.sex_weight > 0 && c.preferred_sex && c.preferred_sex !== 'Any') {
+                const sexMatch = persona.sex === c.preferred_sex ? 1 : 0;
+                criteriaScore += sexMatch * c.sex_weight * 60;
+            }
+
+            // --- State match ---
+            if (c.state_weight > 0 && c.preferred_states?.length > 0) {
+                const stateMatch = c.preferred_states.includes(persona.state) ? 1 : 0.3;
+                criteriaScore += stateMatch * c.state_weight * 60;
+            }
+
+            return Math.min(100, Math.round(pineconeScore + criteriaScore));
         };
 
         const formattedPersonas = rows.map(r => ({
@@ -173,44 +357,53 @@ router.post('/retrieve-personas', async (req, res) => {
         })).sort((a, b) => b.similarity_score - a.similarity_score);
 
         // 5. FEATURE-BASED DYNAMIC SEGMENTATION
+        // Filter to only top-scoring personas before segmenting
+        const MIN_RESONANCE = 0.10; // Only segment personas with >10% match
+        const relevantPersonas = formattedPersonas.filter(p => p.similarity_score >= MIN_RESONANCE);
+        // Graceful fallback: if fewer than 20 pass the threshold, use top 100 by score
+        const poolToSegment = relevantPersonas.length >= 20 ? relevantPersonas : formattedPersonas.slice(0, 100);
+
+        // Group by education_level + zone — creates meaningful demographic segments
         const groups = {};
-        formattedPersonas.forEach(p => {
-            const occ = (p.metadata.occupation || "General").split(' ')[0]; // Use first word of occupation as base feature
+        poolToSegment.forEach(p => {
+            const edu = (p.metadata.education_level || "General").split(' ')[0];
             const zone = p.metadata.zone || "Urban";
-            const key = `${zone} ${occ}`.trim();
-            if (!groups[key]) groups[key] = { key, personas: [], zone, feature: occ };
+            const key = `${zone}_${edu}`;
+            if (!groups[key]) groups[key] = { key, personas: [], zone, feature: edu };
             groups[key].personas.push(p);
         });
 
-        // Ensure we handle at least 5 segments of 10 personas
+        // Sort groups by average similarity score (relevance), NOT by size
         const sortedGroups = Object.values(groups)
-            .sort((a, b) => b.personas.length - a.personas.length);
+            .map(g => ({
+                ...g,
+                avgScore: g.personas.reduce((sum, p) => sum + p.similarity_score, 0) / (g.personas.length || 1)
+            }))
+            .sort((a, b) => b.avgScore - a.avgScore);
 
-        const segments = sortedGroups.slice(0, 5).map((g, index) => {
+        const top5Groups = sortedGroups.slice(0, 5);
+
+        // Ask Groq to name all 5 segments in one call
+        const segmentNames = await nameSegmentsWithGroq(idea, targetAudience, top5Groups);
+
+        const segments = top5Groups.map((g, index) => {
             const topPersonas = g.personas.slice(0, 10);
-            
-            // Feature-based Naming: Extract most frequent word across this group's occupations
-            const words = g.personas.flatMap(p => (p.metadata.occupation || "").split(/\s+/));
-            const wordFreq = {};
-            words.forEach(w => { if(w.length > 3) wordFreq[w] = (wordFreq[w] || 0) + 1; });
-            const topWord = Object.keys(wordFreq).sort((a,b) => wordFreq[b] - wordFreq[a])[0] || g.feature;
-            
-            const segmentName = `${g.zone} ${topWord} Cluster`.trim();
-            const avgResonance = Math.round(topPersonas.reduce((acc, p) => acc + p.similarity_score, 0) / topPersonas.length * 100);
-            
-            const ages = topPersonas.map(p => p.metadata.age);
+            const avgResonance = Math.round(
+                topPersonas.reduce((acc, p) => acc + p.similarity_score, 0) / topPersonas.length * 100
+            );
+            const ages = topPersonas.map(p => p.metadata.age).filter(Boolean);
 
             return {
                 segment_id: `seg_${index}`,
-                segment_name: segmentName,
+                segment_name: segmentNames[index] || `Segment ${index + 1}`,
                 count: topPersonas.length,
                 resonance_score: avgResonance,
                 profile: {
-                    dominant_state: topPersonas[0].metadata.state,
+                    dominant_state: topPersonas[0]?.metadata.state || 'N/A',
                     dominant_occupation: [...new Set(topPersonas.map(p => p.metadata.occupation))].slice(0, 2).join(", "),
                     dominant_zone: g.zone,
                     dominant_sex: "Mixed",
-                    age_range: `${Math.min(...ages)}-${Math.max(...ages)}`
+                    age_range: ages.length ? `${Math.min(...ages)}-${Math.max(...ages)}` : 'N/A'
                 },
                 personas: topPersonas
             };
@@ -288,6 +481,75 @@ router.post('/simulate', async (req, res) => {
         });
     } catch (error) {
         console.error('[SIMULATE ERROR]', error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * Route: Generate high-level insights from all segment results
+ */
+router.post('/generate-insights', async (req, res) => {
+    try {
+        const { idea, segmentsWithResults } = req.body;
+        console.log(`🧠 Generating global insights for idea: "${idea?.idea?.substring(0, 50)}..."`);
+
+        // Prepare concise summaries for the AI
+        const segmentSummaries = (segmentsWithResults || []).map(s => {
+            const tr = s.testResult || {};
+            return {
+                name: s.segment_name,
+                resonanceScore: tr.resonanceScore,
+                verdict: tr.verdict,
+                willingnessToPay: tr.willingnessToPay,
+                topKeyDrivers: (tr.keyDrivers || []).slice(0, 2),
+                topFrictionPoints: (tr.frictionPoints || []).slice(0, 2)
+            };
+        });
+
+        const systemPrompt = `You are a market research analyst. Based on simulation results across multiple persona segments, generate a structured report.
+
+RESPONSE FORMAT (JSON only, no markdown):
+{
+  "insights": [
+    {
+      "title": "Short punchy insight headline (5-8 words)",
+      "evidence": "1-2 sentences citing specific patterns from the data",
+      "analysis": "2-3 sentences explaining what this means for the founder and what action to take"
+    }
+  ],
+  "nextSteps": [
+    "Specific, actionable recommendation #1 (one sentence)",
+    "Specific, actionable recommendation #2 (one sentence)",
+    "Specific, actionable recommendation #3 (one sentence)"
+  ]
+}
+
+Generate exactly 3 insights and exactly 3 nextSteps. Be specific to the data provided, not generic. Reference actual segment names, scores, and friction points from the data.`;
+
+        const userPrompt = `
+STARTUP IDEA:
+- Idea: ${idea?.idea}
+- Industry: ${idea?.industry}
+- Target Audience: ${idea?.targetAudience}
+
+SIMULATION AGGREGATE DATA:
+${JSON.stringify(segmentSummaries, null, 2)}
+`;
+
+        const result = await generateAIResponse(systemPrompt, userPrompt, 0.4);
+
+        if (!result) {
+            throw new Error("AI Engine failed to return a structured insight report.");
+        }
+
+        res.json({
+            success: true,
+            insights: result.insights,
+            nextSteps: result.nextSteps
+        });
+
+    } catch (error) {
+        console.error('[GENERATE-INSIGHTS ERROR]', error.message);
         res.status(500).json({ success: false, error: error.message });
     }
 });

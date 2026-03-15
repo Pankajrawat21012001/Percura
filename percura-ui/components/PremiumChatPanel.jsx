@@ -16,7 +16,8 @@ const FALLBACK_SURNAMES = [
 ];
 
 function getRealisticName(id, currentName) {
-    if (currentName && !currentName.includes("Persona") && currentName !== "Custom Persona") {
+    const cleanName = (currentName || "").trim().toLowerCase();
+    if (cleanName && !cleanName.includes("persona") && cleanName !== "custom persona" && !["unknown", "n/a"].includes(cleanName)) {
         return currentName;
     }
     const seed = parseInt(id.toString().replace(/\D/g, '')) || 0;

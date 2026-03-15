@@ -28,7 +28,34 @@ export default function SimulationResultsPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isInterrogationOpen, setIsInterrogationOpen] = useState(false);
     
+    // Task 2: New state for insights
+    const [insightData, setInsightData] = useState(null); // { insights: [], nextSteps: [] }
+    const [insightsLoading, setInsightsLoading] = useState(false);
+    
     const reportRef = useRef(null);
+    
+    // Derived aggregates used in hooks and UI
+    const results = simulationResults || [];
+    const totalSegments = simDoc?.results?.segments?.length || 0;
+    const completedCount = results.length;
+    const progressPercent = totalSegments > 0 ? Math.round((completedCount / totalSegments) * 100) : 0;
+
+    const averageResonance = results.length > 0 
+        ? Math.round(results.reduce((acc, curr) => acc + (curr.testResult?.resonanceScore || 0), 0) / results.length)
+        : 0;
+    const totalPersonasCount = results.reduce((acc, r) => acc + (r.personas?.length || 0), 0);
+    const adoptionCount = results.filter(r => (r.testResult?.resonanceScore || 0) >= 70)
+                                 .reduce((acc, r) => acc + (r.personas?.length || 0), 0);
+    const rejectedCount = results.filter(r => (r.testResult?.resonanceScore || 0) < 50)
+                                 .reduce((acc, r) => acc + (r.personas?.length || 0), 0);
+    
+    const survivalProb = Math.min(99, Math.max(5, Math.round((averageResonance * 0.8) + (20 * (adoptionCount / (totalPersonasCount || 1))))));
+
+    const allDrivers = results.flatMap(r => r.testResult?.keyDrivers || []);
+    const topReasons = [...new Set(allDrivers)].slice(0, 3);
+    
+    const allObjections = results.flatMap(r => r.testResult?.frictionPoints || []);
+    const topObjections = [...new Set(allObjections)].slice(0, 3);
 
     // Listen to the simulation document
     useEffect(() => {
@@ -61,6 +88,10 @@ export default function SimulationResultsPage() {
                     if (data.ideaData) setIdea(data.ideaData);
                     if (data.results?.segmentsWithResults) {
                         setSimulationResults(data.results.segmentsWithResults);
+                    }
+                    // Task 2: Pre-populate insightData if it exists
+                    if (data.results?.insights && data.results?.nextSteps) {
+                        setInsightData({ insights: data.results.insights, nextSteps: data.results.nextSteps });
                     }
                 } else {
                     // Document doesn't exist — maybe deleted
@@ -142,6 +173,45 @@ export default function SimulationResultsPage() {
 
         processSimulation();
     }, [simDoc, isProcessing, currentSimulationId]);
+
+    // Task 2: Insight generation effect
+    useEffect(() => {
+        if (simDoc?.status === "completed" && results.length > 0 && insightData === null && !insightsLoading) {
+            const generateInsights = async () => {
+                setInsightsLoading(true);
+                try {
+                    console.log("🧠 Triggering AI Insight synthesis...");
+                    const response = await fetch(`${API_BASE_URL}/api/generate-insights`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ idea: simDoc.ideaData, segmentsWithResults: results })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        const newInsightData = { insights: data.insights, nextSteps: data.nextSteps };
+                        setInsightData(newInsightData);
+                        
+                        // Persist to Firestore
+                        try {
+                            await setDoc(doc(db, "simulations", currentSimulationId), {
+                                results: {
+                                    insights: data.insights,
+                                    nextSteps: data.nextSteps
+                                }
+                            }, { merge: true });
+                        } catch (permErr) {
+                            console.warn("[FIRESTORE] Could not persist insights:", permErr.message);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error generating insights:", err);
+                } finally {
+                    setInsightsLoading(false);
+                }
+            };
+            generateInsights();
+        }
+    }, [simDoc?.status, results.length, insightData, insightsLoading, currentSimulationId]);
 
     const handleDownloadPDF = async () => {
         console.log("[PDF] Initializing Report Generation...");
@@ -241,33 +311,6 @@ export default function SimulationResultsPage() {
         );
     }
 
-    const results = simulationResults || [];
-    const totalSegments = simDoc.results?.segments?.length || 0;
-    const completedCount = results.length;
-    const progressPercent = totalSegments > 0 ? Math.round((completedCount / totalSegments) * 100) : 0;
-
-    // Aggregate stats
-    const averageResonance = results.length > 0 
-        ? Math.round(results.reduce((acc, curr) => acc + (curr.testResult?.resonanceScore || 0), 0) / results.length)
-        : 0;
-    const skepticPercentage = results.length > 0
-        ? Math.round(results.reduce((acc, curr) => acc + (curr.testResult?.resonanceScore < 50 ? 1 : 0), 0) / results.length * 100)
-        : 0;
-    
-    const totalPersonasCount = results.reduce((acc, r) => acc + (r.personas?.length || 0), 0);
-    const adoptionCount = results.filter(r => (r.testResult?.resonanceScore || 0) >= 70)
-                                 .reduce((acc, r) => acc + (r.personas?.length || 0), 0);
-    const rejectedCount = results.filter(r => (r.testResult?.resonanceScore || 0) < 50)
-                                 .reduce((acc, r) => acc + (r.personas?.length || 0), 0);
-    
-    // Survival probability formula: weighted resonance vs resistance
-    const survivalProb = Math.min(99, Math.max(5, Math.round((averageResonance * 0.8) + (20 * (adoptionCount / (totalPersonasCount || 1))))));
-
-    const allDrivers = results.flatMap(r => r.testResult?.keyDrivers || []);
-    const topReasons = [...new Set(allDrivers)].slice(0, 3);
-    
-    const allObjections = results.flatMap(r => r.testResult?.frictionPoints || []);
-    const topObjections = [...new Set(allObjections)].slice(0, 3);
 
     return (
         <DashboardLayout rightPanel={<ChatPanel />}>
@@ -288,11 +331,20 @@ export default function SimulationResultsPage() {
                     {/* Header */}
                     <div className="mb-12 flex justify-between items-end">
                         <div>
-                            <p className="text-[10px] uppercase tracking-[0.4em] text-blue-400 font-black mb-4">Validation Outcome</p>
-                            <h1 className="text-5xl font-light tracking-tighter mb-2">
-                                Market <span className="text-gradient-blue italic font-normal">Resonance</span> Echo
+                            <p className="text-[10px] uppercase tracking-[0.4em] text-blue-400 font-black mb-4">
+                                Simulation Results
+                            </p>
+                            <h1 className="text-4xl font-light tracking-tighter mb-2">
+                                {idea?.idea
+                                    ? idea.idea.length > 50
+                                        ? idea.idea.substring(0, 50) + "..."
+                                        : idea.idea
+                                    : "Simulation Complete"}
                             </h1>
-                            <p className="text-white/40 text-sm font-normal">Based on 50 high-resonance personas • {idea?.duration || 12} Week Horizon</p>
+                            <p className="text-white/40 text-sm font-normal">
+                                {totalPersonasCount > 0 ? totalPersonasCount : "--"} personas across {results.length} segments
+                                {idea?.duration ? ` · ${idea.duration} week horizon` : ""}
+                            </p>
                         </div>
                         <div className="flex gap-4 mb-4">
                             <Button 
@@ -321,32 +373,84 @@ export default function SimulationResultsPage() {
                         <div className="bg-[#0D0D0D]/80 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 md:p-12 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)]">
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                                  {/* Primary Stats Grid */}
-                                 <div className="grid grid-cols-2 gap-x-12 gap-y-10 border-r border-white/5 pr-4">
-                                     <div className="space-y-1">
-                                         <span className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold">Total Sample</span>
-                                         <div className="text-4xl font-black italic text-white">{results.length > 0 ? totalPersonasCount : '--'}</div>
-                                         <p className="text-[9px] text-white/20 uppercase tracking-widest">Synthetic Humans</p>
+                                 <div className="space-y-10 border-r border-white/5 pr-8">
+                                     <div className="grid grid-cols-2 gap-x-12 gap-y-10">
+                                         <div className="space-y-1">
+                                             <span className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold">Total Sample</span>
+                                             <div className="text-4xl font-black italic text-white">{results.length > 0 ? totalPersonasCount : '--'}</div>
+                                             <p className="text-[9px] text-white/20 uppercase tracking-widest">Simulated Profiles</p>
+                                         </div>
+                                         <div className="space-y-1">
+                                             <span className="text-[9px] uppercase tracking-[0.2em] text-emerald-500/40 font-bold">Market Adoption</span>
+                                             <div className="text-4xl font-black italic text-emerald-400">{results.length > 0 ? adoptionCount : '--'}</div>
+                                             <p className="text-[9px] text-emerald-500/20 uppercase tracking-widest">Would Adopt</p>
+                                         </div>
+                                         <div className="space-y-1">
+                                             <span className="text-[9px] uppercase tracking-[0.2em] text-red-500/40 font-bold">Rejected</span>
+                                             <div className="text-4xl font-black italic text-red-500/80">{results.length > 0 ? rejectedCount : '--'}</div>
+                                             <p className="text-[9px] text-red-500/20 uppercase tracking-widest">Would Reject</p>
+                                         </div>
+                                         <div className="space-y-1">
+                                             <span className="text-[9px] uppercase tracking-[0.2em] text-blue-500/40 font-bold">Market Fit Score</span>
+                                             <div className="text-4xl font-black italic text-blue-400" title="Weighted score: (avg resonance × 0.8) + (adoption rate × 20)">{results.length > 0 ? `${survivalProb}%` : '--'}</div>
+                                             <p className="text-[9px] text-blue-500/20 uppercase tracking-widest">Predicted Outlook</p>
+                                         </div>
                                      </div>
-                                     <div className="space-y-1">
-                                         <span className="text-[9px] uppercase tracking-[0.2em] text-emerald-500/40 font-bold">Market Adoption</span>
-                                         <div className="text-4xl font-black italic text-emerald-400">{results.length > 0 ? adoptionCount : '--'}</div>
-                                         <p className="text-[9px] text-emerald-500/20 uppercase tracking-widest">Resonant Personas</p>
-                                     </div>
-                                     <div className="space-y-1">
-                                         <span className="text-[9px] uppercase tracking-[0.2em] text-red-500/40 font-bold">Rejected</span>
-                                         <div className="text-4xl font-black italic text-red-500/80">{results.length > 0 ? rejectedCount : '--'}</div>
-                                         <p className="text-[9px] text-red-500/20 uppercase tracking-widest">Skeptical Profiles</p>
-                                     </div>
-                                     <div className="space-y-1">
-                                         <span className="text-[9px] uppercase tracking-[0.2em] text-blue-500/40 font-bold">Survival Prob.</span>
-                                         <div className="text-4xl font-black italic text-blue-400">{results.length > 0 ? `${survivalProb}%` : '--'}</div>
-                                         <p className="text-[9px] text-blue-500/20 uppercase tracking-widest">Predicted Outlook</p>
-                                     </div>
+
+                                     {/* Task 5: Response Distribution Bar */}
+                                     {results.length > 0 && (() => {
+                                         const adoptPct  = Math.round((adoptionCount / totalPersonasCount) * 100);
+                                         const pilotCount = results.filter(r => {
+                                             const s = r.testResult?.resonanceScore || 0;
+                                             return s >= 50 && s < 70;
+                                         }).reduce((acc, r) => acc + (r.personas?.length || 0), 0);
+                                         const pilotPct  = Math.round((pilotCount / totalPersonasCount) * 100);
+                                         const rejectPct = Math.round((rejectedCount / totalPersonasCount) * 100);
+
+                                         return (
+                                             <div className="mt-8 pt-8 border-t border-white/5">
+                                                 <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">
+                                                     Response Distribution
+                                                 </p>
+                                                 <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
+                                                     <div
+                                                         className="bg-emerald-500/70 transition-all duration-1000"
+                                                         style={{ width: `${adoptPct}%` }}
+                                                         title={`Adopt: ${adoptPct}%`}
+                                                     />
+                                                     <div
+                                                         className="bg-amber-400/60 transition-all duration-1000"
+                                                         style={{ width: `${pilotPct}%` }}
+                                                         title={`Pilot: ${pilotPct}%`}
+                                                     />
+                                                     <div
+                                                         className="bg-red-500/50 transition-all duration-1000"
+                                                         style={{ width: `${rejectPct}%` }}
+                                                         title={`Reject: ${rejectPct}%`}
+                                                     />
+                                                 </div>
+                                                 <div className="flex gap-6 mt-3">
+                                                     <span className="text-[10px] text-emerald-400/80 flex items-center gap-1.5">
+                                                         <span className="w-2 h-2 rounded-full bg-emerald-500/70 inline-block" />
+                                                         Adopt {adoptPct}%
+                                                     </span>
+                                                     <span className="text-[10px] text-amber-400/70 flex items-center gap-1.5">
+                                                         <span className="w-2 h-2 rounded-full bg-amber-400/60 inline-block" />
+                                                         Pilot {pilotPct}%
+                                                     </span>
+                                                     <span className="text-[10px] text-red-400/70 flex items-center gap-1.5">
+                                                         <span className="w-2 h-2 rounded-full bg-red-500/50 inline-block" />
+                                                         Reject {rejectPct}%
+                                                     </span>
+                                                 </div>
+                                             </div>
+                                         );
+                                     })()}
                                  </div>
 
                                  {/* Qualitative Insights */}
-                                 <div className="space-y-8">
-                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                 <div className="flex flex-col h-full">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-auto">
                                          <div>
                                              <span className="text-[9px] uppercase tracking-widest text-emerald-400/40 font-bold block mb-4">Top Motivators</span>
                                              {topReasons.map((r, i) => (
@@ -366,18 +470,151 @@ export default function SimulationResultsPage() {
                                              {topObjections.length === 0 && <p className="text-[11px] text-white/20 italic">Extracting friction...</p>}
                                          </div>
                                      </div>
+
+                                     {/* Task 11: WTP Aggregate */}
+                                     {(() => {
+                                         const wtpHigh   = results.filter(r => r.testResult?.willingnessToPay === "High").length;
+                                         const wtpMedium = results.filter(r => r.testResult?.willingnessToPay === "Medium").length;
+                                         const wtpLow    = results.filter(r => ["Low", "Zero"].includes(r.testResult?.willingnessToPay)).length;
+                                         if (results.length === 0) return null;
+                                         return (
+                                             <div className="pt-8 mt-8 border-t border-white/5">
+                                                 <span className="text-[9px] uppercase tracking-widest text-white/30 font-bold block mb-3">
+                                                     Willingness to Pay
+                                                 </span>
+                                                 <div className="flex flex-wrap gap-2">
+                                                     {wtpHigh > 0 && (
+                                                         <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400">
+                                                             High — {wtpHigh} segment{wtpHigh > 1 ? "s" : ""}
+                                                         </span>
+                                                     )}
+                                                     {wtpMedium > 0 && (
+                                                         <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-400">
+                                                             Medium — {wtpMedium} segment{wtpMedium > 1 ? "s" : ""}
+                                                         </span>
+                                                     )}
+                                                     {wtpLow > 0 && (
+                                                         <span className="px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] text-red-400">
+                                                             Low/Zero — {wtpLow} segment{wtpLow > 1 ? "s" : ""}
+                                                         </span>
+                                                     )}
+                                                 </div>
+                                             </div>
+                                         );
+                                     })()}
                                  </div>
                              </div>
                         </div>
                     </div>
+
+                    {/* Task 6 — Add Top Quotes Strip */}
+                    {results.length > 0 && (() => {
+                        // Collect top 3 verbatimQuotes sorted by resonanceScore descending
+                        const topQuotes = [...results]
+                            .filter(r => r.testResult?.verbatimQuote)
+                            .sort((a, b) => (b.testResult?.resonanceScore || 0) - (a.testResult?.resonanceScore || 0))
+                            .slice(0, 3);
+
+                        if (topQuotes.length === 0) return null;
+
+                        return (
+                            <div className="mb-12">
+                                <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6">
+                                    Voices from the Simulation
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {topQuotes.map((r, i) => {
+                                        const score = r.testResult?.resonanceScore || 0;
+                                        return (
+                                            <div
+                                                key={i}
+                                                className="bg-[#0D0D0D]/60 border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-3"
+                                            >
+                                                <p className="text-sm font-light text-white/75 leading-relaxed italic flex-1">
+                                                    "{r.testResult.verbatimQuote}"
+                                                </p>
+                                                <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                                                    <span className="text-[10px] text-white/40">{r.segment_name}</span>
+                                                    <span className={`text-[10px] font-bold ${
+                                                        score >= 70
+                                                            ? "text-emerald-400"
+                                                            : score < 50
+                                                            ? "text-red-400"
+                                                            : "text-amber-400"
+                                                    }`}>
+                                                        {score}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })()}
+
+                    {/* Task 7 — Add Insight Cards section */}
+                    {(insightsLoading || insightData) && (
+                        <div className="mb-12">
+                            <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6">
+                                Key Insights
+                            </p>
+
+                            {insightsLoading && !insightData && (
+                                <div className="flex items-center gap-4 bg-purple-500/5 border border-purple-500/10 rounded-2xl p-6 border-dashed animate-pulse">
+                                    <div className="w-8 h-8 rounded-full border-2 border-t-purple-500/80 border-white/5 animate-spin" />
+                                    <p className="text-[11px] text-white/40">Synthesizing insights from simulation data...</p>
+                                </div>
+                            )}
+
+                            {insightData?.insights && (
+                                <div className="space-y-4">
+                                    {insightData.insights.map((ins, i) => (
+                                        <div
+                                            key={i}
+                                            className="bg-[#0D0D0D]/60 border border-purple-500/10 rounded-2xl p-6 hover:border-purple-500/25 transition-all duration-300"
+                                        >
+                                            <div className="flex items-start gap-4">
+                                                <span className="text-[10px] font-black text-purple-400/60 uppercase tracking-widest mt-0.5 shrink-0">
+                                                    #{i + 1}
+                                                </span>
+                                                <div className="flex-1">
+                                                    <h4 className="text-base font-medium text-white mb-3">{ins.title}</h4>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-2">
+                                                                Evidence
+                                                            </p>
+                                                            <p className="text-[12px] text-white/55 leading-relaxed">{ins.evidence}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-2">
+                                                                What this means
+                                                            </p>
+                                                            <p className="text-[12px] text-white/55 leading-relaxed">{ins.analysis}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Simulation Status Overlay */}
                     {simDoc.status === "in progress" && completedCount < totalSegments && (
                         <div className="mb-12 flex items-center gap-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl p-6 border-dashed animate-in fade-in duration-500">
                             <div className="w-10 h-10 rounded-full border-2 border-t-blue-500/80 border-white/5 animate-spin" />
                             <div>
-                                <h3 className="text-sm font-bold text-white/80">Neural Crowd Processing...</h3>
-                                <p className="text-[11px] text-white/40 font-normal">Synthesizing cluster resonance. {completedCount} of {totalSegments} clusters identified.</p>
+                                <h3 className="text-sm font-bold text-white/80">Simulating Segment Reactions...</h3>
+                                <p className="text-[11px] text-white/40 font-normal">
+                                    Running segment {completedCount + 1} of {totalSegments}
+                                    {simDoc.results?.segments?.[completedCount]?.segment_name
+                                        ? ` — ${simDoc.results.segments[completedCount].segment_name}`
+                                        : ""}
+                                </p>
                             </div>
                         </div>
                     )}
@@ -395,6 +632,27 @@ export default function SimulationResultsPage() {
                             </div>
                         ))}
                     </div>
+
+                    {/* Task 10 — Add "What to Do Next" section at the bottom */}
+                    {insightData?.nextSteps && insightData.nextSteps.length > 0 && (
+                        <div className="mt-16">
+                            <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6">
+                                What to Do Next
+                            </p>
+                            <div className="bg-[#0D0D0D]/60 border border-white/10 rounded-[2.5rem] p-8 md:p-10">
+                                <div className="space-y-5">
+                                    {insightData.nextSteps.map((step, i) => (
+                                        <div key={i} className="flex items-start gap-5">
+                                            <div className="shrink-0 w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                                                <span className="text-[10px] font-black text-blue-400">{i + 1}</span>
+                                            </div>
+                                            <p className="text-[13px] text-white/70 leading-relaxed pt-0.5">{step}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -429,11 +687,10 @@ function PersonaResultCard({ result, index }) {
                     {/* Content */}
                     <div className="flex-1">
                         <div className="flex justify-between items-start mb-4">
-                             <div>
-                                 <p className="text-sm font-medium text-white">Cluster {index + 1} Reaction</p>
-                                 <h3 className="text-2xl font-normal text-white">{result.segment_name}</h3>
-                                 <p className="text-[10px] text-white/30 uppercase tracking-widest mt-1">Status: <span className="text-white/60 font-bold">{tr.verdict}</span></p>
-                             </div>
+                              <div>
+                                  <h3 className="text-2xl font-normal text-white">{result.segment_name}</h3>
+                                  <p className="text-[10px] text-white/30 uppercase tracking-widest mt-1">Status: <span className="text-white/60 font-bold">{tr.verdict}</span></p>
+                              </div>
                              <Button 
                                  onClick={() => setIsExpanded(!isExpanded)}
                                  variant="ghost"
@@ -504,14 +761,15 @@ function PersonaResultCard({ result, index }) {
                                                  <div className="text-[10px] font-bold text-white/80 truncate">
                                                      {(() => {
                                                          const rawName = m.name || (m.occupation ? `Persona of ${m.occupation}` : `Persona ${p.persona_id || p.id}`);
-                                                         if (rawName.includes("Persona")) {
-                                                             const seed = parseInt((p.persona_id || p.id).toString().replace(/\D/g, '')) || 0;
-                                                             const names = ["Aarav", "Arjun", "Aditya", "Amit", "Alok", "Ananya", "Aavya", "Bhavna", "Ishani", "Jiya"];
-                                                             const surnames = ["Sharma", "Verma", "Gupta", "Malhotra", "Kapoor", "Patel", "Shah", "Kumar", "Singh", "Yadav"];
-                                                             const firstName = names[seed % names.length];
-                                                             const lastName = surnames[(seed * 7) % surnames.length];
-                                                             return `${firstName} ${lastName} (${m.age || '??'})`;
-                                                         }
+                                                          const cleanName = (rawName || "").trim().toLowerCase();
+                                                          if (cleanName.includes("persona") || ["unknown", "n/a", ""].includes(cleanName)) {
+                                                              const seed = parseInt((p.persona_id || p.id).toString().replace(/\D/g, '')) || 0;
+                                                              const names = ["Aarav", "Arjun", "Aditya", "Amit", "Alok", "Ananya", "Aavya", "Bhavna", "Ishani", "Jiya"];
+                                                              const surnames = ["Sharma", "Verma", "Gupta", "Malhotra", "Kapoor", "Patel", "Shah", "Kumar", "Singh", "Yadav"];
+                                                              const firstName = names[seed % names.length];
+                                                              const lastName = surnames[(seed * 7) % surnames.length];
+                                                              return `${firstName} ${lastName} (${m.age || '??'})`;
+                                                          }
                                                          return `${rawName} (${m.age || '??'})`;
                                                      })()}
                                                  </div>
@@ -532,6 +790,27 @@ function PersonaResultCard({ result, index }) {
                                     );
                                 })}
                             </div>
+
+                            {/* Task 9 — Add Top Friction Themes to expanded cluster view */}
+                            {(() => {
+                                const frictions = tr.frictionPoints || [];
+                                if (frictions.length === 0) return null;
+                                return (
+                                    <div className="mt-8 pt-8 border-t border-white/5">
+                                        <h4 className="text-[11px] uppercase tracking-[0.2em] text-white/40 font-bold mb-4">
+                                            Friction Themes in This Segment
+                                        </h4>
+                                        <div className="flex flex-col gap-2">
+                                            {frictions.slice(0, 5).map((f, fi) => (
+                                                <div key={fi} className="flex items-start gap-3">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500/60 mt-1.5 shrink-0" />
+                                                    <p className="text-[11px] text-white/50 leading-relaxed">{f}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}

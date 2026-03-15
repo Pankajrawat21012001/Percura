@@ -431,7 +431,8 @@ function PersonaBox({ segment, index, isSelected, onToggle }) {
                                     <h4 className="text-[11px] font-bold text-white/80">
                                         {(() => {
                                             const rawName = p.metadata?.name || (p.metadata?.occupation ? `Persona of ${p.metadata.occupation}` : `Persona ${p.persona_id}`);
-                                            if (rawName.includes("Persona")) {
+                                            const cleanName = (rawName || "").trim().toLowerCase();
+                                            if (cleanName.includes("persona") || ["unknown", "n/a", ""].includes(cleanName)) {
                                                 const seed = parseInt((p.persona_id).toString().replace(/\D/g, '')) || 0;
                                                 const names = ["Aarav", "Arjun", "Aditya", "Amit", "Alok", "Ananya", "Aavya", "Bhavna", "Ishani", "Jiya"];
                                                 const surnames = ["Sharma", "Verma", "Gupta", "Malhotra", "Kapoor", "Patel", "Shah", "Kumar", "Singh", "Yadav"];
