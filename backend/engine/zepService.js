@@ -63,13 +63,31 @@ socioeconomic factors relevant to this industry.
         const crypto = require('crypto');
         const userId = `percura_${crypto.createHash('md5').update(cacheKey).digest('hex').slice(0, 12)}`;
 
+        // Step 1: Ensure the user exists in Zep (required before any graph operation)
+        console.log(`🔗 [ZEP] Ensuring user exists: ${userId}`);
+        try {
+            await client.user.get(userId);
+            console.log(`✅ [ZEP] User already exists: ${userId}`);
+        } catch (userErr) {
+            // User doesn't exist — create them
+            if (userErr?.body?.message === 'not found' || userErr?.status === 404 || userErr?.message?.includes('404')) {
+                await client.user.add({
+                    userId: userId,
+                    firstName: 'Percura',
+                    lastName: 'Simulation',
+                    metadata: { source: 'percura', idea: idea.slice(0, 100) }
+                });
+                console.log(`✅ [ZEP] User created: ${userId}`);
+            } else {
+                throw userErr; // Re-throw unexpected errors
+            }
+        }
+
         // Add to Zep graph (Zep auto-extracts entities and relationships)
         console.log(`🔗 [ZEP] Sending data to graph for user: ${userId}`);
         
-        // Use both camelCase and snake_case to satisfy potentially mismatched SDK/API validation
         await client.graph.add({
             userId: userId,
-            user_id: userId,
             data: seedText,
             type: 'text',
         });
@@ -88,7 +106,6 @@ socioeconomic factors relevant to this industry.
             ...p,
             limit: 5,
             userId: userId,
-            user_id: userId, // Fallback for snake_case
         }));
 
         const [competitorResults, riskResults, trendResults] = await Promise.allSettled(

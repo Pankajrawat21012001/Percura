@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
@@ -97,7 +96,9 @@ that will be used to score Indian consumer personas from a database.
 
 The persona database has these fields: occupation (string), zone (Urban/Semi-Urban/Rural),
 education_level (string like "Graduate", "Postgraduate", "Below Graduate", "Illiterate"),
-age (number), sex (Male/Female), state (Indian state name).
+age (number), sex (Male/Female), state (Indian state name), first_language (e.g. Hindi, Tamil,
+Gujarati, Bengali, Marathi), marital_status (Currently Married, Unmarried, Widowed),
+hobbies (array of strings), skills (array of strings), career_goals_and_ambitions (string).
 
 RESPONSE FORMAT (JSON only, no markdown, no explanation):
 {
@@ -113,16 +114,19 @@ RESPONSE FORMAT (JSON only, no markdown, no explanation):
   "preferred_sex": "Male" or "Female" or "Any",
   "sex_weight": 0.0 to 1.0,
   "preferred_states": [],
-  "state_weight": 0.0 to 1.0
+  "state_weight": 0.0 to 1.0,
+  "preferred_languages": [],
+  "language_weight": 0.0 to 0.1
 }
 
 RULES:
 - If target audience does not mention age, set age_min and age_max to null and age_weight to 0.
 - If target audience does not mention gender/sex, set preferred_sex to "Any" and sex_weight to 0.
 - If target audience does not mention a state or region, set preferred_states to [] and state_weight to 0.
+- If target audience mentions a language (Hindi, Tamil, Gujarati etc.), set preferred_languages and language_weight up to 0.1.
 - occupation_keywords should be 3-6 words that describe relevant job roles (in lowercase).
 - zone_scores must always have all three keys with values summing to around 2.0.
-- All weights must sum to 1.0 across: occupation_weight + zone_weight + education_weight + age_weight + sex_weight + state_weight.`;
+- All weights must sum to 1.0 across: occupation_weight + zone_weight + education_weight + age_weight + sex_weight + state_weight + language_weight.`;
 
     const userPrompt = `STARTUP IDEA: ${idea}
 TARGET AUDIENCE: ${targetAudience}
@@ -380,19 +384,13 @@ router.post('/retrieve-personas', async (req, res) => {
                 criteriaScore += stateMatch * c.state_weight * 60;
             }
 
-            // --- First language match (bonus signal, weight 0.05 from occupation_weight) ---
-            const targetText = (targetAudience || '').toLowerCase();
-            const hindiMarkets = ['uttar pradesh', 'bihar', 'rajasthan', 'madhya pradesh', 'haryana', 'uttarakhand'];
-            const southMarkets = ['tamil nadu', 'kerala', 'karnataka', 'telangana', 'andhra pradesh'];
-
-            const personaLang = (persona.first_language || '').toLowerCase();
-            const personaState = (persona.state || '').toLowerCase();
-
-            if (targetText.includes('pan india') || targetText.includes('hindi') || hindiMarkets.some(s => personaState.includes(s))) {
-                if (personaLang === 'hindi') criteriaScore += 3;
-            }
-            if (southMarkets.some(s => personaState.includes(s)) && ['tamil', 'telugu', 'kannada', 'malayalam'].includes(personaLang)) {
-                criteriaScore += 3;
+            // --- First language match (uses Groq criteria rubric if available) ---
+            if (c.language_weight > 0 && c.preferred_languages?.length > 0) {
+                const personaLang = (persona.first_language || '').toLowerCase();
+                const langMatch = c.preferred_languages.some(l =>
+                    personaLang.includes(l.toLowerCase()) || l.toLowerCase().includes(personaLang)
+                ) ? 1 : 0;
+                criteriaScore += langMatch * c.language_weight * 60;
             }
 
             return Math.min(100, Math.round(pineconeScore + criteriaScore));
@@ -441,6 +439,12 @@ router.post('/retrieve-personas', async (req, res) => {
             );
             const ages = topPersonas.map(p => p.metadata.age).filter(Boolean);
 
+            // Rich profile fields from new DB columns
+            const languages = [...new Set(topPersonas.map(p => p.metadata.first_language).filter(Boolean))].slice(0, 2);
+            const maritalMix = topPersonas.filter(p => p.metadata.marital_status === 'Currently Married').length;
+            const sexCounts = topPersonas.reduce((a, p) => { a[p.metadata.sex || 'Unknown'] = (a[p.metadata.sex || 'Unknown'] || 0) + 1; return a; }, {});
+            const dominantSex = Object.entries(sexCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Mixed';
+
             return {
                 segment_id: `seg_${index}`,
                 segment_name: segmentNames[index] || `Segment ${index + 1}`,
@@ -450,8 +454,11 @@ router.post('/retrieve-personas', async (req, res) => {
                     dominant_state: topPersonas[0]?.metadata.state || 'N/A',
                     dominant_occupation: [...new Set(topPersonas.map(p => p.metadata.occupation))].slice(0, 2).join(", "),
                     dominant_zone: g.zone,
-                    dominant_sex: "Mixed",
-                    age_range: ages.length ? `${Math.min(...ages)}-${Math.max(...ages)}` : 'N/A'
+                    dominant_sex: dominantSex,
+                    age_range: ages.length ? `${Math.min(...ages)}-${Math.max(...ages)}` : 'N/A',
+                    primary_languages: languages,
+                    married_percent: Math.round((maritalMix / topPersonas.length) * 100),
+                    education_mix: g.feature || 'General',
                 },
                 personas: topPersonas
             };

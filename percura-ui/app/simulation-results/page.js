@@ -20,7 +20,7 @@ const ShaderPageBackground = dynamic(
 
 export default function SimulationResultsPage() {
     const router = useRouter();
-    const { currentSimulationId, idea, simulationResults, setSimulationResults, setIdea } = useIdea();
+    const { currentSimulationId, idea, simulationResults, setSimulationResults, setIdea, fullSelectedSegments } = useIdea();
     const { user, loading: authLoading } = useAuth();
     
     const [simDoc, setSimDoc] = useState(null);
@@ -125,10 +125,20 @@ export default function SimulationResultsPage() {
 
         const processSimulation = async () => {
             setIsProcessing(true);
-            const segmentsToTest = simDoc.results?.segments || [];
+
+            // Get segments WITH personas — try localStorage first, then fullSelectedSegments, then Firestore
+            let richSegments = null;
+            try {
+                const lsKey = `percura_segments_${currentSimulationId}`;
+                const stored = localStorage.getItem(lsKey);
+                if (stored) richSegments = JSON.parse(stored);
+            } catch (e) { /* ignore */ }
+            if (!richSegments && fullSelectedSegments) richSegments = fullSelectedSegments;
+            if (!richSegments) richSegments = simDoc.results?.segments || []; // fallback: no personas
+
             const existingResults = simDoc.results?.segmentsWithResults || [];
             
-            const segmentsToProcess = segmentsToTest.filter(
+            const segmentsToProcess = richSegments.filter(
                 seg => !existingResults.find(r => r.segment_id === seg.segment_id)
             );
 
@@ -139,7 +149,7 @@ export default function SimulationResultsPage() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
                             idea: simDoc.ideaData, 
-                            segment,
+                            segment,           // has full personas from localStorage
                             zepContext: simDoc.results?.marketContext || null,
                         })
                     });
@@ -154,13 +164,22 @@ export default function SimulationResultsPage() {
                 .map(r => r.value);
 
             const allResults = [...existingResults, ...successfulResults];
-            setSimulationResults(allResults);
+            setSimulationResults(allResults); // full data in React state
+
+            // Strip personas before Firestore write (1MB limit)
+            const allResultsForFirestore = allResults.map(r => {
+                const { personas, ...rest } = r;
+                return {
+                    ...rest,
+                    personaCount: personas?.length || 0,
+                };
+            });
 
             // Persist to Firestore
             try {
                 await setDoc(doc(db, "simulations", currentSimulationId), {
                     status: "completed",
-                    results: { segmentsWithResults: allResults }
+                    results: { segmentsWithResults: allResultsForFirestore }
                 }, { merge: true });
             } catch (permErr) {
                 console.warn("[FIRESTORE] Could not persist results:", permErr.message);

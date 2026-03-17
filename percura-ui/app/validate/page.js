@@ -177,17 +177,27 @@ export default function ValidatePage() {
             const data = await response.json();
 
             // Store in Firebase immediately for history persistence
+            // Strip persona arrays before saving to Firestore (1MB limit)
+            // Full personas stay in React state (memory) only
+            const segmentsForFirestore = (data.segments || []).map(seg => {
+                const { personas, ...segWithoutPersonas } = seg;
+                return {
+                    ...segWithoutPersonas,
+                    personaCount: personas?.length || 0, // keep count only
+                };
+            });
+
             const docRef = await addDoc(collection(db, "simulations"), {
                 userId: currentUser.uid,
-                ideaData: form, // This now includes duration
-                status: "ready", // ready for segment selection
+                ideaData: form,
+                status: "ready",
                 timestamp: serverTimestamp(),
                 results: {
-                    segments: data.segments || [],
-                    personas: data.personas || [],
+                    segments: segmentsForFirestore,
                     totalMatched: data.totalMatched || 0,
                     testType: form.testType,
                     marketContext: data.marketContext || null,
+                    // personas NOT saved to Firestore — kept in React state only
                 }
             });
 
@@ -200,6 +210,7 @@ export default function ValidatePage() {
                 totalMatched: data.totalMatched || 0,
                 filtersApplied: data.filtersApplied || {},
                 testType: form.testType,
+                marketContext: data.marketContext || null,  // pass through to segment page
             });
             setPersonas(data.personas || []);
 

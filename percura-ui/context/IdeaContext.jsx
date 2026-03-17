@@ -12,6 +12,9 @@ export function IdeaProvider({ children }) {
     const [personas, setPersonas] = useState(null);
     const [simulationResults, setSimulationResults] = useState(null);
     const [selectedSegment, setSelectedSegment] = useState(null);
+    // Stores full selected segments (with personas) for results page
+    // Populated by segment/page.js before navigation
+    const [fullSelectedSegments, setFullSelectedSegments] = useState(null);
     const [marketContext, setMarketContext] = useState(null);
 
     // Initialize from localStorage so page refreshes restore the last session
@@ -41,6 +44,7 @@ export function IdeaProvider({ children }) {
         setSimulationResults(null);
         setSelectedSegment(null);
         setMarketContext(null);
+        setFullSelectedSegments(null);
         setCurrentSimulationId(null);
     };
 
@@ -53,6 +57,7 @@ export function IdeaProvider({ children }) {
                 simulationResults, setSimulationResults,
                 selectedSegment, setSelectedSegment,
                 marketContext, setMarketContext,
+                fullSelectedSegments, setFullSelectedSegments,
                 currentSimulationId, setCurrentSimulationId,
                 reset,
             }}

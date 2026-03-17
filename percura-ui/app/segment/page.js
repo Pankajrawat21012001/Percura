@@ -122,11 +122,24 @@ export default function SegmentPage() {
         if (!user || selectedSegments.size === 0) return;
         setIsSimulating(true);
 
-        // Filter selected segments
+        // Build selected list with full persona data
         const selectedList = [];
         if (selectedSegments.has("custom")) selectedList.push(customSegment);
         segments.forEach(seg => {
             if (selectedSegments.has(seg.segment_id)) selectedList.push(seg);
+        });
+
+        // Save full segments (with personas) to localStorage for results page
+        // This survives Firestore but resets on hard refresh
+        try {
+            const lsKey = `percura_segments_${currentSimulationId || 'pending'}`;
+            localStorage.setItem(lsKey, JSON.stringify(selectedList));
+        } catch (e) { /* localStorage full or unavailable */ }
+
+        // Strip personas for Firestore (1MB limit)
+        const selectedListForFirestore = selectedList.map(seg => {
+            const { personas, ...rest } = seg;
+            return { ...rest, personaCount: personas?.length || 0 };
         });
         
         try {
@@ -136,9 +149,10 @@ export default function SegmentPage() {
                 status: "in progress",
                 timestamp: serverTimestamp(),
                 results: {
-                    segments: selectedList,
+                    segments: selectedListForFirestore,
                     totalMatched: validation.totalMatched,
-                    testType: idea.testType
+                    testType: idea.testType,
+                    marketContext: validation.marketContext || null,
                 }
             };
 
@@ -156,11 +170,20 @@ export default function SegmentPage() {
                 }
             } catch (permError) {
                 console.warn("Permission issue or document mismatch, falling back to new record creation:", permError);
-                // Fallback: Just create a new record if update fails (likely due to strict rules)
                 const docRef = await addDoc(collection(db, "simulations"), simulationData);
                 docId = docRef.id;
                 setCurrentSimulationId(docId);
             }
+
+            // Re-key localStorage with the final docId (in case it was 'pending')
+            try {
+                const oldKey = `percura_segments_pending`;
+                const stored = localStorage.getItem(oldKey);
+                if (stored) {
+                    localStorage.setItem(`percura_segments_${docId}`, stored);
+                    localStorage.removeItem(oldKey);
+                }
+            } catch (e) { /* ignore */ }
 
             setSimulationResults([]);
             router.push("/simulation-results");
