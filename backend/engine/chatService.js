@@ -1,7 +1,8 @@
 /**
- * Persona Chat Engine
+ * Persona Chat Engine — UPGRADED
  * 
  * Simulates real-time dialogue between a user and a persona or segment.
+ * Now uses enriched behavioral profiles for deeply authentic responses.
  */
 
 const { generateAIResponse } = require('./groqService');
@@ -12,15 +13,12 @@ async function handlePersonaChat(simulationId, target, message, history, context
     const targets = Array.isArray(target) ? target : [target];
     const isAll = targets.includes("all");
     
-    // Panel mode: If requested, return individual replies for each target
-    // We'll detect panel mode if targets.length > 1 and it's not "all"
     const isPanel = !isAll && targets.length > 1;
 
     if (isPanel) {
         const replies = [];
         for (const targetId of targets) {
             const personaReply = await getSingleTargetResponse(targetId, message, history, idea, simulationResults);
-            // Ensure reply is always a plain string, never an object
             replies.push({
                 name: String(personaReply.name || "Persona"),
                 reply: String(personaReply.reply || "...")
@@ -29,7 +27,6 @@ async function handlePersonaChat(simulationId, target, message, history, context
         return { isPanel: true, replies };
     }
 
-    // Single target or "all" (collective)
     const targetId = targets[0];
     const personaReply = await getSingleTargetResponse(targetId, message, history, idea, simulationResults);
     return { 
@@ -63,7 +60,6 @@ async function getSingleTargetResponse(targetId, message, history, idea, simulat
         let persona = null;
 
         if (!segment) {
-            // Check all personas in all segments
             for (const s of (simulationResults || [])) {
                 persona = (s.personas || []).find(p => (p.persona_id || p.id) == targetId);
                 if (persona) {
@@ -74,23 +70,76 @@ async function getSingleTargetResponse(targetId, message, history, idea, simulat
         }
 
         if (persona) {
-            const personaId = persona.persona_id || persona.id;
-            const currentName = persona.metadata?.name || persona.name;
-            let rawName = "Persona";
+            const ep = persona.enrichedProfile;
 
-            if (currentName && !currentName.includes("Persona") && currentName !== "Custom Persona") {
-                rawName = currentName;
+            if (ep) {
+                // ── UPGRADE 2: Rich context from enriched profile ──
+                const ms = ep.memoryState || {};
+                
+                targetName = ep.fullName ? `${ep.fullName} (${persona.metadata?.age || ''})` : (persona.metadata?.name || 'Persona');
+
+                const experiencesList = (ms.keyExperiences || []).length > 0
+                    ? ms.keyExperiences.map(e => `- ${e}`).join("\n")
+                    : "Nothing yet";
+
+                targetContext = `
+You are ${ep.fullName}, ${persona.metadata?.age || '28'} years old, ${persona.metadata?.occupation || 'professional'} from ${persona.metadata?.state || 'India'} (${persona.metadata?.zone || 'Urban'}).
+
+YOUR INNER WORLD:
+${ep.internalNarrative}
+
+HOW YOU MAKE DECISIONS:
+- Decision style: ${ep.behaviorPatterns?.decisionMaking || 'Research-heavy'}
+- You trust: ${ep.behaviorPatterns?.socialInfluence || 'Family and friends'}
+- Adoption style: ${ep.behaviorPatterns?.adoptionStyle || 'Early Majority'}
+- How you talk: ${ep.behaviorPatterns?.communicationStyle || 'Casual, Hindi-English mix'}
+
+YOUR CURRENT STATE IN THIS SIMULATION:
+- Times you've heard about this idea: ${ms.exposureCount || 0}
+- Your current feeling toward it (0=hate, 1=love): ${ms.sentimentScore !== undefined ? ms.sentimentScore : 0.5}
+- Things you've experienced:
+${experiencesList}
+- Heard about it from someone you know: ${ms.heardFromPeers ? 'Yes' : 'No'}
+
+WHAT EXCITES YOU ABOUT THIS IDEA:
+${(ep.triggerPoints || []).map(t => `- ${t}`).join("\n")}
+
+WHAT MAKES YOU SKEPTICAL:
+${(ep.frictionPoints || []).map(f => `- ${f}`).join("\n")}
+
+YOUR INITIAL GUT REACTION WAS:
+${ep.reactionToIdea || 'I need to think about this more.'}
+
+STRICT RULES:
+1. You are a REAL HUMAN. Never break character.
+2. Respond in your natural voice — ${ep.behaviorPatterns?.communicationStyle || 'casual and direct'}.
+3. Keep responses to 2-3 sentences max.
+4. Your answer must be shaped by your current sentimentScore and exposureCount.
+5. If sentimentScore is below 0.3, be resistant or skeptical.
+6. If sentimentScore is above 0.7, be enthusiastic or curious.
+7. If exposureCount is 0, this is your first time hearing about this — react freshly.
+8. Never mention that you are a simulation, persona, or AI.
+9. Reference specific details from your life when relevant.
+                `;
             } else {
-                const names = ["Aarav", "Arjun", "Aditya", "Amit", "Alok", "Ananya", "Aavya", "Bhavna", "Ishani", "Jiya"];
-                const surnames = ["Sharma", "Verma", "Gupta", "Malhotra", "Kapoor", "Patel", "Shah", "Kumar", "Singh", "Yadav"];
-                const seed = parseInt(personaId.toString().replace(/\D/g, '')) || 0;
-                rawName = `${names[seed % names.length]} ${surnames[(seed * 7) % surnames.length]}`;
-            }
+                // ── FALLBACK: original behavior for unenriched personas ──
+                const personaId = persona.persona_id || persona.id;
+                const currentName = persona.metadata?.name || persona.name;
+                let rawName = "Persona";
 
-            const age = persona.metadata?.age || persona.age || (20 + (parseInt(personaId) % 40));
-            targetName = age ? `${rawName} (${age})` : rawName;
-            
-            targetContext = `
+                if (currentName && !currentName.includes("Persona") && currentName !== "Custom Persona") {
+                    rawName = currentName;
+                } else {
+                    const names = ["Aarav", "Arjun", "Aditya", "Amit", "Alok", "Ananya", "Aavya", "Bhavna", "Ishani", "Jiya"];
+                    const surnames = ["Sharma", "Verma", "Gupta", "Malhotra", "Kapoor", "Patel", "Shah", "Kumar", "Singh", "Yadav"];
+                    const seed = parseInt(personaId.toString().replace(/\D/g, '')) || 0;
+                    rawName = `${names[seed % names.length]} ${surnames[(seed * 7) % surnames.length]}`;
+                }
+
+                const age = persona.metadata?.age || persona.age || (20 + (parseInt(personaId) % 40));
+                targetName = age ? `${rawName} (${age})` : rawName;
+                
+                targetContext = `
             You are ${rawName}, a ${age}-year-old ${persona.metadata?.occupation || "consumer"} from ${persona.metadata?.state || "India"}.
             You are part of the "${segment.segment_name}" audience segment.
             
@@ -107,6 +156,7 @@ async function getSingleTargetResponse(targetId, message, history, idea, simulat
             AUTHENTICITY GUIDELINES:
             Be honest and critical. If the product is expensive, mention it. If it solves a real pain point for someone in your job, be excited. Use colloquial Indian English.
             `;
+            }
         } else if (segment) {
             targetName = segment.segment_name;
             targetContext = `
@@ -149,7 +199,6 @@ async function getSingleTargetResponse(targetId, message, history, idea, simulat
 
     try {
         const result = await generateAIResponse(systemPrompt, userPrompt, 0.7);
-        // Guard: result.reply might itself be nested or undefined
         let replyText = "I'm not sure what to say to that.";
         if (result) {
             if (typeof result.reply === "string") replyText = result.reply;

@@ -5,6 +5,7 @@ const { Pinecone } = require('@pinecone-database/pinecone');
 const { pipeline } = require('@xenova/transformers');
 const { testSegmentResonance } = require('../engine/segmentTest');
 const { generateAIResponse } = require('../engine/groqService');
+const { enrichSegments } = require('../engine/personaEnrichment');
 const { buildIdeaContext } = require('../engine/zepService');
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
@@ -396,11 +397,16 @@ router.post('/retrieve-personas', async (req, res) => {
             return Math.min(100, Math.round(pineconeScore + criteriaScore));
         };
 
-        const formattedPersonas = rows.map(r => ({
-            persona_id: r.id,
-            similarity_score: calculateResonance(r) / 100,
-            metadata: { ...r }
-        })).sort((a, b) => b.similarity_score - a.similarity_score);
+        const formattedPersonas = rows.map(r => {
+            const safeMetadata = { ...r };
+            delete safeMetadata.full_metadata;
+            delete safeMetadata.embedding;
+            return {
+                persona_id: r.id,
+                similarity_score: calculateResonance(r) / 100,
+                metadata: safeMetadata
+            };
+        }).sort((a, b) => b.similarity_score - a.similarity_score);
 
         // 5. FEATURE-BASED DYNAMIC SEGMENTATION
         // Filter to only top-scoring personas before segmenting
@@ -474,11 +480,21 @@ router.post('/retrieve-personas', async (req, res) => {
             });
         }
 
+        // UPGRADE 1: Deep Persona Enrichment — enrich top 3 per segment
+        let enrichedSegments = segments;
+        try {
+            enrichedSegments = await enrichSegments(segments, { idea, targetAudience, industry, businessModel }, 3);
+            console.log('✅ [ENRICH] Persona enrichment complete.');
+        } catch (enrichErr) {
+            console.warn('⚠️ [ENRICH] Enrichment failed, using unenriched segments:', enrichErr.message);
+            enrichedSegments = segments;
+        }
+
         res.json({
             success: true,
             totalMatched: formattedPersonas.length,
             personas: formattedPersonas,
-            segments: segments,
+            segments: enrichedSegments,
             query: idea,
             marketContext: zepContext ? {
                 competitors: zepContext.competitors,

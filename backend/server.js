@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api', simulationRoutes);
+app.use('/api/simulation', simulationRoutes);
 app.use('/api', personaRoutes);
 app.use('/api', chatRoutes);
 

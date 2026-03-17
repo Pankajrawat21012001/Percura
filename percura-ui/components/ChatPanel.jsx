@@ -195,9 +195,30 @@ export default function ChatPanel({ onClose }) {
         }, 1000);
     };
 
+    // Build targets with simulation state indicators where available
     const targets = [
-        { id: "all", name: "Collective Audience" },
-        ...(simulationResults || []).map(r => ({ id: r.segment_id, name: r.segment_name }))
+        { id: "all", name: "Collective Audience", simState: null },
+        ...(simulationResults || []).flatMap(r => {
+            const segTarget = { id: r.segment_id, name: r.segment_name, simState: null };
+            // Also expose individual enriched personas from each segment
+            const personaTargets = (r.personas || [])
+                .filter(p => p.enrichedProfile)
+                .map(p => {
+                    const pid = p.persona_id || p.id;
+                    const ep = p.enrichedProfile;
+                    const ss = p.simulationState || ep?.memoryState || {};
+                    return {
+                        id: pid,
+                        name: ep.fullName || p.metadata?.name || `Persona ${pid}`,
+                        simState: {
+                            converted: ss.converted || false,
+                            churned: ss.churned || false,
+                            sentimentScore: ss.sentimentScore !== undefined ? ss.sentimentScore : (ep?.memoryState?.sentimentScore || 0.5)
+                        }
+                    };
+                });
+            return [segTarget, ...personaTargets];
+        })
     ];
 
     if (!currentSimulationId) {
@@ -312,6 +333,12 @@ export default function ChatPanel({ onClose }) {
                                                 )}
                                             </div>
                                             <span>{t.name}</span>
+                                            {t.simState && (
+                                                <div className="flex items-center gap-1.5 ml-auto">
+                                                    <div className={`w-2 h-2 rounded-full ${t.simState.converted ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : t.simState.churned ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' : 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.3)]'}`} />
+                                                    <span className="text-[9px] font-mono text-white/30">{(t.simState.sentimentScore * 100).toFixed(0)}%</span>
+                                                </div>
+                                            )}
                                         </div>
                                         {isSelected && <div className="text-[9px] uppercase tracking-tighter opacity-40">Active</div>}
                                     </div>

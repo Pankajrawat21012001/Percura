@@ -1,52 +1,79 @@
 const express = require('express');
 const router = express.Router();
+const { runSimulation } = require('../engine/simulationEngine');
 
-// This file is now primarily for legacy compatibility or redirected features.
-// The main Persona Segment Testing logic resides in routes/personas.js.
+// In-memory simulation store (Firestore migration later)
+const simulationStore = new Map();
 
 /**
- * Legacy Simulation Endpoints
- * All redirected or decommissioned to focus on Persona Segment Testing.
+ * POST /api/simulation/run
+ * Runs the full time-step behavioral simulation.
  */
+router.post('/run', async (req, res) => {
+    try {
+        const { idea, segments, weeks } = req.body;
 
-router.post('/run', (req, res) => {
-    res.json({ 
-        success: true, 
-        message: 'Legacy simulation disabled. Use the Persona Testing flow.',
-        results: { pulse: { score: 0, signals: [] }, trajectory: [] }
-    });
+        if (!idea || !segments || segments.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields: idea, segments'
+            });
+        }
+
+        console.log(`🚀 [SIM-ROUTE] Starting simulation for "${(idea.idea || '').substring(0, 50)}..." (${weeks || 8} weeks)`);
+
+        const result = await runSimulation(idea, segments, { weeks: weeks || 8 });
+
+        // Store in memory
+        simulationStore.set(result.id, result);
+
+        // Cap store at 100 entries
+        if (simulationStore.size > 100) {
+            const oldestKey = simulationStore.keys().next().value;
+            simulationStore.delete(oldestKey);
+        }
+
+        res.json({
+            success: true,
+            simulation: result
+        });
+
+    } catch (error) {
+        console.error('[SIM-ROUTE ERROR]', error.message);
+        res.status(500).json({
+            success: false,
+            error: 'Simulation engine failed: ' + error.message
+        });
+    }
 });
 
-router.post('/run/pulse', (req, res) => {
-    res.json({ 
-        success: true, 
-        message: 'Legacy pulse simulation disabled.',
-        results: { score: 0, signals: [] }
-    });
-});
+/**
+ * GET /api/simulation/:id
+ * Retrieve a stored simulation by ID.
+ */
+router.get('/:id', (req, res) => {
+    const { id } = req.params;
+    const simulation = simulationStore.get(id);
 
-router.post('/run/deep', (req, res) => {
-    res.json({ 
-        success: true, 
-        message: 'Legacy deep simulation disabled.',
-        results: { analysis: "Feature decommissioned." }
-    });
-});
+    if (!simulation) {
+        return res.status(404).json({
+            success: false,
+            error: 'Simulation not found. It may have expired from memory.'
+        });
+    }
 
-router.post('/startup-simulation', (req, res) => {
-    res.json({ 
-        success: true, 
-        message: 'Startup trajectory simulation disabled.',
-        simulation: { status: 'decommissioned' }
-    });
-});
-
-router.post('/brutal-test', (req, res) => {
     res.json({
         success: true,
-        message: 'Brutal mode disabled.',
-        verdict: { status: 'decommissioned' }
+        simulation
     });
 });
 
+/**
+ * Expose the store for chat route to look up persona final states.
+ */
+function getSimulation(id) {
+    return simulationStore.get(id) || null;
+}
+
 module.exports = router;
+module.exports.getSimulation = getSimulation;

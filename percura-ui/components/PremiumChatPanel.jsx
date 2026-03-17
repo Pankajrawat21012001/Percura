@@ -60,9 +60,19 @@ export default function PremiumChatPanel({ onClose }) {
     const allAgents = (simulationResults || []).reduce((acc, segment) => {
         const personas = (segment.personas || []).map(p => {
             const personaId = p.persona_id || p.id;
-            const rawName = getRealisticName(personaId, p.metadata?.name || p.name);
+            const ep = p.enrichedProfile;
+            const rawName = ep?.fullName || getRealisticName(personaId, p.metadata?.name || p.name);
             const age = p.metadata?.age || p.age;
             const displayName = age ? `${rawName} (${age})` : rawName;
+
+            // Build simulation state from enrichedProfile or simulationState
+            const ss = p.simulationState || ep?.memoryState || {};
+            const simState = ep ? {
+                converted: ss.converted || false,
+                churned: ss.churned || false,
+                sentimentScore: ss.sentimentScore !== undefined ? ss.sentimentScore : 0.5,
+                exposureCount: ss.exposureCount || 0,
+            } : null;
 
             return {
                 ...p,
@@ -71,10 +81,12 @@ export default function PremiumChatPanel({ onClose }) {
                 displayName: displayName,
                 age: age,
                 archetype: p.metadata?.occupation || p.metadata?.archetype || p.archetype || segment.segment_name,
-                state: p.state || (segment.testResult?.resonanceScore >= 70 ? "ADOPTED" : segment.testResult?.resonanceScore < 50 ? "REJECTED" : "NEUTRAL"),
-                influence: p.influence || Math.floor(Math.random() * 6) + 3, // Fallback
+                state: simState?.converted ? "ADOPTED" : simState?.churned ? "REJECTED" : (p.state || (segment.testResult?.resonanceScore >= 70 ? "ADOPTED" : segment.testResult?.resonanceScore < 50 ? "REJECTED" : "NEUTRAL")),
+                influence: p.influence || Math.floor(Math.random() * 6) + 3,
                 segmentId: segment.segment_id,
-                segmentName: segment.segment_name
+                segmentName: segment.segment_name,
+                simState: simState,
+                adoptionStyle: ep?.behaviorPatterns?.adoptionStyle || null,
             };
         });
         return [...acc, ...personas];
@@ -321,7 +333,15 @@ export default function PremiumChatPanel({ onClose }) {
                                         <span className={`text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md ${agent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400" : agent.state === "REJECTED" ? "bg-rose-500/10 text-rose-400" : "bg-white/5 text-white/30"}`}>
                                             {agent.state}
                                         </span>
-                                        <span className="text-[10px] text-white/20 font-mono">Inf: <span className="text-white/40">{agent.influence}/10</span></span>
+                                        {agent.simState && (
+                                            <div className="flex items-center gap-1">
+                                                <div className={`w-2 h-2 rounded-full ${agent.simState.converted ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : agent.simState.churned ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' : 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.3)]'}`} />
+                                                <span className="text-[9px] font-mono text-white/30">{(agent.simState.sentimentScore * 100).toFixed(0)}%</span>
+                                            </div>
+                                        )}
+                                        {!agent.simState && (
+                                            <span className="text-[10px] text-white/20 font-mono">Inf: <span className="text-white/40">{agent.influence}/10</span></span>
+                                        )}
                                     </div>
                                 </div>
                             );
