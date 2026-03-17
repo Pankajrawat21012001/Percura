@@ -33,6 +33,7 @@ export default function SimulationResultsPage() {
     const [insightsLoading, setInsightsLoading] = useState(false);
     
     const reportRef = useRef(null);
+    const insightsFetchedRef = useRef(false);
     
     // Derived aggregates used in hooks and UI
     const results = simulationResults || [];
@@ -49,7 +50,10 @@ export default function SimulationResultsPage() {
     const rejectedCount = results.filter(r => (r.testResult?.resonanceScore || 0) < 50)
                                  .reduce((acc, r) => acc + (r.personas?.length || 0), 0);
     
-    const survivalProb = Math.min(99, Math.max(5, Math.round((averageResonance * 0.8) + (20 * (adoptionCount / (totalPersonasCount || 1))))));
+    const adoptionRate = results.length > 0
+        ? results.filter(r => (r.testResult?.resonanceScore || 0) >= 70).length / results.length
+        : 0;
+    const survivalProb = Math.min(99, Math.max(5, Math.round((averageResonance * 0.7) + (adoptionRate * 30))));
 
     const allDrivers = results.flatMap(r => r.testResult?.keyDrivers || []);
     const topReasons = [...new Set(allDrivers)].slice(0, 3);
@@ -124,48 +128,42 @@ export default function SimulationResultsPage() {
             const segmentsToTest = simDoc.results?.segments || [];
             const existingResults = simDoc.results?.segmentsWithResults || [];
             
-            const results = [...existingResults];
-            
-            for (const segment of segmentsToTest) {
-                // Skip if already has result
-                if (existingResults.find(r => r.segment_id === segment.segment_id)) continue;
+            const segmentsToProcess = segmentsToTest.filter(
+                seg => !existingResults.find(r => r.segment_id === seg.segment_id)
+            );
 
-                try {
+            const newResults = await Promise.allSettled(
+                segmentsToProcess.map(async (segment) => {
                     const response = await fetch(`${API_BASE_URL}/api/test-segment`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ idea: simDoc.ideaData, segment })
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            idea: simDoc.ideaData, 
+                            segment,
+                            zepContext: simDoc.results?.marketContext || null,
+                        })
                     });
                     const data = await response.json();
-                    if (data.success) {
-                        results.push({ ...segment, testResult: data.testResult });
-                        
-                        // Update local state immediately so UI reflects progress
-                        setSimulationResults([...results]);
+                    if (!data.success) throw new Error(`Segment ${segment.segment_name} failed`);
+                    return { ...segment, testResult: data.testResult };
+                })
+            );
 
-                        // Try to persist to Firestore — but don't crash if it fails
-                        try {
-                            await setDoc(doc(db, "simulations", currentSimulationId), {
-                                results: {
-                                    segmentsWithResults: results
-                                }
-                            }, { merge: true });
-                        } catch (permErr) {
-                            console.warn("[FIRESTORE] Could not persist partial results (permission issue). Using local state.", permErr.message);
-                        }
-                    }
-                } catch (err) {
-                    console.error("Error testing segment:", segment.segment_name, err);
-                }
-            }
+            const successfulResults = newResults
+                .filter(r => r.status === 'fulfilled')
+                .map(r => r.value);
 
-            // Try to finalize status in Firestore
+            const allResults = [...existingResults, ...successfulResults];
+            setSimulationResults(allResults);
+
+            // Persist to Firestore
             try {
                 await setDoc(doc(db, "simulations", currentSimulationId), {
-                    status: "completed"
+                    status: "completed",
+                    results: { segmentsWithResults: allResults }
                 }, { merge: true });
             } catch (permErr) {
-                console.warn("[FIRESTORE] Could not update simulation status:", permErr.message);
+                console.warn("[FIRESTORE] Could not persist results:", permErr.message);
             }
 
             setIsProcessing(false);
@@ -176,7 +174,12 @@ export default function SimulationResultsPage() {
 
     // Task 2: Insight generation effect
     useEffect(() => {
-        if (simDoc?.status === "completed" && results.length > 0 && insightData === null && !insightsLoading) {
+        if (simDoc?.status === "completed" && results.length > 0 
+            && insightData === null && !insightsLoading 
+            && !insightsFetchedRef.current) {
+            
+            insightsFetchedRef.current = true;
+            
             const generateInsights = async () => {
                 setInsightsLoading(true);
                 try {
@@ -211,7 +214,7 @@ export default function SimulationResultsPage() {
             };
             generateInsights();
         }
-    }, [simDoc?.status, results.length, insightData, insightsLoading, currentSimulationId]);
+    }, [simDoc?.status, results.length]);
 
     const handleDownloadPDF = async () => {
         console.log("[PDF] Initializing Report Generation...");
@@ -473,9 +476,12 @@ export default function SimulationResultsPage() {
 
                                      {/* Task 11: WTP Aggregate */}
                                      {(() => {
-                                         const wtpHigh   = results.filter(r => r.testResult?.willingnessToPay === "High").length;
-                                         const wtpMedium = results.filter(r => r.testResult?.willingnessToPay === "Medium").length;
-                                         const wtpLow    = results.filter(r => ["Low", "Zero"].includes(r.testResult?.willingnessToPay)).length;
+                                         const wtpHigh   = results.filter(r => r.testResult?.willingnessToPay === "High")
+                                                                  .reduce((acc, r) => acc + (r.personas?.length || 0), 0);
+                                         const wtpMedium = results.filter(r => r.testResult?.willingnessToPay === "Medium")
+                                                                  .reduce((acc, r) => acc + (r.personas?.length || 0), 0);
+                                         const wtpLow    = results.filter(r => ["Low", "Zero"].includes(r.testResult?.willingnessToPay))
+                                                                  .reduce((acc, r) => acc + (r.personas?.length || 0), 0);
                                          if (results.length === 0) return null;
                                          return (
                                              <div className="pt-8 mt-8 border-t border-white/5">
@@ -485,17 +491,17 @@ export default function SimulationResultsPage() {
                                                  <div className="flex flex-wrap gap-2">
                                                      {wtpHigh > 0 && (
                                                          <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400">
-                                                             High — {wtpHigh} segment{wtpHigh > 1 ? "s" : ""}
+                                                             High — {wtpHigh} personas ({Math.round(wtpHigh/totalPersonasCount*100)}%)
                                                          </span>
                                                      )}
                                                      {wtpMedium > 0 && (
                                                          <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-400">
-                                                             Medium — {wtpMedium} segment{wtpMedium > 1 ? "s" : ""}
+                                                             Medium — {wtpMedium} personas ({Math.round(wtpMedium/totalPersonasCount*100)}%)
                                                          </span>
                                                      )}
                                                      {wtpLow > 0 && (
                                                          <span className="px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] text-red-400">
-                                                             Low/Zero — {wtpLow} segment{wtpLow > 1 ? "s" : ""}
+                                                             Low/Zero — {wtpLow} personas ({Math.round(wtpLow/totalPersonasCount*100)}%)
                                                          </span>
                                                      )}
                                                  </div>
@@ -552,6 +558,9 @@ export default function SimulationResultsPage() {
                             </div>
                         );
                     })()}
+
+                    {/* Market Context Panel (Zep Graph) */}
+                    <MarketContextPanel marketContext={simDoc?.results?.marketContext} />
 
                     {/* Task 7 — Add Insight Cards section */}
                     {(insightsLoading || insightData) && (
@@ -814,6 +823,53 @@ function PersonaResultCard({ result, index }) {
                         </div>
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+function MarketContextPanel({ marketContext }) {
+    if (!marketContext) return null;
+    
+    const { competitors = [], risks = [], trends = [] } = marketContext;
+    if (!competitors.length && !risks.length && !trends.length) return null;
+
+    return (
+        <div className="mb-12">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6 flex items-center gap-3">
+                Market Context
+                <span className="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] normal-case tracking-normal">
+                    Zep Graph
+                </span>
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                    { label: 'Competitors & Alternatives', items: competitors, color: 'red' },
+                    { label: 'Risks & Regulations', items: risks, color: 'amber' },
+                    { label: 'Market Trends', items: trends, color: 'blue' },
+                ].map(({ label, items, color }) => items.length > 0 && (
+                    <div key={label} className="bg-[#0D0D0D]/60 border border-white/[0.07] rounded-2xl p-5">
+                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-4 ${
+                            color === 'red' ? 'text-red-400/60' : 
+                            color === 'amber' ? 'text-amber-400/60' : 
+                            'text-blue-400/60'
+                        }`}>
+                            {label}
+                        </p>
+                        <div className="space-y-2">
+                            {items.map((item, i) => (
+                                <p key={i} className="text-[11px] text-white/60 leading-relaxed flex items-start gap-2">
+                                    <span className={`w-1 h-1 rounded-full mt-1.5 shrink-0 ${
+                                        color === 'red' ? 'bg-red-400' : 
+                                        color === 'amber' ? 'bg-amber-400' : 
+                                        'bg-blue-400'
+                                    }`} />
+                                    {item}
+                                </p>
+                            ))}
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );

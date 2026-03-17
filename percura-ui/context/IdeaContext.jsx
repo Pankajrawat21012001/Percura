@@ -12,6 +12,7 @@ export function IdeaProvider({ children }) {
     const [personas, setPersonas] = useState(null);
     const [simulationResults, setSimulationResults] = useState(null);
     const [selectedSegment, setSelectedSegment] = useState(null);
+    const [marketContext, setMarketContext] = useState(null);
 
     // Initialize from localStorage so page refreshes restore the last session
     const [currentSimulationId, setCurrentSimulationIdRaw] = useState(() => {
@@ -39,6 +40,7 @@ export function IdeaProvider({ children }) {
         setPersonas(null);
         setSimulationResults(null);
         setSelectedSegment(null);
+        setMarketContext(null);
         setCurrentSimulationId(null);
     };
 
@@ -50,6 +52,7 @@ export function IdeaProvider({ children }) {
                 personas, setPersonas,
                 simulationResults, setSimulationResults,
                 selectedSegment, setSelectedSegment,
+                marketContext, setMarketContext,
                 currentSimulationId, setCurrentSimulationId,
                 reset,
             }}

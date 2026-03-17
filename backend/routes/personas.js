@@ -6,6 +6,7 @@ const { Pinecone } = require('@pinecone-database/pinecone');
 const { pipeline } = require('@xenova/transformers');
 const { testSegmentResonance } = require('../engine/segmentTest');
 const { generateAIResponse } = require('../engine/groqService');
+const { buildIdeaContext } = require('../engine/zepService');
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 // Singleton embedder — initialised once on first call, reused for all subsequent calls
@@ -171,6 +172,9 @@ async function nameSegmentsWithGroq(idea, targetAudience, rawSegments) {
         const ageRange = ages.length ? `${Math.min(...ages)}-${Math.max(...ages)}` : 'Unknown';
         const states = [...new Set(topPersonas.map(p => p.metadata.state || 'Unknown'))].slice(0, 2);
         const edu = [...new Set(topPersonas.map(p => p.metadata.education_level || 'Unknown'))].slice(0, 2);
+        const languages = [...new Set(topPersonas.map(p => p.metadata.first_language).filter(Boolean))].slice(0, 2);
+        const maritalMix = topPersonas.filter(p => p.metadata.marital_status === 'Currently Married').length;
+
         return {
             index: i,
             zone: g.zone,
@@ -178,6 +182,8 @@ async function nameSegmentsWithGroq(idea, targetAudience, rawSegments) {
             top_occupations: occupations.slice(0, 3),
             top_states: states,
             education_levels: edu,
+            primary_languages: languages,
+            married_percent: Math.round((maritalMix / topPersonas.length) * 100),
             avg_relevance_score: Math.round(g.avgScore * 100)
         };
     });
@@ -236,9 +242,10 @@ router.post('/retrieve-personas', async (req, res) => {
             BUSINESS MODEL: ${businessModel || 'Any'}
         `.trim();
 
-        const [vector, criteria] = await Promise.all([
+        const [vector, criteria, zepContext] = await Promise.all([
             getEmbedding(weightedQueryText),
-            getCriteriaFromGroq(idea, targetAudience, industry, businessModel)
+            getCriteriaFromGroq(idea, targetAudience, industry, businessModel),
+            buildIdeaContext(idea, targetAudience, industry, businessModel)
         ]);
 
         // 2. Search Pinecone
@@ -264,7 +271,7 @@ router.post('/retrieve-personas', async (req, res) => {
         // 3. Fetch Details from Hostinger MySQL
         console.log(`🗄️ [HOSTINGER MYSQL] Filtering and fetching text details...`);
         
-        let sql = "SELECT * FROM personas WHERE id IN (?)";
+        let sql = `SELECT * FROM personas WHERE id IN (?)`;
         const params = [matchedIds];
 
         if (state && state !== "All India") { sql += " AND state = ?"; params.push(state); }
@@ -275,10 +282,36 @@ router.post('/retrieve-personas', async (req, res) => {
             rows = queryRows;
             
             // Even if query succeeds, some rows might not have names or might have generic names
-            rows = rows.map(r => ({
-                ...r,
-                name: (r.name && !r.name.includes("Persona")) ? r.name : generateRealName(r.id)
-            }));
+            rows = queryRows.map(r => {
+                let meta = {};
+                try {
+                    if (r.full_metadata) {
+                        meta = typeof r.full_metadata === 'string' 
+                            ? JSON.parse(r.full_metadata) 
+                            : r.full_metadata;
+                    }
+                } catch (e) {
+                    console.warn(`[MYSQL] Could not parse full_metadata for ID ${r.id}`);
+                }
+
+                return {
+                    ...meta, // Primary data from JSON blob
+                    ...r,    // Override with dedicated columns if they exist
+                    name: (r.name && !r.name.toLowerCase().includes('persona') && !r.name.toLowerCase().includes('unknown')) 
+                        ? r.name 
+                        : (meta.name || generateRealName(r.id)),
+                    // Ensure rich fields always exist (dedicated col -> meta blob -> null/default)
+                    hobbies: r.hobbies || meta.hobbies || null,
+                    skills: r.skills || meta.skills || null,
+                    first_language: r.first_language || meta.first_language || null,
+                    marital_status: r.marital_status || meta.marital_status || null,
+                    education_degree: r.education_degree || meta.education_degree || null,
+                    cultural_background: r.cultural_background || meta.cultural_background || null,
+                    career_goals_and_ambitions: r.career_goals_and_ambitions || meta.career_goals_and_ambitions || null,
+                    persona: r.persona || meta.persona || null,
+                    professional_persona: r.professional_persona || meta.professional_persona || null,
+                };
+            });
 
             console.log(`✅ [HOSTINGER MYSQL] Successfully retrieved ${rows.length} relevant rows.`);
         } catch (dbError) {
@@ -345,6 +378,21 @@ router.post('/retrieve-personas', async (req, res) => {
             if (c.state_weight > 0 && c.preferred_states?.length > 0) {
                 const stateMatch = c.preferred_states.includes(persona.state) ? 1 : 0.3;
                 criteriaScore += stateMatch * c.state_weight * 60;
+            }
+
+            // --- First language match (bonus signal, weight 0.05 from occupation_weight) ---
+            const targetText = (targetAudience || '').toLowerCase();
+            const hindiMarkets = ['uttar pradesh', 'bihar', 'rajasthan', 'madhya pradesh', 'haryana', 'uttarakhand'];
+            const southMarkets = ['tamil nadu', 'kerala', 'karnataka', 'telangana', 'andhra pradesh'];
+
+            const personaLang = (persona.first_language || '').toLowerCase();
+            const personaState = (persona.state || '').toLowerCase();
+
+            if (targetText.includes('pan india') || targetText.includes('hindi') || hindiMarkets.some(s => personaState.includes(s))) {
+                if (personaLang === 'hindi') criteriaScore += 3;
+            }
+            if (southMarkets.some(s => personaState.includes(s)) && ['tamil', 'telugu', 'kannada', 'malayalam'].includes(personaLang)) {
+                criteriaScore += 3;
             }
 
             return Math.min(100, Math.round(pineconeScore + criteriaScore));
@@ -424,7 +472,13 @@ router.post('/retrieve-personas', async (req, res) => {
             totalMatched: formattedPersonas.length,
             personas: formattedPersonas,
             segments: segments,
-            query: idea
+            query: idea,
+            marketContext: zepContext ? {
+                competitors: zepContext.competitors,
+                risks: zepContext.risks,
+                trends: zepContext.trends,
+                graphId: zepContext.graphId,
+            } : null,
         });
 
     } catch (error) {
@@ -443,10 +497,16 @@ router.get('/states', (req, res) => {
  */
 router.post('/test-segment', async (req, res) => {
     try {
-        const { idea, segment } = req.body;
+        const { idea, segment, zepContext } = req.body;
         console.log(`🧪 Testing resonance for segment: ${segment.segment_name}`);
         
-        const testResult = await testSegmentResonance(idea, segment);
+        // Attach zepContext to idea for segmentTest to use
+        const ideaWithContext = {
+            ...idea,
+            zepContext: zepContext?.groqContext || null,
+        };
+        
+        const testResult = await testSegmentResonance(ideaWithContext, segment);
         
         res.json({
             success: true,

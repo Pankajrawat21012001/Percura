@@ -24,8 +24,30 @@ async function testSegmentResonance(idea, segment) {
     // Build a narrative description for both the segment and individual personas
     const personaList = (personas || []).map((p, i) => {
         const m = p.metadata || {};
-        return `${i+1}. [${m.occupation}, ${m.age}y, ${m.state}] - ${m.summary || 'Typical profile'}`;
-    }).join('\n');
+
+        // Parse JSON array fields safely
+        const hobbies = (() => {
+            try { return JSON.parse(m.hobbies || '[]').slice(0, 3).join(', '); }
+            catch { return m.hobbies || ''; }
+        })();
+        const skills = (() => {
+            try { return JSON.parse(m.skills || '[]').slice(0, 3).join(', '); }
+            catch { return m.skills || ''; }
+        })();
+
+        const psychProfile = m.persona || m.professional_persona || m.summary || 'Typical profile';
+        const culturalBg = m.cultural_background ? `Cultural background: ${m.cultural_background}.` : '';
+        const goals = m.career_goals_and_ambitions ? `Goals: ${m.career_goals_and_ambitions}.` : '';
+
+        return `${i+1}. ${m.name || 'Persona'}, ${m.age}y, ${m.sex || ''}, ${m.occupation}
+   Location: ${m.state} (${m.zone}) | Language: ${m.first_language || 'Hindi'} | Marital: ${m.marital_status || 'Unknown'}
+   Education: ${m.education_level}${m.education_degree ? ` (${m.education_degree})` : ''}
+   ${culturalBg}
+   ${goals}
+   Hobbies: ${hobbies || 'Not specified'}
+   Skills: ${skills || 'Not specified'}
+   Profile: ${psychProfile}`;
+    }).join('\n\n');
 
     const segmentContext = `
 SEGMENT: ${segment_name}
@@ -60,8 +82,12 @@ RESPONSE FORMAT (JSON):
 }
 
 STRICT: The 'personaFeedbacks' array MUST have exactly ${personas?.length || 0} items matching the order of the personas provided.
-Stay in character for each persona based on their age, occupation, and region.
+Stay in character for each persona. Use their first_language to infer communication style and trust patterns. Use their hobbies and cultural background to ground their reaction in real Indian daily life. A Gujarati-speaking homemaker reacts very differently from an English-first Bangalore software engineer — reflect this specificity in every feedback line.
 `;
+
+    const marketContextBlock = idea.zepContext 
+        ? `\nINDIAN MARKET CONTEXT (from knowledge graph):\n${idea.zepContext}\n`
+        : '';
 
     const userPrompt = `
 STARTUP IDEA:
@@ -70,7 +96,7 @@ STARTUP IDEA:
 - Business Model: ${idea.businessModel || 'Not specified'}
 - Stated Target Audience: ${idea.targetAudience || 'General public'}
 ${idea.duration ? `- Simulation Horizon: ${idea.duration} weeks` : ''}
-
+${marketContextBlock}
 TARGET SEGMENT & INDIVIDUALS:
 ${segmentContext}
 

@@ -187,6 +187,7 @@ export default function ValidatePage() {
                     personas: data.personas || [],
                     totalMatched: data.totalMatched || 0,
                     testType: form.testType,
+                    marketContext: data.marketContext || null,
                 }
             });
 
