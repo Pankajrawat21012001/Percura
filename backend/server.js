@@ -6,6 +6,8 @@ const path = require('path');
 const simulationRoutes = require('./routes/simulation');
 const personaRoutes = require('./routes/personas');
 const chatRoutes = require('./routes/chat');
+const graphRoutes = require('./routes/graph');
+const surveyRoutes = require('./routes/survey');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,8 +18,10 @@ app.use(express.json());
 
 // Routes
 app.use('/api/simulation', simulationRoutes);
+app.use('/api/graph', graphRoutes);
 app.use('/api', personaRoutes);
 app.use('/api', chatRoutes);
+app.use('/api/survey', surveyRoutes);
 
 // Health check
 app.get('/health', async (req, res) => {

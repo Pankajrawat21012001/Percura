@@ -11,6 +11,9 @@ import Button from "../../components/ui/Button";
 import DashboardLayout from "../../components/DashboardLayout";
 import ChatPanel from "../../components/ChatPanel";
 import PremiumChatPanel from "../../components/PremiumChatPanel";
+import GraphExplorer from "../../components/GraphExplorer";
+import SimulationTimeline from "../../components/SimulationTimeline";
+import SimulationReport from "../../components/SimulationReport";
 import API_BASE_URL from "../../lib/apiConfig";
 
 const ShaderPageBackground = dynamic(
@@ -27,6 +30,7 @@ export default function SimulationResultsPage() {
     const [loading, setLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isInterrogationOpen, setIsInterrogationOpen] = useState(false);
+    const [isGraphOpen, setIsGraphOpen] = useState(false);
     
     // Task 2: New state for insights
     const [insightData, setInsightData] = useState(null); // { insights: [], nextSteps: [] }
@@ -65,6 +69,8 @@ export default function SimulationResultsPage() {
     
     const allObjections = results.flatMap(r => r.testResult?.frictionPoints || []);
     const topObjections = [...new Set(allObjections)].slice(0, 3);
+
+    const graphId = simDoc?.results?.marketContext?.graphId || null;
 
     // Listen to the simulation document
     useEffect(() => {
@@ -383,15 +389,35 @@ export default function SimulationResultsPage() {
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                 Download Report
                             </Button>
+                            <Button
+                                onClick={() => setIsGraphOpen(true)}
+                                variant="secondary"
+                                size="sm"
+                                disabled={results.length === 0}
+                                className="flex items-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                </svg>
+                                Knowledge Graph
+                            </Button>
                             <Button 
                                 onClick={async () => {
                                     setDeepSimLoading(true);
                                     setDeepSimError(null);
                                     try {
+                                        const segmentsToSend = fullSelectedSegments?.length ? fullSelectedSegments : results;
+
+                                        if (!segmentsToSend?.length) {
+                                            setDeepSimError("No persona data available. Please re-run the initial simulation first.");
+                                            setDeepSimLoading(false);
+                                            return;
+                                        }
+
                                         const res = await fetch(`${API_BASE_URL}/api/simulation/run`, {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({ idea, segments: results, weeks: 8 }),
+                                            body: JSON.stringify({ idea, segments: segmentsToSend, weeks: 8 }),
                                         });
                                         const data = await res.json();
                                         if (!data.success) throw new Error(data.error || "Simulation failed");
@@ -738,103 +764,26 @@ export default function SimulationResultsPage() {
                         </div>
                     )}
 
-                    {/* Deep Simulation Report */}
-                    {deepSimResult && deepSimResult.finalReport && (
+                    {/* Deep Simulation Report — New Components */}
+                    {deepSimResult && (
                         <div className="mt-16 space-y-8">
                             <p className="text-[9px] uppercase tracking-[0.3em] text-cyan-400/60 font-bold">
                                 Deep Simulation Report — {deepSimResult.weeks}-Week Behavioral Analysis
                             </p>
 
-                            {/* Verdict Badge + Trajectory */}
-                            <div className="bg-[#0D0D0D]/80 backdrop-blur-3xl border border-cyan-500/20 rounded-[2.5rem] p-10">
-                                <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-8">
-                                    <span className={`px-6 py-3 rounded-2xl text-lg font-black tracking-tight ${
-                                        deepSimResult.finalReport.finalVerdict === 'Strong Launch Signal'
-                                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                            : deepSimResult.finalReport.finalVerdict === 'Pivot Required'
-                                            ? 'bg-red-500/15 text-red-400 border border-red-500/30'
-                                            : deepSimResult.finalReport.finalVerdict === 'Premature Market'
-                                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                                            : 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
-                                    }`}>
-                                        {deepSimResult.finalReport.finalVerdict}
-                                    </span>
-                                    <p className="text-sm text-white/50 leading-relaxed">{deepSimResult.finalReport.adoptionTrajectory}</p>
-                                </div>
+                            {/* Live Timeline */}
+                            <SimulationTimeline
+                                weeklySnapshots={deepSimResult.weeklySnapshots || []}
+                                allEvents={deepSimResult.allEvents || []}
+                                totalWeeks={deepSimResult.weeks || 8}
+                            />
 
-                                {/* Adoption Curve Chart */}
-                                <div className="mb-10">
-                                    <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">Adoption Curve</p>
-                                    <div className="flex items-end gap-1 h-32">
-                                        {(deepSimResult.weeklySnapshots || []).map((snap, wi) => {
-                                            const pct = Math.round((snap.overallAdoptionCurve || 0) * 100);
-                                            return (
-                                                <div key={wi} className="flex-1 flex flex-col items-center gap-1 group" title={`Week ${snap.week}: ${pct}%`}>
-                                                    <span className="text-[8px] text-white/30 font-mono opacity-0 group-hover:opacity-100 transition-opacity">{pct}%</span>
-                                                    <div
-                                                        className="w-full bg-gradient-to-t from-cyan-600/60 to-cyan-400/40 rounded-t-md transition-all duration-500 hover:from-cyan-500/80 hover:to-cyan-300/60"
-                                                        style={{ height: `${Math.max(4, pct * 1.1)}px` }}
-                                                    />
-                                                    <span className="text-[8px] text-white/20 font-mono">W{snap.week}</span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Segment Ranking */}
-                                {deepSimResult.finalReport.segmentRanking?.length > 0 && (
-                                    <div className="mb-10">
-                                        <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">Segment Ranking</p>
-                                        <div className="space-y-3">
-                                            {deepSimResult.finalReport.segmentRanking.map((sr, si) => (
-                                                <div key={si} className="flex items-start gap-4 bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                                                    <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${
-                                                        (sr.rank || si + 1) === 1 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-white/5 text-white/40 border border-white/10'
-                                                    }`}>
-                                                        #{sr.rank || si + 1}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-white/80">{sr.segmentName}</p>
-                                                        <p className="text-[11px] text-white/40 mt-1 leading-relaxed">{sr.reasoning}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Launch Recommendations */}
-                                {deepSimResult.finalReport.launchRecommendations?.length > 0 && (
-                                    <div>
-                                        <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">Launch Recommendations</p>
-                                        <div className="space-y-4">
-                                            {deepSimResult.finalReport.launchRecommendations.map((rec, ri) => (
-                                                <div key={ri} className="flex items-start gap-4">
-                                                    <div className="shrink-0 w-7 h-7 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                                                        <span className="text-[10px] font-black text-cyan-400">{ri + 1}</span>
-                                                    </div>
-                                                    <p className="text-[13px] text-white/70 leading-relaxed pt-0.5">{rec}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Key Turning Points */}
-                            {deepSimResult.finalReport.keyTurningPoints?.length > 0 && (
-                                <div className="bg-[#0D0D0D]/60 border border-white/[0.07] rounded-2xl p-6">
-                                    <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">Key Turning Points</p>
-                                    <div className="space-y-3">
-                                        {deepSimResult.finalReport.keyTurningPoints.map((tp, ti) => (
-                                            <div key={ti} className="flex items-start gap-3">
-                                                <span className="text-[10px] font-mono text-cyan-400/60 shrink-0 mt-0.5">W{tp.week}</span>
-                                                <p className="text-[11px] text-white/60 leading-relaxed">{tp.event}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                            {/* Structured Report */}
+                            {deepSimResult.finalReport && (
+                                <SimulationReport
+                                    report={deepSimResult.finalReport}
+                                    weeklySnapshots={deepSimResult.weeklySnapshots || []}
+                                />
                             )}
                         </div>
                     )}
@@ -843,6 +792,16 @@ export default function SimulationResultsPage() {
 
             {isInterrogationOpen && (
                 <PremiumChatPanel onClose={() => setIsInterrogationOpen(false)} />
+            )}
+
+            {isGraphOpen && (
+                <GraphExplorer
+                    graphId={graphId}
+                    idea={idea}
+                    segments={fullSelectedSegments?.length ? fullSelectedSegments : results}
+                    marketContext={simDoc?.results?.marketContext || null}
+                    onClose={() => setIsGraphOpen(false)}
+                />
             )}
         </DashboardLayout>
     );

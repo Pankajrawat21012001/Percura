@@ -54,6 +54,12 @@ export default function PremiumChatPanel({ onClose }) {
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
+    // Survey state
+    const [surveySelectedIds, setSurveySelectedIds] = useState(new Set());
+    const [surveyQuestion, setSurveyQuestion] = useState("");
+    const [surveyResults, setSurveyResults] = useState([]);
+    const [surveyLoading, setSurveyLoading] = useState(false);
+
     const chatEndRef = useRef(null);
 
     // Prepare all agents from all segments
@@ -250,6 +256,12 @@ export default function PremiumChatPanel({ onClose }) {
                             >
                                 Panel
                             </button>
+                            <button
+                                onClick={() => setMode("survey")}
+                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-3 rounded-xl transition-all ${mode === "survey" ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/20" : "text-white/30 hover:text-white/60"}`}
+                            >
+                                Survey
+                            </button>
                         </div>
                     </div>
 
@@ -375,9 +387,35 @@ export default function PremiumChatPanel({ onClose }) {
                             </div>
                         </div>
                     )}
+
+                    {/* Survey Selection Summary */}
+                    {mode === "survey" && surveySelectedIds.size > 0 && (
+                        <div className="p-6 border-t border-white/5 bg-cyan-600/5">
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-[9px] uppercase tracking-widest text-cyan-400/60 font-black">
+                                    Survey: {surveySelectedIds.size}/{allAgents.length} selected
+                                </p>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setSurveySelectedIds(new Set(allAgents.map(a => a.id)))}
+                                        className="text-[9px] text-cyan-400/60 hover:text-cyan-400 transition-colors font-bold"
+                                    >
+                                        All
+                                    </button>
+                                    <button
+                                        onClick={() => setSurveySelectedIds(new Set())}
+                                        className="text-[9px] text-white/30 hover:text-white/60 transition-colors font-bold"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* ── CENTER: Chat Area ── */}
+                {/* ── CENTER: Chat Area (single/panel mode only) ── */}
+                {mode !== "survey" && (
                 <div className="flex-1 flex flex-col min-w-0 bg-[#0C0C0E]">
                     {/* Header */}
                     <div className="px-8 py-6 border-b border-white/5 bg-black/40 flex items-center justify-between">
@@ -543,6 +581,166 @@ export default function PremiumChatPanel({ onClose }) {
                         </p>
                     </div>
                 </div>
+                )}
+
+                {/* ── CENTER: Survey Mode ── */}
+                {mode === "survey" && (
+                    <div className="flex-1 flex flex-col min-w-0 bg-[#0C0C0E]">
+                        {/* Survey Header */}
+                        <div className="px-8 py-6 border-b border-white/5 bg-black/40 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xl shadow-inner">📋</div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-white tracking-tight">Mass Survey</h2>
+                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">
+                                        Send one question to {surveySelectedIds.size} personas simultaneously
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Survey Content */}
+                        <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6 custom-scrollbar">
+                            {/* Persona Selection Grid */}
+                            <div>
+                                <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-black mb-4">Select Personas to Survey</p>
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                                    {allAgents.map(agent => {
+                                        const isChecked = surveySelectedIds.has(agent.id);
+                                        return (
+                                            <label
+                                                key={agent.id}
+                                                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                                    isChecked
+                                                        ? "bg-cyan-600/10 border-cyan-500/30"
+                                                        : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05]"
+                                                }`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => {
+                                                        setSurveySelectedIds(prev => {
+                                                            const next = new Set(prev);
+                                                            if (next.has(agent.id)) next.delete(agent.id);
+                                                            else next.add(agent.id);
+                                                            return next;
+                                                        });
+                                                    }}
+                                                    className="sr-only"
+                                                />
+                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                                                    isChecked ? "bg-cyan-600 border-cyan-500" : "border-white/20"
+                                                }`}>
+                                                    {isChecked && (
+                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-bold text-white/80 truncate">{agent.displayName}</p>
+                                                    <p className="text-[9px] text-white/30 truncate">{agent.segmentName}</p>
+                                                </div>
+                                                {agent.simState && (
+                                                    <div
+                                                        className="shrink-0 w-2 h-2 rounded-full"
+                                                        style={{
+                                                            backgroundColor: agent.simState.converted ? '#22c55e' : agent.simState.churned ? '#ef4444' : '#eab308'
+                                                        }}
+                                                    />
+                                                )}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Question Input */}
+                            <div>
+                                <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-black mb-3">Your Question</p>
+                                <textarea
+                                    value={surveyQuestion}
+                                    onChange={(e) => setSurveyQuestion(e.target.value)}
+                                    placeholder="Ask all selected personas a question... e.g. 'What would make you pay for this product?'"
+                                    rows={3}
+                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-6 py-4 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-cyan-500/50 transition-all resize-none"
+                                />
+                                <button
+                                    onClick={async () => {
+                                        if (!surveyQuestion.trim() || surveySelectedIds.size === 0 || surveyLoading) return;
+                                        setSurveyLoading(true);
+                                        try {
+                                            const selectedPersonas = allAgents
+                                                .filter(a => surveySelectedIds.has(a.id))
+                                                .map(a => ({
+                                                    name: a.name,
+                                                    segmentName: a.segmentName,
+                                                    adoptionStyle: a.adoptionStyle || 'Early Majority',
+                                                    internalNarrative: a.enrichedProfile?.internalNarrative || '',
+                                                    sentimentScore: a.simState?.sentimentScore || 0.5,
+                                                    converted: a.simState?.converted || false,
+                                                    churned: a.simState?.churned || false,
+                                                    keyExperiences: a.enrichedProfile?.memoryState?.keyExperiences || []
+                                                }));
+                                            const res = await fetch(`${API_BASE_URL}/api/survey/run`, {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({
+                                                    question: surveyQuestion,
+                                                    personas: selectedPersonas,
+                                                    idea
+                                                })
+                                            });
+                                            const data = await res.json();
+                                            if (data.success) {
+                                                setSurveyResults(prev => [...data.results, ...prev]);
+                                            }
+                                        } catch (err) {
+                                            console.error("Survey error:", err);
+                                        } finally {
+                                            setSurveyLoading(false);
+                                        }
+                                    }}
+                                    disabled={surveyLoading || !surveyQuestion.trim() || surveySelectedIds.size === 0}
+                                    className="mt-3 w-full py-3 bg-cyan-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-cyan-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {surveyLoading ? (
+                                        <><div className="w-4 h-4 rounded-full border-2 border-t-white border-white/20 animate-spin" /> Surveying {surveySelectedIds.size} personas...</>
+                                    ) : (
+                                        <>Send Survey to {surveySelectedIds.size} Personas</>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Survey Results */}
+                            {surveyResults.length > 0 && (
+                                <div>
+                                    <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-black mb-4">
+                                        Responses ({surveyResults.length})
+                                    </p>
+                                    <div className="space-y-3">
+                                        {surveyResults.map((result, i) => (
+                                            <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xs font-bold text-white/60">
+                                                        {(result.personaName || 'A')[0]}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-white/80">{result.personaName}</p>
+                                                        <p className="text-[9px] text-white/30">{result.segmentName}</p>
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm text-white/70 leading-relaxed">{result.answer}</p>
+                                                <p className="text-[9px] text-white/20 mt-2 italic">Q: {result.question}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* ── RIGHT: Profile Sidebar (Single Mode) ── */}
                 {mode === "single" && selectedAgent && (

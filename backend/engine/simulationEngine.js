@@ -20,7 +20,7 @@ const DISCOVERY_RATES = {
 const PEER_INFLUENCE_CHANCE = 0.30;  // 30% chance of hearing from a peer
 const PEER_SENTIMENT_PULL = 0.20;     // Moves 20% toward segment average
 const CHURN_THRESHOLD = 0.30;
-const CONVERSION_THRESHOLD = 0.72;
+const CONVERSION_THRESHOLD = 0.65;    // Lowered from 0.72 for small pools
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 200;
 
@@ -66,25 +66,44 @@ async function runSimulation(idea, segments, options = {}) {
     }
 
     const weeklySnapshots = [];
+    const allEvents = []; // Per-persona timeline events across all weeks
 
     // ── Week 0: Baseline ──
     weeklySnapshots.push(buildSnapshot(0, segments, personaStates));
 
+    // Scale discovery rates up when persona pool is small
+    const totalPersonas = Object.keys(personaStates).length;
+    const discoveryMultiplier = totalPersonas < 10 ? 3.0 : totalPersonas < 20 ? 2.0 : 1.0;
+    console.log(`📊 [SIM] Pool size: ${totalPersonas} personas, discovery multiplier: ${discoveryMultiplier}x`);
+
     // ── Weeks 1 through N ──
     for (let week = 1; week <= weeks; week++) {
         console.log(`📅 [SIM] === Week ${week}/${weeks} ===`);
+        const weekEvents = [];
 
         // Step 1: Organic Discovery (with batched LLM calls)
         const discoveryBatch = [];
-        for (const pid of Object.keys(personaStates)) {
+        const activePids = Object.keys(personaStates).filter(pid => {
             const ps = personaStates[pid];
-            if (ps.churned || ps.converted) continue;
+            return !ps.churned && !ps.converted;
+        });
 
-            const discoveryRate = DISCOVERY_RATES[ps.adoptionStyle] || 0.10;
-            if (Math.random() < discoveryRate) {
+        for (const pid of activePids) {
+            const ps = personaStates[pid];
+            const baseRate = DISCOVERY_RATES[ps.adoptionStyle] || 0.10;
+            const scaledRate = Math.min(0.85, baseRate * discoveryMultiplier);
+            if (Math.random() < scaledRate) {
                 discoveryBatch.push(pid);
             }
         }
+
+        // Guarantee at least 1 discovery per week if there are active personas
+        if (discoveryBatch.length === 0 && activePids.length > 0) {
+            const randomPid = activePids[Math.floor(Math.random() * activePids.length)];
+            discoveryBatch.push(randomPid);
+        }
+
+        console.log(`  🔍 Discoveries this week: ${discoveryBatch.length}/${activePids.length} active`);
 
         // Process discoveries in batches of BATCH_SIZE
         for (let i = 0; i < discoveryBatch.length; i += BATCH_SIZE) {
@@ -98,8 +117,22 @@ async function runSimulation(idea, segments, options = {}) {
                     const pid = batch[j];
                     const ps = personaStates[pid];
                     ps.exposureCount += 1;
-                    ps.sentimentScore = clamp(ps.sentimentScore + sentimentDelta, 0, 1);
+                    const effectiveDelta = sentimentDelta === 0 ? 0.04 : sentimentDelta;
+                    ps.sentimentScore = clamp(ps.sentimentScore + effectiveDelta, 0, 1);
                     ps.keyExperiences.push(`Week ${week}: ${experience}`);
+
+                    // Emit timeline event
+                    weekEvents.push({
+                        id: `evt_${week}_disc_${pid}`,
+                        week,
+                        action: 'DISCOVERY',
+                        personaId: pid,
+                        personaName: ps.name,
+                        segmentName: ps.segmentName,
+                        description: experience,
+                        sentiment: ps.sentimentScore,
+                        sentimentDelta: effectiveDelta
+                    });
                 }
             }
 
@@ -126,10 +159,21 @@ async function runSimulation(idea, segments, options = {}) {
                 if (Math.random() < PEER_INFLUENCE_CHANCE) {
                     ps.heardFromPeers = true;
                     ps.exposureCount += 1;
-                    // Nudge toward segment average
                     const nudge = (segAvgSentiment - ps.sentimentScore) * PEER_SENTIMENT_PULL;
                     ps.sentimentScore = clamp(ps.sentimentScore + nudge, 0, 1);
                     ps.keyExperiences.push(`Week ${week}: Heard about it from a colleague/friend`);
+
+                    weekEvents.push({
+                        id: `evt_${week}_peer_${ps.personaId}`,
+                        week,
+                        action: 'PEER_INFLUENCE',
+                        personaId: ps.personaId,
+                        personaName: ps.name,
+                        segmentName: ps.segmentName,
+                        description: 'Heard about it from a colleague or friend in their network',
+                        sentiment: ps.sentimentScore,
+                        sentimentDelta: nudge
+                    });
                 }
             }
         }
@@ -141,6 +185,18 @@ async function runSimulation(idea, segments, options = {}) {
             if (ps.exposureCount >= 2 && ps.sentimentScore < CHURN_THRESHOLD) {
                 ps.churned = true;
                 ps.keyExperiences.push(`Week ${week}: Lost interest — churned`);
+
+                weekEvents.push({
+                    id: `evt_${week}_churn_${pid}`,
+                    week,
+                    action: 'CHURN',
+                    personaId: pid,
+                    personaName: ps.name,
+                    segmentName: ps.segmentName,
+                    description: 'Lost interest and stopped engaging — churned',
+                    sentiment: ps.sentimentScore,
+                    sentimentDelta: 0
+                });
             }
         }
 
@@ -151,11 +207,26 @@ async function runSimulation(idea, segments, options = {}) {
             if (ps.sentimentScore >= CONVERSION_THRESHOLD) {
                 ps.converted = true;
                 ps.keyExperiences.push(`Week ${week}: Converted — would try/buy`);
+
+                weekEvents.push({
+                    id: `evt_${week}_convert_${pid}`,
+                    week,
+                    action: 'CONVERSION',
+                    personaId: pid,
+                    personaName: ps.name,
+                    segmentName: ps.segmentName,
+                    description: 'Highly interested — converted and would try/buy the product',
+                    sentiment: ps.sentimentScore,
+                    sentimentDelta: 0
+                });
             }
         }
 
+        // Collect events for this week
+        allEvents.push(...weekEvents);
+
         // Build weekly snapshot
-        const snapshot = buildSnapshot(week, segments, personaStates);
+        const snapshot = buildSnapshot(week, segments, personaStates, weekEvents);
         weeklySnapshots.push(snapshot);
 
         if (weeklyEventCallback) {
@@ -174,6 +245,7 @@ async function runSimulation(idea, segments, options = {}) {
         idea,
         weeks,
         weeklySnapshots,
+        allEvents,
         finalReport,
         personaFinalStates: personaStates,
         completedAt: new Date().toISOString()
@@ -231,7 +303,7 @@ How does this person react to discovering/encountering the product this week?`;
 /**
  * Build a weekly snapshot from current persona states.
  */
-function buildSnapshot(week, segments, personaStates) {
+function buildSnapshot(week, segments, personaStates, weekEvents = []) {
     const segmentSnapshots = segments.map(segment => {
         const segPersonaIds = (segment.personas || []).map(p => p.persona_id || p.id);
         const segStates = segPersonaIds.map(id => personaStates[id]).filter(Boolean);
@@ -261,6 +333,7 @@ function buildSnapshot(week, segments, personaStates) {
 
     const allStates = Object.values(personaStates);
     const totalConverted = allStates.filter(s => s.converted).length;
+    const totalChurned = allStates.filter(s => s.churned).length;
     const overallAdoptionCurve = allStates.length > 0
         ? parseFloat((totalConverted / allStates.length).toFixed(3))
         : 0;
@@ -268,7 +341,11 @@ function buildSnapshot(week, segments, personaStates) {
     return {
         week,
         segmentSnapshots,
-        overallAdoptionCurve
+        overallAdoptionCurve,
+        totalConverted,
+        totalChurned,
+        totalActive: allStates.length - totalConverted - totalChurned,
+        events: weekEvents
     };
 }
 
