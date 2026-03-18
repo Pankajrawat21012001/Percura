@@ -322,9 +322,21 @@ export default function PremiumChatPanel({ onClose }) {
                                     {isSelected && <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />}
 
                                     <div className="flex items-start justify-between mb-3">
-                                        <div>
-                                            <p className={`text-sm font-bold transition-colors ${isSelected ? "text-white" : "text-white/80 group-hover:text-white"}`}>{agent.displayName}</p>
-                                            <p className="text-[10px] text-white/30 font-medium group-hover:text-white/40">{agent.archetype}</p>
+                                        <div className="flex items-center gap-2">
+                                            {agent.simState && (
+                                                <div
+                                                    className="shrink-0 rounded-full"
+                                                    style={{
+                                                        width: '10px',
+                                                        height: '10px',
+                                                        backgroundColor: agent.simState.converted ? '#22c55e' : agent.simState.churned ? '#ef4444' : '#eab308',
+                                                    }}
+                                                />
+                                            )}
+                                            <div>
+                                                <p className={`text-sm font-bold transition-colors ${isSelected ? "text-white" : "text-white/80 group-hover:text-white"}`}>{agent.displayName}</p>
+                                                <p className="text-[10px] text-white/30 font-medium group-hover:text-white/40">{agent.archetype}</p>
+                                            </div>
                                         </div>
                                         <div className={`w-2 h-2 rounded-full mt-1.5 shadow-[0_0_8px_rgba(0,0,0,0.5)] ${agent.state === "ADOPTED" ? "bg-emerald-500 shadow-emerald-500/20" : agent.state === "REJECTED" ? "bg-rose-500 shadow-rose-500/20" : "bg-white/20"}`} />
                                     </div>

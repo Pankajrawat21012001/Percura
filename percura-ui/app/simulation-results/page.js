@@ -20,7 +20,7 @@ const ShaderPageBackground = dynamic(
 
 export default function SimulationResultsPage() {
     const router = useRouter();
-    const { currentSimulationId, idea, simulationResults, setSimulationResults, setIdea, fullSelectedSegments } = useIdea();
+    const { currentSimulationId, setCurrentSimulationId, idea, simulationResults, setSimulationResults, setIdea, fullSelectedSegments } = useIdea();
     const { user, loading: authLoading } = useAuth();
     
     const [simDoc, setSimDoc] = useState(null);
@@ -31,6 +31,11 @@ export default function SimulationResultsPage() {
     // Task 2: New state for insights
     const [insightData, setInsightData] = useState(null); // { insights: [], nextSteps: [] }
     const [insightsLoading, setInsightsLoading] = useState(false);
+
+    // Deep simulation state
+    const [deepSimLoading, setDeepSimLoading] = useState(false);
+    const [deepSimResult, setDeepSimResult] = useState(null);
+    const [deepSimError, setDeepSimError] = useState(null);
     
     const reportRef = useRef(null);
     const insightsFetchedRef = useRef(false);
@@ -379,6 +384,38 @@ export default function SimulationResultsPage() {
                                 Download Report
                             </Button>
                             <Button 
+                                onClick={async () => {
+                                    setDeepSimLoading(true);
+                                    setDeepSimError(null);
+                                    try {
+                                        const res = await fetch(`${API_BASE_URL}/api/simulation/run`, {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ idea, segments: results, weeks: 8 }),
+                                        });
+                                        const data = await res.json();
+                                        if (!data.success) throw new Error(data.error || "Simulation failed");
+                                        setDeepSimResult(data.simulation);
+                                        if (data.simulation?.id) setCurrentSimulationId(data.simulation.id);
+                                    } catch (err) {
+                                        console.error("[DEEP-SIM]", err);
+                                        setDeepSimError(err.message);
+                                    } finally {
+                                        setDeepSimLoading(false);
+                                    }
+                                }}
+                                variant="primary"
+                                size="sm"
+                                disabled={deepSimLoading || results.length === 0}
+                                className="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-xl shadow-blue-600/20 disabled:opacity-40"
+                            >
+                                {deepSimLoading ? (
+                                    <><div className="w-4 h-4 rounded-full border-2 border-t-white border-white/20 animate-spin" /> Running 8-week simulation...</>
+                                ) : (
+                                    <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Run Deep Simulation</>
+                                )}
+                            </Button>
+                            <Button 
                                 onClick={() => setIsInterrogationOpen(true)}
                                 variant="primary"
                                 size="sm"
@@ -679,6 +716,126 @@ export default function SimulationResultsPage() {
                                     ))}
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Deep Simulation Error */}
+                    {deepSimError && (
+                        <div className="mt-12 bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center">
+                            <p className="text-sm text-red-400 font-medium">Deep Simulation Failed</p>
+                            <p className="text-[11px] text-red-400/60 mt-1">{deepSimError}</p>
+                        </div>
+                    )}
+
+                    {/* Deep Simulation Loading */}
+                    {deepSimLoading && (
+                        <div className="mt-12 flex items-center gap-4 bg-cyan-500/5 border border-cyan-500/10 rounded-2xl p-6 border-dashed animate-pulse">
+                            <div className="w-10 h-10 rounded-full border-2 border-t-cyan-500/80 border-white/5 animate-spin" />
+                            <div>
+                                <h3 className="text-sm font-bold text-white/80">Running 8-week behavioral simulation...</h3>
+                                <p className="text-[11px] text-white/40 font-normal">Each persona is discovering, reacting, and being influenced week by week.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Deep Simulation Report */}
+                    {deepSimResult && deepSimResult.finalReport && (
+                        <div className="mt-16 space-y-8">
+                            <p className="text-[9px] uppercase tracking-[0.3em] text-cyan-400/60 font-bold">
+                                Deep Simulation Report — {deepSimResult.weeks}-Week Behavioral Analysis
+                            </p>
+
+                            {/* Verdict Badge + Trajectory */}
+                            <div className="bg-[#0D0D0D]/80 backdrop-blur-3xl border border-cyan-500/20 rounded-[2.5rem] p-10">
+                                <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-8">
+                                    <span className={`px-6 py-3 rounded-2xl text-lg font-black tracking-tight ${
+                                        deepSimResult.finalReport.finalVerdict === 'Strong Launch Signal'
+                                            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                            : deepSimResult.finalReport.finalVerdict === 'Pivot Required'
+                                            ? 'bg-red-500/15 text-red-400 border border-red-500/30'
+                                            : deepSimResult.finalReport.finalVerdict === 'Premature Market'
+                                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                            : 'bg-blue-500/15 text-blue-400 border border-blue-500/30'
+                                    }`}>
+                                        {deepSimResult.finalReport.finalVerdict}
+                                    </span>
+                                    <p className="text-sm text-white/50 leading-relaxed">{deepSimResult.finalReport.adoptionTrajectory}</p>
+                                </div>
+
+                                {/* Adoption Curve Chart */}
+                                <div className="mb-10">
+                                    <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">Adoption Curve</p>
+                                    <div className="flex items-end gap-1 h-32">
+                                        {(deepSimResult.weeklySnapshots || []).map((snap, wi) => {
+                                            const pct = Math.round((snap.overallAdoptionCurve || 0) * 100);
+                                            return (
+                                                <div key={wi} className="flex-1 flex flex-col items-center gap-1 group" title={`Week ${snap.week}: ${pct}%`}>
+                                                    <span className="text-[8px] text-white/30 font-mono opacity-0 group-hover:opacity-100 transition-opacity">{pct}%</span>
+                                                    <div
+                                                        className="w-full bg-gradient-to-t from-cyan-600/60 to-cyan-400/40 rounded-t-md transition-all duration-500 hover:from-cyan-500/80 hover:to-cyan-300/60"
+                                                        style={{ height: `${Math.max(4, pct * 1.1)}px` }}
+                                                    />
+                                                    <span className="text-[8px] text-white/20 font-mono">W{snap.week}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Segment Ranking */}
+                                {deepSimResult.finalReport.segmentRanking?.length > 0 && (
+                                    <div className="mb-10">
+                                        <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">Segment Ranking</p>
+                                        <div className="space-y-3">
+                                            {deepSimResult.finalReport.segmentRanking.map((sr, si) => (
+                                                <div key={si} className="flex items-start gap-4 bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                                                    <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${
+                                                        (sr.rank || si + 1) === 1 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-white/5 text-white/40 border border-white/10'
+                                                    }`}>
+                                                        #{sr.rank || si + 1}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-white/80">{sr.segmentName}</p>
+                                                        <p className="text-[11px] text-white/40 mt-1 leading-relaxed">{sr.reasoning}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Launch Recommendations */}
+                                {deepSimResult.finalReport.launchRecommendations?.length > 0 && (
+                                    <div>
+                                        <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">Launch Recommendations</p>
+                                        <div className="space-y-4">
+                                            {deepSimResult.finalReport.launchRecommendations.map((rec, ri) => (
+                                                <div key={ri} className="flex items-start gap-4">
+                                                    <div className="shrink-0 w-7 h-7 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                                                        <span className="text-[10px] font-black text-cyan-400">{ri + 1}</span>
+                                                    </div>
+                                                    <p className="text-[13px] text-white/70 leading-relaxed pt-0.5">{rec}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Key Turning Points */}
+                            {deepSimResult.finalReport.keyTurningPoints?.length > 0 && (
+                                <div className="bg-[#0D0D0D]/60 border border-white/[0.07] rounded-2xl p-6">
+                                    <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">Key Turning Points</p>
+                                    <div className="space-y-3">
+                                        {deepSimResult.finalReport.keyTurningPoints.map((tp, ti) => (
+                                            <div key={ti} className="flex items-start gap-3">
+                                                <span className="text-[10px] font-mono text-cyan-400/60 shrink-0 mt-0.5">W{tp.week}</span>
+                                                <p className="text-[11px] text-white/60 leading-relaxed">{tp.event}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
