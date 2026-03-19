@@ -7,6 +7,7 @@
  */
 
 const { generateAIResponse } = require('./groqService');
+const { buildIdeaContext } = require('./zepService');
 
 // In-memory cache: `${persona_id}::${ideaHash}` → enrichedProfile
 const enrichmentCache = new Map();
@@ -52,12 +53,26 @@ You must return ONLY valid JSON with these exact fields:
 
 {
   "fullName": "A realistic Indian name matching demographics",
-  "internalNarrative": "300-400 word first-person internal monologue written AS this person — their daily life, financial pressures, aspirations, what they care about, what they're afraid of, what they read, who influences them. Must feel like a real human wrote it. Reference their specific occupation, age, state, and zone.",
+  "mbti": "e.g., INTJ, ESFP",
+  "languagePreference": "Primary and secondary languages (e.g., Hindi, English, Regional)",
+  "priceRange": "Monthly disposable income in INR (e.g., 10000, 50000)",
+  "internalNarrative": "300-400 word first-person internal monologue written AS this person.",
   "behaviorPatterns": {
-    "decisionMaking": "How they evaluate new products — impulsive vs research-heavy, price-sensitive vs value-driven",
-    "socialInfluence": "Who they trust — friends, influencers, family, reviews, ads",
+    "decisionMaking": "How they evaluate new products",
+    "socialInfluence": "Who they trust",
     "adoptionStyle": "One of: Innovator, Early Adopter, Early Majority, Late Majority, Laggard",
-    "communicationStyle": "How they talk — formal/casual, English/Hindi/mix, short/verbose, emotional/logical"
+    "communicationStyle": "How they talk",
+    "influenceWeight": "Float 0.0 to 1.0 (How influential they are to peers)",
+    "familyInfluence": "High, Medium, or Low"
+  },
+  "socialMediaBehavior": {
+    "platforms": ["Instagram", "WhatsApp"],
+    "postingFrequency": "Daily, Weekly, Rarely",
+    "contentType": "Memes, News, Personal"
+  },
+  "financialBehavior": {
+    "primaryPaymentMethod": "UPI, Cash, Credit Card",
+    "priceSensitivity": "High, Medium, Low"
   },
   "memoryState": {
     "exposureCount": 0,
@@ -66,17 +81,25 @@ You must return ONLY valid JSON with these exact fields:
     "heardFromPeers": false,
     "triedProduct": false
   },
-  "reactionToIdea": "Their INITIAL gut reaction to the startup idea — one paragraph, written in their voice, referencing their specific life context. Not a verdict. A human reaction.",
-  "triggerPoints": ["3-5 specific things that would make this person excited about the idea"],
-  "frictionPoints": ["3-5 specific things that would make this person skeptical or reject the idea"]
+  "reactionToIdea": "1 paragraph initial reaction in their voice.",
+  "triggerPoints": ["3-5 specific things that would make this person excited"],
+  "frictionPoints": ["3-5 specific things that would make this person skeptical"]
 }
 
 RULES:
-- The internalNarrative must be deeply specific to their occupation, age, state, zone, and education.
-- triggerPoints and frictionPoints must reference concrete, specific things (prices in rupees, specific features, real platforms they'd use).
-- The reactionToIdea should use their natural voice (casual if young urban, more formal if older etc).
-- adoptionStyle must be exactly one of the five values listed.
-- Do NOT use generic marketing language. Write as if you are this person.`;
+- The internalNarrative must be deeply specific to their occupation, state, zone, and education.
+- triggerPoints and frictionPoints must reference concrete, specific things.
+- adoptionStyle must be exactly one of the five values listed.`;
+
+    let zepContextStr = "";
+    try {
+        const graphCtx = await buildIdeaContext(ideaText, targetAudience, industry, typeof idea === 'object' ? idea.businessModel : null);
+        if (graphCtx && graphCtx.groqContext) {
+            zepContextStr = `\nMARKET CONTEXT (For realistic grounding):\n${graphCtx.groqContext}\n`;
+        }
+    } catch (e) {
+        /* Ignore missing zep context */
+    }
 
     const userPrompt = `PERSONA DEMOGRAPHICS:
 - Name: ${name}
@@ -92,8 +115,8 @@ STARTUP IDEA BEING TESTED:
 "${ideaText}"
 Industry: ${industry}
 Target Audience: ${targetAudience}
-
-Generate a complete behavioral profile for this person. Make it deeply authentic and specific to their life circumstances.`;
+${zepContextStr}
+Generate a complete behavioral profile for this person. Make it deeply authentic and specific to their life circumstances in India.`;
 
     try {
         console.log(`🧬 [ENRICH] Generating behavioral profile for ${name} (ID: ${personaId})...`);
@@ -107,12 +130,26 @@ Generate a complete behavioral profile for this person. Make it deeply authentic
         // Validate and sanitize the result
         const enrichedProfile = {
             fullName: result.fullName || name,
+            mbti: result.mbti || 'ISFJ',
+            languagePreference: result.languagePreference || 'Hindi, English',
+            priceRange: result.priceRange || '25000',
             internalNarrative: result.internalNarrative || `I am ${name}, a ${age}-year-old ${occupation} from ${state}.`,
             behaviorPatterns: {
                 decisionMaking: result.behaviorPatterns?.decisionMaking || 'Research-heavy, moderately price-sensitive',
                 socialInfluence: result.behaviorPatterns?.socialInfluence || 'Trusts family and close friends',
                 adoptionStyle: validateAdoptionStyle(result.behaviorPatterns?.adoptionStyle),
-                communicationStyle: result.behaviorPatterns?.communicationStyle || 'Casual, Hindi-English mix'
+                communicationStyle: result.behaviorPatterns?.communicationStyle || 'Casual, Hindi-English mix',
+                influenceWeight: parseFloat(result.behaviorPatterns?.influenceWeight) || 0.5,
+                familyInfluence: result.behaviorPatterns?.familyInfluence || 'Medium'
+            },
+            socialMediaBehavior: {
+                platforms: Array.isArray(result.socialMediaBehavior?.platforms) ? result.socialMediaBehavior.platforms : ['WhatsApp', 'YouTube'],
+                postingFrequency: result.socialMediaBehavior?.postingFrequency || 'Weekly',
+                contentType: result.socialMediaBehavior?.contentType || 'Personal updates'
+            },
+            financialBehavior: {
+                primaryPaymentMethod: result.financialBehavior?.primaryPaymentMethod || 'UPI',
+                priceSensitivity: result.financialBehavior?.priceSensitivity || 'Medium'
             },
             memoryState: {
                 exposureCount: 0,
@@ -166,12 +203,26 @@ function buildFallbackProfile(m, ideaText) {
 
     return {
         fullName: name,
+        mbti: 'ISTJ',
+        languagePreference: 'Hindi, English',
+        priceRange: '25000',
         internalNarrative: `I'm ${name}, ${age} years old, working as a ${occupation} in ${state}. My day starts early and I'm always looking for ways to make my life simpler. Money is important to me — I budget carefully and don't spend on things I can't justify. I usually hear about new products through friends or social media, and I like reading reviews before trying anything.`,
         behaviorPatterns: {
             decisionMaking: 'Moderately research-heavy, price-sensitive',
             socialInfluence: 'Trusts peers and online reviews',
             adoptionStyle: 'Early Majority',
-            communicationStyle: 'Casual, uses Hindi-English mix'
+            communicationStyle: 'Casual, uses Hindi-English mix',
+            influenceWeight: 0.5,
+            familyInfluence: 'High'
+        },
+        socialMediaBehavior: {
+            platforms: ['WhatsApp', 'YouTube'],
+            postingFrequency: 'Rarely',
+            contentType: 'Family and friends updates'
+        },
+        financialBehavior: {
+            primaryPaymentMethod: 'UPI',
+            priceSensitivity: 'High'
         },
         memoryState: {
             exposureCount: 0,

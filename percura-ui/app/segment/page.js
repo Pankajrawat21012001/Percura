@@ -23,6 +23,8 @@ export default function SegmentPage() {
     const { user } = useAuth();
     
     const [selectedSegments, setSelectedSegments] = useState(new Set());
+    const [phase, setPhase] = useState("selection"); // "selection", "pulsing", "validated"
+    const [pulseResults, setPulseResults] = useState({});
     const [isSimulating, setIsSimulating] = useState(false);
     const [isCreatingCustom, setIsCreatingCustom] = useState(false);
     
@@ -118,18 +120,57 @@ export default function SegmentPage() {
         });
     };
 
-    const handleRunSimulation = async () => {
+    const handleRunPulseTest = async () => {
         if (!user || selectedSegments.size === 0) return;
-        setIsSimulating(true);
+        setPhase("pulsing");
 
-        // Build selected list with full persona data
         const selectedList = [];
         if (selectedSegments.has("custom")) selectedList.push(customSegment);
         segments.forEach(seg => {
             if (selectedSegments.has(seg.segment_id)) selectedList.push(seg);
         });
 
-        // Save full segments (with personas) to localStorage for results page
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/simulate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    idea: idea, 
+                    segments: selectedList 
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                const resultsMap = {};
+                data.results.forEach(r => {
+                    resultsMap[r.segment_id] = r.testResult;
+                });
+                setPulseResults(resultsMap);
+                setPhase("validated");
+            } else {
+                throw new Error("Pulse Test failed");
+            }
+        } catch (err) {
+            console.error("Failed to run pulse test:", err);
+            setPhase("selection");
+        }
+    };
+
+    const handleRunSimulationFinal = async () => {
+        if (!user || selectedSegments.size === 0) return;
+        setIsSimulating(true);
+
+        // Build selected list with full persona data AND attach pulse validation results
+        const selectedList = [];
+        if (selectedSegments.has("custom")) selectedList.push({...customSegment, testResult: pulseResults["custom"]});
+        segments.forEach(seg => {
+            if (selectedSegments.has(seg.segment_id)) {
+                selectedList.push({...seg, testResult: pulseResults[seg.segment_id]});
+            }
+        });
+
+        // Save full segments (with personas and testResult) to localStorage for results page
         // This survives Firestore but resets on hard refresh
         try {
             const lsKey = `percura_segments_${currentSimulationId || 'pending'}`;
@@ -146,10 +187,10 @@ export default function SegmentPage() {
             const simulationData = {
                 userId: user.uid,
                 ideaData: idea,
-                status: "in progress",
+                status: "completed", // Instantly completed because pulse is done
                 timestamp: serverTimestamp(),
                 results: {
-                    segments: selectedListForFirestore,
+                    segmentsWithResults: selectedListForFirestore, // Changed from segments to segmentsWithResults
                     totalMatched: validation.totalMatched,
                     testType: idea.testType,
                     marketContext: validation.marketContext || null,
@@ -223,6 +264,7 @@ export default function SegmentPage() {
                             index={i + 1}
                             isSelected={selectedSegments.has(seg.segment_id)}
                             onToggle={() => toggleSegment(seg.segment_id)}
+                            pulseResult={pulseResults[seg.segment_id]}
                         />
                     ))}
 
@@ -316,14 +358,34 @@ export default function SegmentPage() {
                         >
                             Modify Idea
                         </Button>
-                        <Button 
-                            disabled={selectedSegments.size === 0 || isSimulating}
-                            onClick={handleRunSimulation}
-                            showArrow={!isSimulating}
-                            className="flex-1"
-                        >
-                            {isSimulating ? "Initializing..." : `Run Simulation (${selectedSegments.size})`}
-                        </Button>
+                        {phase === "selection" && (
+                            <Button 
+                                disabled={selectedSegments.size === 0 || isSimulating}
+                                onClick={handleRunPulseTest}
+                                showArrow={true}
+                                className="flex-1 uppercase tracking-widest text-[11px]"
+                            >
+                                Run Deep Pulse Validation
+                            </Button>
+                        )}
+                        {phase === "pulsing" && (
+                            <Button 
+                                disabled={true}
+                                className="flex-1 uppercase tracking-widest text-[11px] opacity-70"
+                            >
+                                Running Zero-Shot Context Validation...
+                            </Button>
+                        )}
+                        {phase === "validated" && (
+                            <Button 
+                                disabled={isSimulating}
+                                onClick={handleRunSimulationFinal}
+                                showArrow={!isSimulating}
+                                className="flex-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500/30 uppercase tracking-widest text-[11px]"
+                            >
+                                {isSimulating ? "Initializing Horizon..." : `Proceed to 8-Week Simulation`}
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -366,7 +428,7 @@ export default function SegmentPage() {
     );
 }
 
-function PersonaBox({ segment, index, isSelected, onToggle }) {
+function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
     const [isExpanded, setIsExpanded] = useState(false);
     
     // Demographic shortcuts from profile
@@ -392,41 +454,64 @@ function PersonaBox({ segment, index, isSelected, onToggle }) {
                 </div>
             </div>
 
-            {/* Strategic Resonance Bar */}
-            <div className="mb-8 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+            {/* Strategic Resonance Bar, fallback to cosine match if no pulse available */}
+            <div className="mb-8 p-4 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden">
+                {pulseResult && (
+                    <div className="absolute top-0 right-0 px-2 py-1 bg-white/10 rounded-bl-lg text-[8px] uppercase tracking-widest font-bold">
+                        Pulse Verified
+                    </div>
+                )}
                 <div className="flex justify-between items-center mb-2.5">
-                    <span className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Strategic Resonance</span>
-                    <span className="text-xs font-black italic text-purple-400">{segment.resonance_score || 0}%</span>
+                    <span className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Total Resonance</span>
+                    <span className="text-xs font-black italic text-purple-400">
+                        {pulseResult ? Math.round(pulseResult.resonanceScore || 0) : (segment.resonance_score || 0)}%
+                    </span>
                 </div>
-                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-4">
                     <div 
                         className="h-full bg-gradient-to-r from-purple-500 via-purple-400 to-blue-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(168,85,247,0.3)]"
-                        style={{ width: `${segment.resonance_score || 0}%` }}
+                        style={{ width: `${pulseResult ? Math.round(pulseResult.resonanceScore || 0) : (segment.resonance_score || 0)}%` }}
                     />
                 </div>
+
+                {/* New Pulse Result Multi-dimensional Scores */}
+                {pulseResult && (
+                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/10">
+                        <div>
+                            <span className="block text-[8px] uppercase tracking-widest text-white/30 font-bold">Utility</span>
+                            <span className="block text-sm font-bold text-white/90">{Math.round(pulseResult.utilityScore || 0)}%</span>
+                        </div>
+                        <div>
+                            <span className="block text-[8px] uppercase tracking-widest text-white/30 font-bold">Culture</span>
+                            <span className="block text-sm font-bold text-white/90">{Math.round(pulseResult.culturalFitScore || 0)}%</span>
+                        </div>
+                        <div>
+                            <span className="block text-[8px] uppercase tracking-widest text-white/30 font-bold">Afford</span>
+                            <span className="block text-sm font-bold text-white/90">{Math.round(pulseResult.affordabilityScore || 0)}%</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Tactical Badges */}
-            <div className="flex flex-wrap gap-2 mb-8">
-                <div className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 flex items-center gap-2">
-                    <span className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Age</span>
-                    <span className="text-[11px] text-white/80">{profile.age_range || "N/A"}</span>
-                </div>
-                <div className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 flex items-center gap-2">
-                    <span className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Zone</span>
-                    <span className="text-[11px] text-white/80">{profile.dominant_zone || "N/A"}</span>
-                </div>
-                <div className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 flex items-center gap-2">
-                    <span className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Sex</span>
-                    <span className="text-[11px] text-white/80">{profile.dominant_sex || "N/A"}</span>
-                </div>
-            </div>
-
-            {/* Segment Profile Summary */}
+            {/* Segment Profile Summary & Pulse Quotes */}
             <div className="mb-8">
-                <p className="text-sm font-light text-white/50 leading-relaxed italic">
-                    "This group typically resides in {profile.dominant_state} and is primarily composed of {profile.dominant_occupation} professionals looking for innovation in this sector."
-                </p>
+                {pulseResult ? (
+                    <div>
+                        <div className="inline-block px-2 py-1 rounded bg-white/10 border border-white/20 mb-3 text-[9px] uppercase tracking-widest font-bold">
+                            Verdict: <span className={pulseResult.verdict === 'CRITICAL' || pulseResult.verdict === 'SKEPTICAL' ? 'text-red-400' : 'text-emerald-400'}>{pulseResult.verdict}</span>
+                        </div>
+                        <p className="text-sm font-light text-white/70 leading-relaxed italic border-l-2 border-purple-500/50 pl-3">
+                            "{pulseResult.verbatimQuote}"
+                        </p>
+                        <p className="text-[10px] text-white/40 mt-3 font-normal uppercase tracking-wide">
+                            Predicted Adoption: <strong className="text-white/80">{pulseResult.predictedAdoptionPattern}</strong>
+                        </p>
+                    </div>
+                ) : (
+                    <p className="text-sm font-light text-white/50 leading-relaxed italic">
+                        "This group typically resides in {profile.dominant_state} and is primarily composed of {profile.dominant_occupation} professionals looking for innovation in this sector."
+                    </p>
+                )}
             </div>
 
             {/* Action Area */}

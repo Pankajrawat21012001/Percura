@@ -7,20 +7,11 @@
  */
 
 const { generateAIResponse } = require('./groqService');
+const { generateIntelligentReport } = require('./reportAgent');
+const { buildIdeaContext, addSimulationEvent } = require('./zepService');
+const { generateSimulationConfig } = require('./configGenerator');
+const { runSocialSimulation } = require('./socialSimEngine');
 
-// Discovery probability by adoption style (per week)
-const DISCOVERY_RATES = {
-    'Innovator': 0.40,
-    'Early Adopter': 0.25,
-    'Early Majority': 0.10,
-    'Late Majority': 0.05,
-    'Laggard': 0.02
-};
-
-const PEER_INFLUENCE_CHANCE = 0.30;  // 30% chance of hearing from a peer
-const PEER_SENTIMENT_PULL = 0.20;     // Moves 20% toward segment average
-const CHURN_THRESHOLD = 0.30;
-const CONVERSION_THRESHOLD = 0.65;    // Lowered from 0.72 for small pools
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 200;
 
@@ -35,6 +26,24 @@ async function runSimulation(idea, segments, options = {}) {
     const weeks = options.weeks || 8;
     const weeklyEventCallback = options.weeklyEventCallback || null;
     const ideaText = idea?.idea || 'a new product';
+    const ideaTargetAudience = idea?.targetAudience || 'Indian consumers';
+    const ideaIndustry = idea?.industry || 'General';
+    const ideaBusinessModel = idea?.businessModel || 'Not specified';
+
+    let graphId = null;
+    try {
+        const graphCtx = await buildIdeaContext(ideaText, ideaTargetAudience, ideaIndustry, ideaBusinessModel);
+        if (graphCtx && graphCtx.graphId) {
+            graphId = graphCtx.graphId;
+        }
+    } catch (err) {
+        console.warn('⚠️ [SIM] Failed to get Zep graph context:', err.message);
+    }
+
+    const config = await generateSimulationConfig(ideaText, ideaIndustry, ideaTargetAudience);
+
+    // Keep the original pull constant
+    const PEER_SENTIMENT_PULL = 0.20;
 
     console.log(`🚀 [SIM] Starting ${weeks}-week simulation across ${segments.length} segments`);
 
@@ -66,44 +75,43 @@ async function runSimulation(idea, segments, options = {}) {
     }
 
     const weeklySnapshots = [];
-    const allEvents = []; // Per-persona timeline events across all weeks
+    const allEvents = [];
+
+    // Add seed events for Week 0
+    (config.seedEvents || []).forEach((evt, idx) => {
+        allEvents.push({
+            id: `evt_seed_${idx}`,
+            week: 0,
+            action: 'MARKET_EVENT',
+            personaName: 'Market',
+            segmentName: 'Global',
+            description: evt,
+            sentiment: 0.5,
+            sentimentDelta: 0
+        });
+    });
 
     // ── Week 0: Baseline ──
     weeklySnapshots.push(buildSnapshot(0, segments, personaStates));
 
-    // Scale discovery rates up when persona pool is small
-    const totalPersonas = Object.keys(personaStates).length;
-    const discoveryMultiplier = totalPersonas < 10 ? 3.0 : totalPersonas < 20 ? 2.0 : 1.0;
-    console.log(`📊 [SIM] Pool size: ${totalPersonas} personas, discovery multiplier: ${discoveryMultiplier}x`);
-
     // ── Weeks 1 through N ──
     for (let week = 1; week <= weeks; week++) {
         console.log(`📅 [SIM] === Week ${week}/${weeks} ===`);
+
+        // Define an array to collect events for Zep
         const weekEvents = [];
 
         // Step 1: Organic Discovery (with batched LLM calls)
         const discoveryBatch = [];
-        const activePids = Object.keys(personaStates).filter(pid => {
+        for (const pid of Object.keys(personaStates)) {
             const ps = personaStates[pid];
-            return !ps.churned && !ps.converted;
-        });
+            if (ps.churned || ps.converted) continue;
 
-        for (const pid of activePids) {
-            const ps = personaStates[pid];
-            const baseRate = DISCOVERY_RATES[ps.adoptionStyle] || 0.10;
-            const scaledRate = Math.min(0.85, baseRate * discoveryMultiplier);
-            if (Math.random() < scaledRate) {
+            const discoveryRate = config.discoveryRates[ps.adoptionStyle] || 0.10;
+            if (Math.random() < discoveryRate) {
                 discoveryBatch.push(pid);
             }
         }
-
-        // Guarantee at least 1 discovery per week if there are active personas
-        if (discoveryBatch.length === 0 && activePids.length > 0) {
-            const randomPid = activePids[Math.floor(Math.random() * activePids.length)];
-            discoveryBatch.push(randomPid);
-        }
-
-        console.log(`  🔍 Discoveries this week: ${discoveryBatch.length}/${activePids.length} active`);
 
         // Process discoveries in batches of BATCH_SIZE
         for (let i = 0; i < discoveryBatch.length; i += BATCH_SIZE) {
@@ -117,21 +125,12 @@ async function runSimulation(idea, segments, options = {}) {
                     const pid = batch[j];
                     const ps = personaStates[pid];
                     ps.exposureCount += 1;
-                    const effectiveDelta = sentimentDelta === 0 ? 0.04 : sentimentDelta;
-                    ps.sentimentScore = clamp(ps.sentimentScore + effectiveDelta, 0, 1);
+                    ps.sentimentScore = clamp(ps.sentimentScore + sentimentDelta, 0, 1);
                     ps.keyExperiences.push(`Week ${week}: ${experience}`);
-
-                    // Emit timeline event
+                    
                     weekEvents.push({
-                        id: `evt_${week}_disc_${pid}`,
-                        week,
-                        action: 'DISCOVERY',
-                        personaId: pid,
-                        personaName: ps.name,
-                        segmentName: ps.segmentName,
-                        description: experience,
-                        sentiment: ps.sentimentScore,
-                        sentimentDelta: effectiveDelta
+                        week, action: 'DISCOVERY', personaName: ps.name, segmentName: ps.segmentName,
+                        description: experience, sentimentDelta: sentimentDelta.toFixed(2), sentiment: ps.sentimentScore.toFixed(2)
                     });
                 }
             }
@@ -156,23 +155,17 @@ async function runSimulation(idea, segments, options = {}) {
                 if (ps.heardFromPeers || ps.converted) continue;
                 if (!hasAdvocate) continue;
 
-                if (Math.random() < PEER_INFLUENCE_CHANCE) {
+                if (Math.random() < config.peerInfluenceChance) {
                     ps.heardFromPeers = true;
                     ps.exposureCount += 1;
+                    // Nudge toward segment average
                     const nudge = (segAvgSentiment - ps.sentimentScore) * PEER_SENTIMENT_PULL;
                     ps.sentimentScore = clamp(ps.sentimentScore + nudge, 0, 1);
                     ps.keyExperiences.push(`Week ${week}: Heard about it from a colleague/friend`);
-
+                    
                     weekEvents.push({
-                        id: `evt_${week}_peer_${ps.personaId}`,
-                        week,
-                        action: 'PEER_INFLUENCE',
-                        personaId: ps.personaId,
-                        personaName: ps.name,
-                        segmentName: ps.segmentName,
-                        description: 'Heard about it from a colleague or friend in their network',
-                        sentiment: ps.sentimentScore,
-                        sentimentDelta: nudge
+                        week, action: 'PEER_INFLUENCE', personaName: ps.name, segmentName: ps.segmentName,
+                        description: 'Heard about the product from a colleague/friend', sentimentDelta: nudge.toFixed(2), sentiment: ps.sentimentScore.toFixed(2)
                     });
                 }
             }
@@ -182,20 +175,13 @@ async function runSimulation(idea, segments, options = {}) {
         for (const pid of Object.keys(personaStates)) {
             const ps = personaStates[pid];
             if (ps.churned || ps.converted) continue;
-            if (ps.exposureCount >= 2 && ps.sentimentScore < CHURN_THRESHOLD) {
+            if (ps.exposureCount >= 2 && ps.sentimentScore < config.churnThreshold) {
                 ps.churned = true;
                 ps.keyExperiences.push(`Week ${week}: Lost interest — churned`);
-
+                
                 weekEvents.push({
-                    id: `evt_${week}_churn_${pid}`,
-                    week,
-                    action: 'CHURN',
-                    personaId: pid,
-                    personaName: ps.name,
-                    segmentName: ps.segmentName,
-                    description: 'Lost interest and stopped engaging — churned',
-                    sentiment: ps.sentimentScore,
-                    sentimentDelta: 0
+                    week, action: 'CHURN', personaName: ps.name, segmentName: ps.segmentName,
+                    description: 'Lost interest and churned', sentimentDelta: 0, sentiment: ps.sentimentScore.toFixed(2)
                 });
             }
         }
@@ -204,29 +190,26 @@ async function runSimulation(idea, segments, options = {}) {
         for (const pid of Object.keys(personaStates)) {
             const ps = personaStates[pid];
             if (ps.churned || ps.converted) continue;
-            if (ps.sentimentScore >= CONVERSION_THRESHOLD) {
+            if (ps.sentimentScore >= config.conversionThreshold) {
                 ps.converted = true;
                 ps.keyExperiences.push(`Week ${week}: Converted — would try/buy`);
-
+                
                 weekEvents.push({
-                    id: `evt_${week}_convert_${pid}`,
-                    week,
-                    action: 'CONVERSION',
-                    personaId: pid,
-                    personaName: ps.name,
-                    segmentName: ps.segmentName,
-                    description: 'Highly interested — converted and would try/buy the product',
-                    sentiment: ps.sentimentScore,
-                    sentimentDelta: 0
+                    week, action: 'CONVERSION', personaName: ps.name, segmentName: ps.segmentName,
+                    description: 'Converted and would try/buy the product', sentimentDelta: 0, sentiment: ps.sentimentScore.toFixed(2)
                 });
             }
         }
+        
+        // Push events to Zep Graph asynchronously
+        if (graphId && weekEvents.length > 0) {
+            weekEvents.forEach(evt => addSimulationEvent(graphId, evt));
+        }
 
-        // Collect events for this week
         allEvents.push(...weekEvents);
 
         // Build weekly snapshot
-        const snapshot = buildSnapshot(week, segments, personaStates, weekEvents);
+        const snapshot = buildSnapshot(week, segments, personaStates);
         weeklySnapshots.push(snapshot);
 
         if (weeklyEventCallback) {
@@ -236,9 +219,17 @@ async function runSimulation(idea, segments, options = {}) {
         console.log(`  📊 Week ${week} complete — adoption curve: ${(snapshot.overallAdoptionCurve * 100).toFixed(1)}%`);
     }
 
+    // ── Run Social Platform Simulation ──
+    try {
+        const socialEvents = await runSocialSimulation(segments, idea, config, weeks, graphId);
+        allEvents.push(...socialEvents);
+    } catch (e) {
+        console.warn(`⚠️ [SIM] Social simulation failed:`, e.message);
+    }
+
     // ── Generate Final Report via Groq ──
     console.log(`🧠 [SIM] Generating final analysis report...`);
-    const finalReport = await generateFinalReport(idea, weeklySnapshots, segments);
+    const finalReport = await generateIntelligentReport(idea, weeklySnapshots, segments, graphId);
 
     const simulationResult = {
         id: `sim_${Date.now()}`,
@@ -303,7 +294,7 @@ How does this person react to discovering/encountering the product this week?`;
 /**
  * Build a weekly snapshot from current persona states.
  */
-function buildSnapshot(week, segments, personaStates, weekEvents = []) {
+function buildSnapshot(week, segments, personaStates) {
     const segmentSnapshots = segments.map(segment => {
         const segPersonaIds = (segment.personas || []).map(p => p.persona_id || p.id);
         const segStates = segPersonaIds.map(id => personaStates[id]).filter(Boolean);
@@ -333,7 +324,6 @@ function buildSnapshot(week, segments, personaStates, weekEvents = []) {
 
     const allStates = Object.values(personaStates);
     const totalConverted = allStates.filter(s => s.converted).length;
-    const totalChurned = allStates.filter(s => s.churned).length;
     const overallAdoptionCurve = allStates.length > 0
         ? parseFloat((totalConverted / allStates.length).toFixed(3))
         : 0;
@@ -341,11 +331,7 @@ function buildSnapshot(week, segments, personaStates, weekEvents = []) {
     return {
         week,
         segmentSnapshots,
-        overallAdoptionCurve,
-        totalConverted,
-        totalChurned,
-        totalActive: allStates.length - totalConverted - totalChurned,
-        events: weekEvents
+        overallAdoptionCurve
     };
 }
 

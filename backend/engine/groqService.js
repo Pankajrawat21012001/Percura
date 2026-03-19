@@ -29,7 +29,7 @@ function cleanJsonString(str) {
  * @param {number} temperature - creativity (def: 0.5)
  * @returns {Promise<Object>} - parsed JSON response
  */
-async function generateAIResponse(systemPrompt, userPrompt, temperature = 0.5) {
+async function generateAIResponse(systemPrompt, userPrompt, temperature = 0.5, forceJson = true) {
     if (!process.env.GROQ_API_KEY) {
         console.warn('GROQ_API_KEY is missing. Returning null to trigger fallback.');
         return null; // Signals caller to use fallback
@@ -54,28 +54,34 @@ async function generateAIResponse(systemPrompt, userPrompt, temperature = 0.5) {
         const currentModel = models[i];
         try {
             console.log(`🤖 Calling Groq API [Model: ${currentModel}]...`);
-            const completion = await groq.chat.completions.create({
+            const requestParams = {
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
                 ],
                 model: currentModel,
-                temperature: temperature,
-                response_format: { type: 'json_object' }
-            });
+                temperature: temperature
+            };
+            if (forceJson) {
+                requestParams.response_format = { type: 'json_object' };
+            }
+            const completion = await groq.chat.completions.create(requestParams);
 
             const rawContent = completion.choices[0]?.message?.content;
             if (!rawContent) {
                 throw new Error('Empty response from Groq');
             }
 
-            const cleanedContent = cleanJsonString(rawContent);
-            const parsedData = JSON.parse(cleanedContent);
-
-            // Cache the successful result
-            responseCache.set(cacheKey, parsedData);
-
-            return parsedData;
+            if (forceJson) {
+                const cleanedContent = cleanJsonString(rawContent);
+                const parsedData = JSON.parse(cleanedContent);
+                responseCache.set(cacheKey, parsedData);
+                return parsedData;
+            } else {
+                // Return raw text (for markdown reports, chat, etc.)
+                responseCache.set(cacheKey, rawContent);
+                return rawContent;
+            }
 
         } catch (error) {
             const isLastModel = i === models.length - 1;
@@ -106,4 +112,12 @@ async function generateAIResponse(systemPrompt, userPrompt, temperature = 0.5) {
     return null;
 }
 
-module.exports = { generateAIResponse };
+/**
+ * Generate a free-text/markdown response (NOT forced JSON).
+ * Use this for report generation, analyst chat, and any natural language output.
+ */
+async function generateTextResponse(systemPrompt, userPrompt, temperature = 0.5) {
+    return generateAIResponse(systemPrompt, userPrompt, temperature, false);
+}
+
+module.exports = { generateAIResponse, generateTextResponse };

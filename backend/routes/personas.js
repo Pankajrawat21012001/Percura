@@ -236,8 +236,8 @@ ${JSON.stringify(segmentSummaries, null, 2)}`;
  */
 router.post('/retrieve-personas', async (req, res) => {
     try {
-        const { idea, targetAudience, industry, businessModel, state, sex, ageMin, ageMax } = req.body;
-        console.log(`[CLOUD-SEARCH] Idea: "${idea.substring(0, 50)}..." | Target: "${targetAudience?.substring(0, 30)}..."`);
+        const { idea, targetAudience, industry, businessModel, state, sex, ageMin, ageMax, marketContext } = req.body;
+        console.log(`[CLOUD-SEARCH] Idea: "${idea?.substring(0, 50)}..." | Target: "${targetAudience?.substring(0, 30)}..."`);
 
         // 0. Get Groq scoring rubric — runs in parallel with embedding for speed
         const weightedQueryText = `
@@ -247,11 +247,12 @@ router.post('/retrieve-personas', async (req, res) => {
             BUSINESS MODEL: ${businessModel || 'Any'}
         `.trim();
 
-        const [vector, criteria, zepContext] = await Promise.all([
+        const [vector, criteria] = await Promise.all([
             getEmbedding(weightedQueryText),
-            getCriteriaFromGroq(idea, targetAudience, industry, businessModel),
-            buildIdeaContext(idea, targetAudience, industry, businessModel)
+            getCriteriaFromGroq(idea, targetAudience, industry, businessModel)
         ]);
+        
+        const zepContext = marketContext || null;
 
         // 2. Search Pinecone
         console.log(`🌲 [PINECONE] Searching Cloud Brain for top weighted matches...`);

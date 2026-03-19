@@ -100,6 +100,9 @@ export default function ValidatePage() {
     });
     const [loading, setLoading] = useState(false);
     const [backendStatus, setBackendStatus] = useState("checking");
+    const [step, setStep] = useState(1);
+    const [marketContext, setMarketContext] = useState(null);
+    const [loadingMessage, setLoadingMessage] = useState("Finding matching personas...");
 
     // We no longer reset global state automatically on mount 
     // to allow 'Modify Idea' functionality to work.
@@ -139,7 +142,7 @@ export default function ValidatePage() {
         form.targetAudience.trim().length > 0 && 
         form.testType.trim().length > 0;
 
-    const handleSubmit = async () => {
+    const handleBuildGraph = async () => {
         if (!canSubmit) return;
 
         let currentUser = user;
@@ -152,6 +155,20 @@ export default function ValidatePage() {
             }
         }
 
+        // Keep loading UI visible just during the transition
+        setLoadingMessage("Initializing Market Context Engine...");
+        setLoading(true);
+
+        // Save form to global context
+        setIdea(form);
+        
+        // Let the new /context page handle the actual graph building
+        router.push("/context");
+    };
+
+    const handleMatchPersonas = async (fallbackContext) => {
+        const ctxToUse = fallbackContext !== undefined ? fallbackContext : marketContext;
+        setLoadingMessage("Scanning 1M+ Personas for Top Matches...");
         setLoading(true);
 
         try {
@@ -167,6 +184,7 @@ export default function ValidatePage() {
                     industry: form.industry.trim() || null,
                     businessModel: form.businessModel.trim() || null,
                     segmentCount: 5,
+                    marketContext: ctxToUse
                 }),
             });
 
@@ -188,7 +206,7 @@ export default function ValidatePage() {
             });
 
             const docRef = await addDoc(collection(db, "simulations"), {
-                userId: currentUser.uid,
+                userId: user.uid,
                 ideaData: form,
                 status: "ready",
                 timestamp: serverTimestamp(),
@@ -232,7 +250,7 @@ export default function ValidatePage() {
     };
 
     if (loading) {
-        return <LoadingScreen message="Finding matching personas..." />;
+        return <LoadingScreen message={loadingMessage} />;
     }
 
     return (
@@ -256,7 +274,8 @@ export default function ValidatePage() {
 
                 </div>
 
-                {/* Form Card */}
+                {/* Form Card (Step 1) */}
+                {step === 1 && (
                 <div className="bg-white/[0.06] border border-white/18 rounded-[2.5rem] p-8 md:p-12 backdrop-blur-md fade-in-up shadow-2xl overflow-hidden relative group">
                     {/* Subtle inner glow */}
                     <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-purple-500/20 transition-all duration-700" />
@@ -383,19 +402,20 @@ export default function ValidatePage() {
                     {/* Submit */}
                     <Button
                         size="xl"
-                        onClick={handleSubmit}
+                        onClick={handleBuildGraph}
                         disabled={!canSubmit}
                         showArrow={canSubmit}
                         className="w-full relative group shadow-xl hover:shadow-purple-500/10 uppercase tracking-widest"
                     >
-                        {backendStatus === "ready" ? "Find Matching Personas" : "Waiting for Engine..."}
+                        {backendStatus === "ready" ? "Build Knowledge Graph" : "Waiting for Engine..."}
                     </Button>
 
                     <p className="text-center text-[10px] text-white/40 mt-6 font-normal tracking-[0.05em]">
-                        Deep matching across 1M+ personas to find your 50 highest-resonance profiles.
+                        Deep extraction of Indian market ontology before querying 1M+ personas.
                     </p>
                 </div>
+                )}
             </div>
         </div>
     );
-}
+}

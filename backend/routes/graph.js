@@ -1,5 +1,34 @@
 const express = require('express');
 const router = express.Router();
+const { buildIdeaContext } = require('../engine/zepService');
+
+/**
+ * POST /api/graph/build
+ * Explicitly triggers Zep Ontology/Graph extraction for an Idea.
+ * Returns the extracted context (Competitors, Risks, Trends).
+ */
+router.post('/build', async (req, res) => {
+    try {
+        const { idea, industry, businessModel, targetAudience } = req.body;
+        
+        console.log(`🧠 [GRAPH ROUTE] Building market context for "${idea?.substring(0, 30)}..."`);
+        const context = await buildIdeaContext(idea, targetAudience, industry, businessModel);
+        
+        if (!context) {
+            return res.status(500).json({ success: false, error: "Failed to establish knowledge graph context." });
+        }
+
+        res.json({
+            success: true,
+            graphId: context.graphId,
+            context: context
+        });
+
+    } catch (err) {
+        console.error('[GRAPH BUILD] Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
 
 /**
  * POST /api/graph/data

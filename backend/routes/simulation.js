@@ -11,7 +11,7 @@ const simulationStore = new Map();
  */
 router.post('/run', async (req, res) => {
     try {
-        const { idea, segments, weeks } = req.body;
+        const { idea, segments, weeks, projectId } = req.body;
 
         if (!idea || !segments || segments.length === 0) {
             return res.status(400).json({
@@ -23,6 +23,10 @@ router.post('/run', async (req, res) => {
         console.log(`🚀 [SIM-ROUTE] Starting simulation for "${(idea.idea || '').substring(0, 50)}..." (${weeks || 8} weeks)`);
 
         const result = await runSimulation(idea, segments, { weeks: weeks || 8 });
+        
+        if (projectId) {
+            result.projectId = projectId;
+        }
 
         // Store in memory
         simulationStore.set(result.id, result);
@@ -66,6 +70,23 @@ router.get('/:id', (req, res) => {
         success: true,
         simulation
     });
+});
+
+/**
+ * GET /api/simulation/:id/export
+ * Export the simulation result as JSON for downloading.
+ */
+router.get('/:id/export', (req, res) => {
+    const { id } = req.params;
+    const simulation = simulationStore.get(id);
+
+    if (!simulation) {
+        return res.status(404).json({ error: 'Simulation not found.' });
+    }
+
+    res.setHeader('Content-disposition', `attachment; filename=percura_export_${id}.json`);
+    res.setHeader('Content-type', 'application/json');
+    res.send(JSON.stringify(simulation, null, 2));
 });
 
 /**

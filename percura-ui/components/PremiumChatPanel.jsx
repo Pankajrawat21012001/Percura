@@ -44,6 +44,7 @@ export default function PremiumChatPanel({ onClose }) {
     // Selection state
     const [selectedAgent, setSelectedAgent] = useState(null);
     const [panelAgents, setPanelAgents] = useState([]);
+    const [debateAgents, setDebateAgents] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSegmentFilter, setSelectedSegmentFilter] = useState("all");
     const [isSegmentDropdownOpen, setIsSegmentDropdownOpen] = useState(false);
@@ -51,8 +52,11 @@ export default function PremiumChatPanel({ onClose }) {
     // Chat history state
     const [conversations, setConversations] = useState({}); // { agentId: [{sender, text, senderName}] }
     const [panelMessages, setPanelMessages] = useState([]); // [{sender, text, replies?}]
+    const [analystMessages, setAnalystMessages] = useState([]); // [{sender, text, senderName}]
+    const [debateMessages, setDebateMessages] = useState([]); // [{sender, text, senderName}]
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isDebating, setIsDebating] = useState(false);
 
     // Survey state
     const [surveySelectedIds, setSurveySelectedIds] = useState(new Set());
@@ -62,8 +66,30 @@ export default function PremiumChatPanel({ onClose }) {
 
     const chatEndRef = useRef(null);
 
+    const [richSegments, setRichSegments] = useState([]);
+
+    // Recover rich segments (with personas) from localStorage if they were stripped for Firestore
+    useEffect(() => {
+        let segments = simulationResults || [];
+        if (segments.length > 0 && (!segments[0].personas || segments[0].personas.length === 0)) {
+            try {
+                const lsKey = `percura_segments_${currentSimulationId}`;
+                const stored = localStorage.getItem(lsKey);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed.length > 0 && parsed[0].personas) {
+                        segments = parsed;
+                    }
+                }
+            } catch (e) {
+                console.warn("Failed to parse local segments:", e);
+            }
+        }
+        setRichSegments(segments);
+    }, [simulationResults, currentSimulationId]);
+
     // Prepare all agents from all segments
-    const allAgents = (simulationResults || []).reduce((acc, segment) => {
+    const allAgents = richSegments.reduce((acc, segment) => {
         const personas = (segment.personas || []).map(p => {
             const personaId = p.persona_id || p.id;
             const ep = p.enrichedProfile;
@@ -108,13 +134,20 @@ export default function PremiumChatPanel({ onClose }) {
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [conversations, panelMessages, isLoading]);
+    }, [conversations, panelMessages, analystMessages, debateMessages, isLoading, isDebating]);
 
     // ───────── SELECTION LOGIC ─────────
     const handleAgentClick = (agent) => {
         if (mode === "single") {
             setSelectedAgent(agent);
-        } else {
+        } else if (mode === "debate") {
+            setDebateAgents((prev) => {
+                const exists = prev.find((a) => a.id === agent.id);
+                if (exists) return prev.filter((a) => a.id !== agent.id);
+                if (prev.length >= 2) return [prev[1], agent]; // Keep max 2
+                return [...prev, agent];
+            });
+        } else if (mode === "panel") {
             setPanelAgents((prev) =>
                 prev.find((a) => a.id === agent.id)
                     ? prev.filter((a) => a.id !== agent.id)
@@ -175,7 +208,38 @@ export default function PremiumChatPanel({ onClose }) {
             } finally {
                 setIsLoading(false);
             }
-        } else {
+        } else if (mode === "analyst") {
+            const userMsgObj = { sender: "user", text: message };
+            const updatedHistory = [...analystMessages, userMsgObj];
+            setAnalystMessages(updatedHistory);
+            setInputValue("");
+            setIsLoading(true);
+
+            try {
+                // If the context contains a graphId, pass it. We extract it from simulationResults if available.
+                const firstSim = simulationResults && simulationResults[0] ? simulationResults[0] : null;
+                const reqBody = {
+                    simulationId: currentSimulationId,
+                    message: message,
+                    chatHistory: updatedHistory,
+                    simulationResult: firstSim
+                };
+
+                const res = await fetch(`${API_BASE_URL}/api/report-chat`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(reqBody),
+                });
+
+                const data = await res.json();
+                setAnalystMessages(prev => [...prev, { sender: "ai", text: data.reply || "No response.", senderName: "AI Analyst" }]);
+            } catch (err) {
+                console.error("Analyst chat error:", err);
+                setAnalystMessages(prev => [...prev, { sender: "ai", text: "Connection to AI Analyst failed.", senderName: "System Error" }]);
+            } finally {
+                setIsLoading(false);
+            }
+        } else if (mode === "panel") {
             if (panelAgents.length === 0) return;
             const userMsgObj = { sender: "user", text: message };
             const newMessages = [...panelMessages, userMsgObj];
@@ -212,6 +276,47 @@ export default function PremiumChatPanel({ onClose }) {
             } finally {
                 setIsLoading(false);
             }
+        } else if (mode === "debate") {
+            if (debateAgents.length !== 2) return;
+            const userMsgObj = { sender: "user", text: `Topic for Debate: ${message}` };
+            setDebateMessages(prev => [...prev, userMsgObj]);
+            setInputValue("");
+            setIsLoading(true);
+            setIsDebating(true);
+
+            try {
+                const [agentA, agentB] = debateAgents;
+                let currentHistory = [userMsgObj];
+
+                // Turn 1: Agent A opening statement
+                const resA = await fetch(`${API_BASE_URL}/api/chat`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ simulationId: currentSimulationId, target: [agentA.id], message: `Please give your opening arguments on: "${message}"`, history: currentHistory.slice(-5), context: { idea, simulationResults } }),
+                });
+                const dataA = await resA.json();
+                const replyA = dataA.reply || "No response.";
+                const msgA = { sender: "ai", text: replyA, senderName: agentA.displayName };
+                currentHistory = [...currentHistory, msgA];
+                setDebateMessages(currentHistory);
+
+                // Turn 2: Agent B rebuttal
+                const resB = await fetch(`${API_BASE_URL}/api/chat`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ simulationId: currentSimulationId, target: [agentB.id], message: `${agentA.displayName} just argued: "${replyA}". Please provide your rebuttal and counter-perspective.`, history: currentHistory.slice(-5), context: { idea, simulationResults } }),
+                });
+                const dataB = await resB.json();
+                const replyB = dataB.reply || "No response.";
+                const msgB = { sender: "ai", text: replyB, senderName: agentB.displayName };
+                currentHistory = [...currentHistory, msgB];
+                setDebateMessages(currentHistory);
+
+            } catch (err) {
+                console.error("Debate error:", err);
+                setDebateMessages(prev => [...prev, { sender: "ai", text: "Debate interrupted due to neural error.", senderName: "System" }]);
+            } finally {
+                setIsLoading(false);
+                setIsDebating(false);
+            }
         }
     };
 
@@ -224,7 +329,13 @@ export default function PremiumChatPanel({ onClose }) {
 
     const currentHistory = mode === "single" && selectedAgent
         ? conversations[selectedAgent.id] || []
-        : panelMessages;
+        : mode === "panel"
+            ? panelMessages
+            : mode === "analyst"
+                ? analystMessages
+                : mode === "debate"
+                    ? debateMessages
+                    : [];
 
     return (
         <div className="fixed inset-0 z-[100] bg-[#0A0A0C]/95 backdrop-blur-2xl flex items-center justify-center p-4 lg:p-10 animate-in fade-in duration-500">
@@ -241,24 +352,35 @@ export default function PremiumChatPanel({ onClose }) {
 
                 {/* ── LEFT: Sidebar ── */}
                 <div className="w-[320px] shrink-0 border-r border-white/5 flex flex-col bg-black/40">
-                    {/* Header: Tabs */}
                     <div className="p-6 pb-4">
-                        <div className="flex bg-white/[0.03] rounded-2xl p-1.5 border border-white/5">
+                        <div className="flex flex-wrap gap-1.5 bg-white/[0.03] rounded-2xl p-1.5 border border-white/5">
                             <button
                                 onClick={() => setMode("single")}
-                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-3 rounded-xl transition-all ${mode === "single" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "single" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
                             >
-                                1:1 Interview
+                                1:1
                             </button>
                             <button
                                 onClick={() => setMode("panel")}
-                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-3 rounded-xl transition-all ${mode === "panel" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "panel" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
                             >
                                 Panel
                             </button>
                             <button
+                                onClick={() => setMode("analyst")}
+                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "analyst" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-white/30 hover:text-white/60"}`}
+                            >
+                                Analyst
+                            </button>
+                            <button
+                                onClick={() => setMode("debate")}
+                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "debate" ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" : "text-white/30 hover:text-white/60"}`}
+                            >
+                                Debate
+                            </button>
+                            <button
                                 onClick={() => setMode("survey")}
-                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-3 rounded-xl transition-all ${mode === "survey" ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "survey" ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/20" : "text-white/30 hover:text-white/60"}`}
                             >
                                 Survey
                             </button>
@@ -320,7 +442,9 @@ export default function PremiumChatPanel({ onClose }) {
                         {filteredAgents.map((agent) => {
                             const isSelected = mode === "single"
                                 ? selectedAgent?.id === agent.id
-                                : panelAgents.find((a) => a.id === agent.id);
+                                : mode === "debate"
+                                    ? debateAgents.find((a) => a.id === agent.id)
+                                    : panelAgents.find((a) => a.id === agent.id);
 
                             return (
                                 <div
@@ -388,6 +512,28 @@ export default function PremiumChatPanel({ onClose }) {
                         </div>
                     )}
 
+                    {/* Selection Summary (for Debate) */}
+                    {mode === "debate" && (
+                        <div className="p-6 border-t border-white/5 bg-rose-600/5">
+                            <p className="text-[9px] uppercase tracking-widest text-rose-400/60 font-black mb-3">
+                                Debate Participants ({debateAgents.length}/2)
+                            </p>
+                            <div className="flex flex-wrap gap-1.5 flex-col">
+                                {debateAgents.map((a, i) => (
+                                    <div key={a.id} className="text-[10px] px-3 py-2 bg-rose-600/10 text-rose-300 rounded-lg border border-rose-500/20 font-bold flex items-center justify-between">
+                                        <span>Candidate {i+1}: {a.displayName}</span>
+                                        <div className={`w-2 h-2 rounded-full ${a.state === "ADOPTED" ? "bg-emerald-500" : a.state === "REJECTED" ? "bg-rose-500" : "bg-amber-400"}`} />
+                                    </div>
+                                ))}
+                                {debateAgents.length < 2 && (
+                                    <div className="text-[10px] px-3 py-2 border border-dashed border-rose-500/30 text-rose-500/50 rounded-lg font-bold">
+                                        Select another persona...
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Survey Selection Summary */}
                     {mode === "survey" && surveySelectedIds.size > 0 && (
                         <div className="p-6 border-t border-white/5 bg-cyan-600/5">
@@ -419,7 +565,17 @@ export default function PremiumChatPanel({ onClose }) {
                 <div className="flex-1 flex flex-col min-w-0 bg-[#0C0C0E]">
                     {/* Header */}
                     <div className="px-8 py-6 border-b border-white/5 bg-black/40 flex items-center justify-between">
-                        {mode === "single" && selectedAgent ? (
+                        {mode === "analyst" ? (
+                            <div className="flex items-center gap-4 animate-in slide-in-from-left-4 duration-500">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xl shadow-inner">
+                                    🧠
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-white tracking-tight">AI Analyst</h2>
+                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Data-driven insights &middot; Zep Knowledge Graph</p>
+                                </div>
+                            </div>
+                        ) : mode === "single" && selectedAgent ? (
                             <div className="flex items-center gap-4 animate-in slide-in-from-left-4 duration-500">
                                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xl shadow-inner">
                                     {selectedAgent.name[0]}
@@ -448,6 +604,16 @@ export default function PremiumChatPanel({ onClose }) {
                                     <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">{panelAgents.length} personas listening &middot; Collective intelligence</p>
                                 </div>
                             </div>
+                        ) : mode === "debate" ? (
+                            <div className="flex items-center gap-4 animate-in slide-in-from-left-4 duration-500">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500/20 to-orange-500/20 border border-white/10 flex items-center justify-center text-xl shadow-inner">
+                                    ⚔️
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-white tracking-tight">Debate Mode</h2>
+                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Observe contrasting perspectives</p>
+                                </div>
+                            </div>
                         ) : (
                             <div>
                                 <h2 className="text-lg font-bold text-white/20 tracking-tight">Interrogation Lab</h2>
@@ -465,7 +631,9 @@ export default function PremiumChatPanel({ onClose }) {
                                 <p className="text-white/30 text-sm leading-relaxed mb-10 font-medium italic">
                                     {mode === "single"
                                         ? "Direct 1:1 interaction with a persona to understand their deep psychological barriers and motivations."
-                                        : "Ask a question to multiple personas simultaneously. Watch how different demographic segments react to the same prompt."
+                                        : mode === "debate" 
+                                            ? "Select exactly TWO personas to debate a topic. Watch how their contrasting backgrounds shape their arguments."
+                                            : "Ask a question to multiple personas simultaneously. Watch how different demographic segments react to the same prompt."
                                     }
                                 </p>
                                 <div className="grid grid-cols-2 gap-3 w-full">
@@ -486,8 +654,12 @@ export default function PremiumChatPanel({ onClose }) {
                             if (msg.sender === "user") {
                                 return (
                                     <div key={i} className="flex justify-end animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                        <div className="max-w-[70%] bg-purple-600/20 border border-purple-500/30 rounded-3xl rounded-br-none px-6 py-4 shadow-2xl shadow-purple-500/5">
-                                            <p className="text-sm text-white/90 leading-relaxed font-medium">{msg.text}</p>
+                                        <div className={`max-w-[70%] border rounded-3xl rounded-br-none px-6 py-4 shadow-2xl ${
+                                            mode === "debate" 
+                                                ? "bg-rose-600/20 border-rose-500/30 shadow-rose-500/5 text-rose-100" 
+                                                : "bg-purple-600/20 border-purple-500/30 shadow-purple-500/5 text-white/90"
+                                            }`}>
+                                            <p className="text-sm leading-relaxed font-bold">{msg.text}</p>
                                         </div>
                                     </div>
                                 );
@@ -533,13 +705,13 @@ export default function PremiumChatPanel({ onClose }) {
                             <div className="flex justify-start animate-in fade-in duration-300">
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 px-1">
-                                        <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-                                        <p className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em]">Synthesizing Response...</p>
+                                        <div className={`w-2 h-2 rounded-full animate-pulse ${mode === "debate" ? "bg-rose-500" : "bg-purple-500"}`} />
+                                        <p className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em]">{isDebating ? "Synthesizing Counter-Argument..." : "Synthesizing Response..."}</p>
                                     </div>
                                     <div className="bg-white/[0.03] border border-white/10 rounded-3xl px-6 py-5 flex gap-1.5 items-center justify-center w-24">
-                                        <div className="w-1.5 h-1.5 bg-purple-500/50 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                        <div className="w-1.5 h-1.5 bg-purple-500/50 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                        <div className="w-1.5 h-1.5 bg-purple-500/50 rounded-full animate-bounce" />
+                                        <div className={`w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.3s] ${mode === "debate" ? "bg-rose-500/50" : "bg-purple-500/50"}`} />
+                                        <div className={`w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.15s] ${mode === "debate" ? "bg-rose-500/50" : "bg-purple-500/50"}`} />
+                                        <div className={`w-1.5 h-1.5 rounded-full animate-bounce ${mode === "debate" ? "bg-rose-500/50" : "bg-purple-500/50"}`} />
                                     </div>
                                 </div>
                             </div>
@@ -561,15 +733,15 @@ export default function PremiumChatPanel({ onClose }) {
                                         e.target.style.height = e.target.scrollHeight + 'px';
                                     }}
                                     onKeyDown={handleKeyDown}
-                                    placeholder={mode === "single" ? (selectedAgent ? `Ask ${selectedAgent.name} anything...` : "Select an agent...") : "Ask the panel a question..."}
-                                    disabled={isLoading || (mode === "single" && !selectedAgent) || (mode === "panel" && panelAgents.length === 0)}
+                                    placeholder={mode === "single" ? (selectedAgent ? `Ask ${selectedAgent.name} anything...` : "Select an agent...") : mode === "debate" ? "Enter a topic for the debate..." : "Ask the panel a question..."}
+                                    disabled={isLoading || (mode === "single" && !selectedAgent) || (mode === "panel" && panelAgents.length === 0) || (mode === "debate" && debateAgents.length !== 2)}
                                     className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-6 py-4 pr-12 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/50 focus:bg-white/[0.08] transition-all disabled:opacity-30 custom-scrollbar resize-none max-h-32"
                                 />
                             </div>
                             <button
                                 onClick={handleSend}
                                 disabled={isLoading || !inputValue.trim()}
-                                className="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-purple-600/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-20 disabled:scale-100 disabled:shadow-none shrink-0"
+                                className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-20 disabled:scale-100 disabled:shadow-none shrink-0 ${mode === "debate" ? "bg-rose-600 shadow-rose-600/20" : "bg-purple-600 shadow-purple-600/20"}`}
                             >
                                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

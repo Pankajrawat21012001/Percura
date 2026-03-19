@@ -61,28 +61,37 @@ ${personaList}
 `;
 
     const systemPrompt = `
-You are a market simulation engine. Evaluate a startup idea against a specific Indian consumer segment.
-You must provide a collective verdict AND individual feedback for each persona provided in the list.
+You are an elite market validation engine evaluating a startup idea against a specific Indian consumer segment.
+You must perform deep Chain-of-Thought reasoning to understand the segment's underlying motivations, cultural context, and financial realities.
 
 RESPONSE FORMAT (JSON):
 {
-  "resonanceScore": number (0-100),
+  "segmentAnalysisRationale": "1-2 paragraphs analyzing the core utility, cultural fit, and economic viability for this segment.",
+  "utilityScore": number (0-100),
+  "culturalFitScore": number (0-100),
+  "affordabilityScore": number (0-100),
+  "resonanceScore": number (0-100) // The final weighted average of the above scores,
   "verdict": "CRITICAL" | "SKEPTICAL" | "NEUTRAL" | "CURIOUS" | "ENTHUSIASTIC",
-  "keyDrivers": string[],
-  "frictionPoints": string[],
+  "predictedAdoptionPattern": "Immediate Trial" | "Wait and See" | "Loyalist to Competitor" | "Hard Rejection",
+  "competitiveAdvantage": "What makes this better than their status quo?",
+  "keyDrivers": ["string"],
+  "frictionPoints": ["string"],
   "willingnessToPay": "High" | "Medium" | "Low" | "Zero",
   "verbatimQuote": "Collective segment voice quote",
   "summary": "2-3 sentence summary",
   "personaFeedbacks": [
      {
+       "reasoning": "1 sentence explaining WHY this persona reacts this way based on their specific profile, income, and habits.",
        "resonanceScore": number,
-       "feedback": "A one-sentence specific reaction from this persona's point of view"
+       "feedback": "A one-sentence specific reaction from this persona's point of view, spoken in their voice/style."
      }
   ]
 }
 
-STRICT: The 'personaFeedbacks' array MUST have exactly ${personas?.length || 0} items matching the order of the personas provided.
-Stay in character for each persona. Use their first_language to infer communication style and trust patterns. Use their hobbies and cultural background to ground their reaction in real Indian daily life. A Gujarati-speaking homemaker reacts very differently from an English-first Bangalore software engineer — reflect this specificity in every feedback line.
+STRICT INSTRUCTIONS:
+1. The 'personaFeedbacks' array MUST have exactly ${personas?.length || 0} items matching the order of the personas provided.
+2. YOU MUST WRITE the 'segmentAnalysisRationale' and persona 'reasoning' fields FIRST before outputting the scores. This is a strict Chain-of-Thought requirement.
+3. Stay deeply grounded in the Indian context. A Gujarati-speaking homemaker reacts very differently from an English-first Bangalore software engineer — reflect this specificity, cultural friction, and price sensitivity in the reasoning.
 `;
 
     const marketContextBlock = idea.zepContext 
@@ -112,13 +121,23 @@ Provide the collective resonance and then a unique, specific feedback line for E
             // Minimal fallback
             const fallbackResonance = 50;
             return {
+                segmentAnalysisRationale: "The engine was unable to generate a deep analysis. Initial matching shows moderate relevance based on demographic alignment.",
+                utilityScore: fallbackResonance,
+                culturalFitScore: fallbackResonance,
+                affordabilityScore: fallbackResonance,
                 resonanceScore: fallbackResonance,
                 verdict: "NEUTRAL",
-                summary: "The engine was unable to generate a deep analysis. Initial matching shows moderate relevance based on demographic alignment.",
+                predictedAdoptionPattern: "Wait and See",
+                competitiveAdvantage: "Unknown",
+                keyDrivers: ["Demographic alignment"],
+                frictionPoints: ["Requires deeper validation"],
+                willingnessToPay: "Medium",
                 verbatimQuote: "It seems interesting, but I need to see more value before I commit.",
+                summary: "The engine was unable to generate a deep analysis.",
                 personaFeedbacks: (personas || []).map(() => ({
+                    reasoning: "Awaiting deeper synthesis of individual profile reaction...",
                     resonanceScore: fallbackResonance,
-                    feedback: "Awaiting deeper synthesis of individual profile reaction..."
+                    feedback: "I am awaiting more information before forming an opinion."
                 }))
             };
         }
@@ -127,6 +146,7 @@ Provide the collective resonance and then a unique, specific feedback line for E
         if (!result.personaFeedbacks || !Array.isArray(result.personaFeedbacks) || result.personaFeedbacks.length === 0) {
             console.log(`⚠️ Segment test missing personaFeedbacks. Generating defaults for ${segment_name}.`);
             result.personaFeedbacks = (personas || []).map(() => ({
+                reasoning: "Fallback reasoning due to incomplete generation.",
                 resonanceScore: result.resonanceScore || 50,
                 feedback: "Based on this profile, the persona would likely prioritize core utility and reliability over novel features."
             }));
