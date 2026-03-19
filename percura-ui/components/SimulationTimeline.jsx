@@ -162,16 +162,9 @@ export default function SimulationTimeline({ weeklySnapshots = [], allEvents = [
                                                             <div style={styles.avatar(config.dotColor)}>
                                                                 {(event.personaName || 'A')[0]}
                                                             </div>
-                                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                <span style={styles.agentName}>
-                                                                    {event.personaName}
-                                                                </span>
-                                                                {(event.occupation || event.city) && (
-                                                                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
-                                                                        {event.occupation || 'Unknown'} • {event.city || 'Unknown'}
-                                                                    </span>
-                                                                )}
-                                                            </div>
+                                                            <span style={styles.agentName}>
+                                                                {event.personaName}
+                                                            </span>
                                                         </div>
                                                         <div style={styles.actionBadge(config.color, config.bgColor)}>
                                                             {config.icon} {config.label}
@@ -186,11 +179,6 @@ export default function SimulationTimeline({ weeklySnapshots = [], allEvents = [
                                                         </span>
                                                         <span style={styles.sentimentTag(event.sentiment)}>
                                                             Sentiment: {(event.sentiment * 100).toFixed(0)}%
-                                                            {event.sentimentDelta && parseFloat(event.sentimentDelta) !== 0 ? (
-                                                                <span style={{ marginLeft: '4px', opacity: 0.8 }}>
-                                                                    ({parseFloat(event.sentimentDelta) > 0 ? '↑' : '↓'} {Math.abs(event.sentimentDelta * 100).toFixed(0)}%)
-                                                                </span>
-                                                            ) : null}
                                                         </span>
                                                     </div>
                                                 </div>

@@ -60,8 +60,6 @@ async function runSimulation(idea, segments, options = {}) {
                 segmentId: segment.segment_id,
                 segmentName: segment.segment_name,
                 name: ep.fullName || persona.metadata?.name || `Persona ${pid}`,
-                occupation: ep.demographics?.occupation || persona.metadata?.occupation || 'Unknown',
-                city: ep.demographics?.city || persona.metadata?.location || 'Unknown',
                 adoptionStyle: ep.behaviorPatterns?.adoptionStyle || 'Early Majority',
                 internalNarrative: ep.internalNarrative || '',
                 communicationStyle: ep.behaviorPatterns?.communicationStyle || 'Casual',
@@ -87,8 +85,6 @@ async function runSimulation(idea, segments, options = {}) {
             action: 'MARKET_EVENT',
             personaName: 'Market',
             segmentName: 'Global',
-            occupation: 'System',
-            city: 'Global',
             description: evt,
             sentiment: 0.5,
             sentimentDelta: 0
@@ -96,7 +92,7 @@ async function runSimulation(idea, segments, options = {}) {
     });
 
     // ── Week 0: Baseline ──
-    weeklySnapshots.push(buildSnapshot(0, segments, personaStates, []));
+    weeklySnapshots.push(buildSnapshot(0, segments, personaStates));
 
     // ── Weeks 1 through N ──
     for (let week = 1; week <= weeks; week++) {
@@ -134,7 +130,6 @@ async function runSimulation(idea, segments, options = {}) {
                     
                     weekEvents.push({
                         week, action: 'DISCOVERY', personaName: ps.name, segmentName: ps.segmentName,
-                        occupation: ps.occupation, city: ps.city,
                         description: experience, sentimentDelta: sentimentDelta.toFixed(2), sentiment: ps.sentimentScore.toFixed(2)
                     });
                 }
@@ -146,7 +141,6 @@ async function runSimulation(idea, segments, options = {}) {
         }
 
         // Step 2: Peer Influence
-        const peerBatch = [];
         for (const segment of segments) {
             const segPersonaIds = (segment.personas || []).map(p => p.persona_id || p.id);
             const segStates = segPersonaIds.map(id => personaStates[id]).filter(Boolean);
@@ -162,80 +156,49 @@ async function runSimulation(idea, segments, options = {}) {
                 if (!hasAdvocate) continue;
 
                 if (Math.random() < config.peerInfluenceChance) {
-                    peerBatch.push(async () => {
-                        ps.heardFromPeers = true;
-                        ps.exposureCount += 1;
-                        // Nudge toward segment average
-                        const nudge = (segAvgSentiment - ps.sentimentScore) * PEER_SENTIMENT_PULL;
-                        ps.sentimentScore = clamp(ps.sentimentScore + nudge, 0, 1);
-                        
-                        const exp = await processReaction(pid, ps, ideaText, week, 'PEER_INFLUENCE', `Their sentiment shifted by ${nudge > 0 ? '+' : ''}${nudge.toFixed(2)} due to peer advocacy.`);
-                        ps.keyExperiences.push(`Week ${week}: ${exp}`);
-                        
-                        weekEvents.push({
-                            week, action: 'PEER_INFLUENCE', personaName: ps.name, segmentName: ps.segmentName,
-                            occupation: ps.occupation, city: ps.city,
-                            description: exp, sentimentDelta: nudge.toFixed(2), sentiment: ps.sentimentScore.toFixed(2)
-                        });
+                    ps.heardFromPeers = true;
+                    ps.exposureCount += 1;
+                    // Nudge toward segment average
+                    const nudge = (segAvgSentiment - ps.sentimentScore) * PEER_SENTIMENT_PULL;
+                    ps.sentimentScore = clamp(ps.sentimentScore + nudge, 0, 1);
+                    ps.keyExperiences.push(`Week ${week}: Heard about it from a colleague/friend`);
+                    
+                    weekEvents.push({
+                        week, action: 'PEER_INFLUENCE', personaName: ps.name, segmentName: ps.segmentName,
+                        description: 'Heard about the product from a colleague/friend', sentimentDelta: nudge.toFixed(2), sentiment: ps.sentimentScore.toFixed(2)
                     });
                 }
             }
         }
-        
-        // Process peer influence in batches
-        for (let i = 0; i < peerBatch.length; i += BATCH_SIZE) {
-            await Promise.allSettled(peerBatch.slice(i, i + BATCH_SIZE).map(fn => fn()));
-            if (i + BATCH_SIZE < peerBatch.length) await delay(BATCH_DELAY_MS);
-        }
 
         // Step 3: Churn Check
-        const churnBatch = [];
         for (const pid of Object.keys(personaStates)) {
             const ps = personaStates[pid];
             if (ps.churned || ps.converted) continue;
             if (ps.exposureCount >= 2 && ps.sentimentScore < config.churnThreshold) {
-                churnBatch.push(async () => {
-                    ps.churned = true;
-                    const exp = await processReaction(pid, ps, ideaText, week, 'CHURN', `Their sentiment is low (${ps.sentimentScore.toFixed(2)}) after ${ps.exposureCount} exposures.`);
-                    ps.keyExperiences.push(`Week ${week}: ${exp}`);
-                    
-                    weekEvents.push({
-                        week, action: 'CHURN', personaName: ps.name, segmentName: ps.segmentName,
-                        occupation: ps.occupation, city: ps.city,
-                        description: exp, sentimentDelta: 0, sentiment: ps.sentimentScore.toFixed(2)
-                    });
+                ps.churned = true;
+                ps.keyExperiences.push(`Week ${week}: Lost interest — churned`);
+                
+                weekEvents.push({
+                    week, action: 'CHURN', personaName: ps.name, segmentName: ps.segmentName,
+                    description: 'Lost interest and churned', sentimentDelta: 0, sentiment: ps.sentimentScore.toFixed(2)
                 });
             }
         }
 
-        for (let i = 0; i < churnBatch.length; i += BATCH_SIZE) {
-            await Promise.allSettled(churnBatch.slice(i, i + BATCH_SIZE).map(fn => fn()));
-            if (i + BATCH_SIZE < churnBatch.length) await delay(BATCH_DELAY_MS);
-        }
-
         // Step 4: Conversion Check
-        const convBatch = [];
         for (const pid of Object.keys(personaStates)) {
             const ps = personaStates[pid];
             if (ps.churned || ps.converted) continue;
             if (ps.sentimentScore >= config.conversionThreshold) {
-                convBatch.push(async () => {
-                    ps.converted = true;
-                    const exp = await processReaction(pid, ps, ideaText, week, 'CONVERSION', `Their sentiment reached the conversion threshold (${ps.sentimentScore.toFixed(2)}).`);
-                    ps.keyExperiences.push(`Week ${week}: ${exp}`);
-                    
-                    weekEvents.push({
-                        week, action: 'CONVERSION', personaName: ps.name, segmentName: ps.segmentName,
-                        occupation: ps.occupation, city: ps.city,
-                        description: exp, sentimentDelta: 0, sentiment: ps.sentimentScore.toFixed(2)
-                    });
+                ps.converted = true;
+                ps.keyExperiences.push(`Week ${week}: Converted — would try/buy`);
+                
+                weekEvents.push({
+                    week, action: 'CONVERSION', personaName: ps.name, segmentName: ps.segmentName,
+                    description: 'Converted and would try/buy the product', sentimentDelta: 0, sentiment: ps.sentimentScore.toFixed(2)
                 });
             }
-        }
-
-        for (let i = 0; i < convBatch.length; i += BATCH_SIZE) {
-            await Promise.allSettled(convBatch.slice(i, i + BATCH_SIZE).map(fn => fn()));
-            if (i + BATCH_SIZE < convBatch.length) await delay(BATCH_DELAY_MS);
         }
         
         // Push events to Zep Graph asynchronously
@@ -245,8 +208,8 @@ async function runSimulation(idea, segments, options = {}) {
 
         allEvents.push(...weekEvents);
 
-        // Build weekly snapshot — pass weekEvents so they are attached to the snapshot
-        const snapshot = buildSnapshot(week, segments, personaStates, weekEvents);
+        // Build weekly snapshot
+        const snapshot = buildSnapshot(week, segments, personaStates);
         weeklySnapshots.push(snapshot);
 
         if (weeklyEventCallback) {
@@ -329,57 +292,9 @@ How does this person react to discovering/encountering the product this week?`;
 }
 
 /**
- * Call Groq to generate a contextual 1-sentence description for Peer Influence, Churn, or Conversion.
- */
-async function processReaction(pid, personaState, ideaText, week, eventType, extraContext = '') {
-    const systemPrompt = `You are simulating a real Indian consumer's internal monologue and reaction.
-EVENT TYPE: ${eventType}
-
-Given their profile, generate a highly specific, one-sentence description of what happened to them this week related to the product concept.
-
-RULES:
-- Keep it under 15 words.
-- Be concrete (e.g., mention specific platforms, feelings, features, or objections).
-- DO NOT use generic phrases like "Lost interest" or "Heard from a friend".
-- For CHURN: specify exactly WHY they decided it's not for them (e.g., price, complexity, prefer existing alternative).
-- For CONVERSION: specify what exact feature or realization pushed them to buy/adopt.
-- For PEER_INFLUENCE: specify who told them (colleague, cousin, WhatsApp group) and what they said.
-
-RESPONSE FORMAT (JSON only):
-{
-  "experience": "The exact short sentence describing their experience"
-}`;
-
-    const userPrompt = `PERSONA: ${personaState.name}
-OCCUPATION: ${personaState.occupation}
-CITY: ${personaState.city}
-ADOPTION STYLE: ${personaState.adoptionStyle}
-INTERNAL NARRATIVE: ${(personaState.internalNarrative || '').substring(0, 300)}
-
-PRODUCT IDEA: "${ideaText}"
-
-EVENT TYPE: ${eventType}
-EXTRA CONTEXT: ${extraContext}
-WEEK: ${week}
-
-Generate the exact short sentence describing their ${eventType} experience this week.`;
-
-    try {
-        const result = await generateAIResponse(systemPrompt, userPrompt, 0.7);
-        if (!result || !result.experience) throw new Error('Empty result');
-        return result.experience;
-    } catch(err) {
-        console.warn(`⚠️ [SIM] Reaction LLM failed for ${pid} [${eventType}]:`, err.message);
-        if (eventType === 'CHURN') return 'Decided the product did not fit their needs after considering it.';
-        if (eventType === 'CONVERSION') return 'Realized the value and decided to adopt the product.';
-        return 'Discussed the product with a peer in their network.';
-    }
-}
-
-/**
  * Build a weekly snapshot from current persona states.
  */
-function buildSnapshot(week, segments, personaStates, weekEvents = []) {
+function buildSnapshot(week, segments, personaStates) {
     const segmentSnapshots = segments.map(segment => {
         const segPersonaIds = (segment.personas || []).map(p => p.persona_id || p.id);
         const segStates = segPersonaIds.map(id => personaStates[id]).filter(Boolean);
@@ -409,27 +324,14 @@ function buildSnapshot(week, segments, personaStates, weekEvents = []) {
 
     const allStates = Object.values(personaStates);
     const totalConverted = allStates.filter(s => s.converted).length;
-    const totalChurned = allStates.filter(s => s.churned).length;
-    const totalActive = allStates.filter(s => !s.churned && !s.converted).length;
     const overallAdoptionCurve = allStates.length > 0
         ? parseFloat((totalConverted / allStates.length).toFixed(3))
         : 0;
 
-    // Attach per-week events with unique IDs so the timeline can render them
-    const events = weekEvents.map((evt, idx) => ({
-        id: `evt_w${week}_${idx}`,
-        ...evt,
-        sentiment: parseFloat(evt.sentiment) || 0.5,
-    }));
-
     return {
         week,
         segmentSnapshots,
-        overallAdoptionCurve,
-        totalConverted,
-        totalChurned,
-        totalActive,
-        events
+        overallAdoptionCurve
     };
 }
 

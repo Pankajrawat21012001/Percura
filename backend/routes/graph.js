@@ -112,28 +112,22 @@ router.post('/data', async (req, res) => {
         const mc = reqMarketContext || idea?.marketContext || null;
 
         if (mc) {
-            (mc.competitors || []).forEach((comp, i) => {
-                const name = typeof comp === 'string' ? comp : (comp.name || `Competitor ${i}`);
-                const detail = typeof comp === 'string' ? comp : (comp.description || name);
-                const cId = `comp_${name.substring(0, 20).replace(/\s+/g, '_').toLowerCase()}`;
-                addNode(cId, name.substring(0, 35), 'Competitor', { detail });
-                addEdge(ideaId, cId, 'COMPETES_WITH', 'COMPETES_WITH', name);
+            (mc.competitors || []).forEach((competitor, i) => {
+                const cId = `comp_${competitor.substring(0, 20).replace(/\s+/g, '_').toLowerCase()}`;
+                addNode(cId, competitor.substring(0, 35), 'Competitor', { detail: competitor });
+                addEdge(ideaId, cId, 'COMPETES_WITH', 'COMPETES_WITH', competitor);
             });
 
             (mc.risks || []).forEach((risk, i) => {
-                const name = typeof risk === 'string' ? risk : (risk.name || `Risk ${i}`);
-                const detail = typeof risk === 'string' ? risk : (risk.description || name);
                 const rId = `risk_${i}`;
-                addNode(rId, name.substring(0, 35), 'Risk', { detail });
-                addEdge(ideaId, rId, 'FACES_RISK', 'FACES_RISK', name);
+                addNode(rId, risk.substring(0, 35), 'Risk', { detail: risk });
+                addEdge(ideaId, rId, 'FACES_RISK', 'FACES_RISK', risk);
             });
 
             (mc.trends || []).forEach((trend, i) => {
-                const name = typeof trend === 'string' ? trend : (trend.name || `Trend ${i}`);
-                const detail = typeof trend === 'string' ? trend : (trend.description || name);
                 const tId = `trend_${i}`;
-                addNode(tId, name.substring(0, 35), 'Trend', { detail });
-                addEdge(tId, ideaId, 'SHAPES', 'SHAPES', name);
+                addNode(tId, trend.substring(0, 35), 'Trend', { detail: trend });
+                addEdge(tId, ideaId, 'SHAPES', 'SHAPES', trend);
             });
         }
 

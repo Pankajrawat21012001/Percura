@@ -1,51 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { groq } = require('../engine/groqService');
+const { generateTextResponse } = require('../engine/groqService');
 const { searchSimulationGraph } = require('../engine/zepService');
 
 /**
- * Tool definitions available to the AI Analyst
- */
-const TOOLS = [
-    {
-        type: "function",
-        function: {
-            name: "search_simulation_graph",
-            description: "Search the Zep knowledge graph for direct evidence from the simulation, including persona reactions, quotes, and behaviors.",
-            parameters: {
-                type: "object",
-                properties: {
-                    query: {
-                        type: "string",
-                        description: "The search query, e.g. 'Why did users churn?' or 'What did they like about the pricing?'",
-                    }
-                },
-                required: ["query"],
-            },
-        },
-    },
-    {
-        type: "function",
-        function: {
-            name: "calculate_aggregate_metrics",
-            description: "Retrieve high-level aggregate metrics from the simulation dataset (e.g. conversion rates, churn numbers).",
-            parameters: {
-                type: "object",
-                properties: {
-                    data_point: {
-                        type: "string",
-                        description: "The metric to look up, e.g. 'total converted', 'adoption curve', 'total personas'",
-                    }
-                },
-                required: ["data_point"],
-            },
-        },
-    }
-];
-
-/**
  * POST /api/report-chat
- * Ask the AI Analyst questions about the simulation data using an Agentic loop.
+ * Ask the AI Analyst questions about the simulation data.
+ * The AI queries Zep for evidence and responds.
  */
 router.post('/', async (req, res) => {
     try {
@@ -56,113 +17,63 @@ router.post('/', async (req, res) => {
         }
 
         console.log(`🤖 [ANALYST] Received question: "${message.substring(0, 50)}..."`);
-        const executedTools = [];
 
-        // Build system message context
+        // Search the Zep graph for relevant evidence
+        let zepEvidence = [];
+        if (graphId) {
+            console.log(`🔗 [ANALYST] Searching graph ${graphId} for evidence...`);
+            zepEvidence = await searchSimulationGraph(graphId, message, 5);
+        }
+
+        // Build simulation data fallback context
         let simContext = '';
         if (simulationResult) {
             const snapshots = simulationResult.weeklySnapshots || [];
             const finalSnap = snapshots[snapshots.length - 1];
-            simContext = `\n[AVAILABLE DATA SUMMARY]:\n- Total personas: ${simulationResult.personaFinalStates ? Object.keys(simulationResult.personaFinalStates).length : 'unknown'}\n- Weeks simulated: ${simulationResult.weeks || 'unknown'}\n- Final converted: ${finalSnap?.totalConverted || 0}\n- Final churned: ${finalSnap?.totalChurned || 0}\n`;
-        }
-
-        const systemMessage = {
-            role: "system",
-            content: `You are an expert Data Analyst and Market Researcher for the Indian market.
-You analyze behavioral simulation data and answer user questions with precision.
-You have access to tools. ALWAYS use "search_simulation_graph" if you need specific persona quotes or reasons.
-If you need high-level numbers, use "calculate_aggregate_metrics".
-Always cite specific data points from the evidence provided.
-Be analytical, concise, and directly address the question. No pleasantries.
-${simContext}
-IDEA: ${simulationResult?.idea?.idea || 'Unknown'}`
-        };
-
-        const messages = [systemMessage];
-
-        // Format and append chat history
-        (chatHistory || []).forEach(msg => {
-            messages.push({
-                role: msg.sender === 'user' ? 'user' : 'assistant',
-                content: msg.text
-            });
-        });
-
-        // Append the current user question
-        messages.push({ role: "user", content: message });
-
-        // 1. Initial LLM Call with Tools
-        console.log(`🤖 [ANALYST] Deciding on tools...`);
-        const initialResponse = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: messages,
-            tools: TOOLS,
-            tool_choice: "auto",
-        });
-
-        const responseMessage = initialResponse.choices[0].message;
-        messages.push(responseMessage); // Add assistant's tool-call response to thread
-
-        // 2. Check for tool calls and execute them
-        if (responseMessage.tool_calls) {
-            for (const toolCall of responseMessage.tool_calls) {
-                const functionName = toolCall.function.name;
-                const args = JSON.parse(toolCall.function.arguments);
-                let toolResult = "";
-
-                console.log(`🔧 [ANALYST] Executing Tool: ${functionName} with args:`, args);
-                executedTools.push(functionName);
-
-                if (functionName === "search_simulation_graph") {
-                    if (graphId) {
-                        const zepEvidence = await searchSimulationGraph(graphId, args.query, 5);
-                        toolResult = zepEvidence.length > 0 
-                            ? zepEvidence.map((e, idx) => `[Evidence ${idx + 1}]: ${e}`).join('\n')
-                            : "No direct evidence found in the graph for this query.";
-                    } else {
-                        toolResult = "Graph ID not provided; cannot search graph.";
-                    }
-                } else if (functionName === "calculate_aggregate_metrics") {
-                    if (simulationResult) {
-                        const snapshots = simulationResult.weeklySnapshots || [];
-                        const finalSnap = snapshots[snapshots.length - 1] || {};
-                        const statesCount = simulationResult.personaFinalStates ? Object.keys(simulationResult.personaFinalStates).length : 0;
-                        toolResult = `Simulation Summary for "${args.data_point}": Total Sample=${statesCount}, Converted=${finalSnap.totalConverted || 0}, Churned=${finalSnap.totalChurned || 0}, Active=${finalSnap.totalActive || 0}. Weekly curve: ${(finalSnap.overallAdoptionCurve || 0)*100}% adoption.`;
-                    } else {
-                        toolResult = "Simulation result data not provided in payload.";
-                    }
-                }
-
-                // Add tool result back to the conversation
-                messages.push({
-                    role: "tool",
-                    tool_call_id: toolCall.id,
-                    content: toolResult,
-                });
-            }
-
-            // 3. Final LLM Call to synthesize the answer
-            console.log(`🤖 [ANALYST] Synthesizing final answer using tool results...`);
-            const finalResponse = await groq.chat.completions.create({
-                model: "llama-3.3-70b-versatile",
-                messages: messages,
-            });
-
-            return res.json({
-                success: true,
-                reply: finalResponse.choices[0].message.content,
-                toolsUsed: executedTools
-            });
+            simContext = `\nSIMULATION STATS:\n- Total personas: ${simulationResult.personaFinalStates ? Object.keys(simulationResult.personaFinalStates).length : 'unknown'}\n- Weeks simulated: ${simulationResult.weeks || 'unknown'}\n- Final converted: ${finalSnap?.totalConverted || 0}\n- Final churned: ${finalSnap?.totalChurned || 0}\n- Final active: ${finalSnap?.totalActive || 0}\n`;
             
-        } else {
-            // No tools were called, the AI just answered directly
-            console.log(`🤖 [ANALYST] Answered directly without tools.`);
-            return res.json({
-                success: true,
-                reply: responseMessage.content,
-                toolsUsed: []
-            });
+            // Add weekly adoption curve
+            if (snapshots.length > 0) {
+                simContext += '\nWEEKLY ADOPTION:\n' + snapshots.map(s => 
+                    `  Week ${s.week}: ${((s.overallAdoptionCurve || 0) * 100).toFixed(1)}% adoption`
+                ).join('\n');
+            }
         }
+
+        const systemPrompt = `You are an expert Data Analyst and Market Researcher for the Indian market.
+You analyze behavioral simulation data and answer user questions with precision.
+Always cite specific data points from the evidence provided (e.g. "Based on Week 3 data..." or "According to the simulation, 4 out of 10 personas...").
+Be analytical, concise, and directly address the question. No pleasantries.
+If the evidence doesn't answer the question, say so honestly and suggest what related data IS available.`;
+
+        const evidenceString = zepEvidence.length > 0 
+            ? zepEvidence.map((e, idx) => `${idx + 1}. ${e}`).join('\n')
+            : 'No direct evidence found in the simulation graph for this query.';
+
+        const formattedHistory = (chatHistory || []).map(msg => `${msg.sender === 'user' ? 'USER' : 'ANALYST'}: ${msg.text}`).join('\n\n');
+
+        const userPrompt = `SIMULATION IDEA:
+${simulationResult?.idea?.idea || 'Unknown product'}
+${simContext}
+
+GRAPH EVIDENCE:
+${evidenceString}
+
+CHAT HISTORY:
+${formattedHistory}
+
+USER QUESTION:
+${message}
+`;
+
+        const analystReply = await generateTextResponse(systemPrompt, userPrompt, 0.5) 
+            || "I am unable to answer that right now. The simulation data may not contain enough information about this topic.";
+
+        res.json({
+            success: true,
+            reply: analystReply,
+            evidenceUsed: zepEvidence
+        });
 
     } catch (error) {
         console.error('[ANALYST ERROR]', error.message);
