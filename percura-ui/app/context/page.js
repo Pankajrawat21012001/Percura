@@ -75,6 +75,7 @@ export default function OntologyContextPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [scanning, setScanning] = useState(false);
+    const [isGraphVisible, setIsGraphVisible] = useState(true);
 
     useEffect(() => {
         if (!idea) {
@@ -99,18 +100,12 @@ export default function OntologyContextPage() {
                 
                 if (!data.success) throw new Error(data.error || "Extraction failed");
                 
-                const ctx = data.context;
-                
-                // 2. Save EVERYTHING into marketContext
-                setMarketContext({
-                    ontology: ctx.ontology || { competitors: [], risks: [], trends: [] },
-                    groqContext: ctx.groqContext || '',
-                    graphId: ctx.graphId
-                });
+                // 2. Save EVERYTHING from the context object (including flat arrays for the backend)
+                setMarketContext(data.context);
 
                 // Update idea only if needed for context injection downstream
-                if (ctx.groqContext !== idea.zepContext) {
-                    setIdea(prev => ({ ...prev, zepContext: ctx.groqContext }));
+                if (data.context.groqContext !== idea.zepContext) {
+                    setIdea(prev => ({ ...prev, zepContext: data.context.groqContext }));
                 }
                 
                 setTimeout(() => setLoading(false), 800);
@@ -288,17 +283,14 @@ export default function OntologyContextPage() {
                                         </div>
                                     </div>
                                     <button 
-                                        onClick={() => {
-                                            const el = document.getElementById('graph-section');
-                                            if (el) el.classList.toggle('hidden');
-                                        }}
+                                        onClick={() => setIsGraphVisible(!isGraphVisible)}
                                         className="text-[11px] font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors"
                                     >
-                                        [ Toggle View ]
+                                        [ {isGraphVisible ? 'Hide' : 'Show'} View ]
                                     </button>
                                 </div>
                                 
-                                <div id="graph-section" className="bg-[#0D0D0D] border border-white/[0.08] rounded-3xl overflow-hidden min-h-[600px] flex flex-col">
+                                <div id="graph-section" className={`bg-[#0D0D0D] border border-white/[0.08] rounded-3xl overflow-hidden min-h-[600px] flex flex-col transition-all duration-300 ${isGraphVisible ? 'opacity-100' : 'hidden opacity-0'}`}>
                                     <GraphExplorer 
                                         headless={true} 
                                         graphId={marketContext?.graphId}

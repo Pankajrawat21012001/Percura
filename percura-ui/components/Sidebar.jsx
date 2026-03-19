@@ -336,8 +336,10 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                 ${!currentSimulationId ? "opacity-25 cursor-not-allowed" : "text-white/50 hover:text-white hover:bg-white/[0.05]"}
                             `}
                         >
-                            <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.06] shrink-0 text-lg group-hover:scale-105 transition-all">
-                                🧠
+                            <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.06] shrink-0 group-hover:scale-105 transition-all">
+                                <svg className="w-4.5 h-4.5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                </svg>
                             </div>
                             <span className={`text-[13px] font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
                                 Interrogation Lab

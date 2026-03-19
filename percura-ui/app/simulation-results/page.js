@@ -11,7 +11,6 @@ import Button from "../../components/ui/Button";
 import DashboardLayout from "../../components/DashboardLayout";
 import ChatPanel from "../../components/ChatPanel";
 import PremiumChatPanel from "../../components/PremiumChatPanel";
-import GraphExplorer from "../../components/GraphExplorer";
 import SimulationTimeline from "../../components/SimulationTimeline";
 import SimulationReport from "../../components/SimulationReport";
 import FlowDescriptionStrip from "../../components/FlowDescriptionStrip";
@@ -33,7 +32,6 @@ export default function SimulationResultsPage() {
     const [loading, setLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isInterrogationOpen, setIsInterrogationOpen] = useState(false);
-    const [isGraphOpen, setIsGraphOpen] = useState(false);
     
     // Task 2: New state for insights
     const [insightData, setInsightData] = useState(null); // { insights: [], nextSteps: [] }
@@ -1274,14 +1272,7 @@ function MarketContextPanel({ marketContext }) {
                 ))}
             </div>
 
-            {/* Premium Knowledge Graph Component */}
-            <div className="mt-8 bg-[#0D0D0D]/60 border border-white/[0.08] rounded-3xl overflow-hidden min-h-[400px] flex flex-col">
-                <GraphExplorer 
-                    headless={true} 
-                    graphId={marketContext?.graphId}
-                    marketContext={marketContext}
-                />
-            </div>
+
         </div>
     );
 }
