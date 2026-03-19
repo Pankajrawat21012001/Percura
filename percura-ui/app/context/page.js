@@ -8,6 +8,9 @@ import Button from "../../components/ui/Button";
 import DashboardLayout from "../../components/DashboardLayout";
 import API_BASE_URL from "../../lib/apiConfig";
 
+import GraphExplorer from "../../components/GraphExplorer";
+import FlowDescriptionStrip from "../../components/FlowDescriptionStrip";
+
 const ShaderPageBackground = dynamic(
     () => import("../../components/ui/shader-background"),
     { ssr: false }
@@ -31,10 +34,37 @@ function LoadingState() {
     }, [steps.length]);
 
     return (
-        <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-16 h-16 rounded-full border-4 border-t-blue-500 border-r-purple-500 border-white/10 animate-spin mb-8" />
-            <h3 className="text-xl font-medium text-white/80 tracking-tight animate-pulse">{steps[step]}</h3>
-            <p className="text-sm text-white/40 mt-4 uppercase tracking-[0.2em]">Neural Extraction Engine</p>
+        <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center justify-center py-10">
+                <div className="w-16 h-16 rounded-full border-4 border-t-blue-500 border-r-purple-500 border-white/10 animate-spin mb-8" />
+                <h3 className="text-xl font-medium text-white/80 tracking-tight animate-pulse">{steps[step]}</h3>
+                <p className="text-sm text-white/40 mt-4 uppercase tracking-[0.2em]">Neural Extraction Engine</p>
+            </div>
+
+            {/* Skeleton Preview */}
+            <div className="w-full max-w-6xl mt-16 space-y-16 opacity-20 pointer-events-none">
+                {[1, 2, 3].map((s) => (
+                    <div key={s} className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-8 bg-white/10 rounded-lg animate-pulse" />
+                            <div className="w-48 h-6 bg-white/10 rounded-md animate-pulse" />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="h-40 bg-white/5 border border-white/10 rounded-2xl animate-pulse shimmer" />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function SectionBadge({ number }) {
+    return (
+        <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/10 flex items-center justify-center text-[11px] font-mono text-white/50 shrink-0">
+            {number}
         </div>
     );
 }
@@ -138,18 +168,17 @@ export default function OntologyContextPage() {
     const ontology = marketContext?.ontology;
 
     return (
-        <DashboardLayout>
-            <div className="relative min-h-screen text-white selection:bg-blue-500/30 overflow-x-hidden pt-32 pb-48">
+        <DashboardLayout currentStep={2}>
+            <div className="relative min-h-screen text-white selection:bg-blue-500/30 overflow-x-hidden pt-6 pb-48">
                 <ShaderPageBackground overlayOpacity={0.9} blur={true} />
                 
                 <div className="relative z-10 max-w-6xl mx-auto px-6">
                     {/* Header */}
                     <div className="mb-12">
                         <div className="flex items-center gap-3 mb-6">
-                            <span className="px-3 py-1.5 bg-white/[0.06] border border-white/15 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
-                                Step 2 / 4
-                            </span>
-                            <span className="text-[10px] text-white/40 font-mono tracking-widest">MARKET ONTOLOGY EXTRACTION</span>
+                            <span className="text-[10px] text-blue-400 font-mono tracking-[0.2em] font-black uppercase">Phase 02</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500/40" />
+                            <span className="text-[10px] text-white/40 font-mono tracking-widest uppercase">Market Ontology Extraction</span>
                         </div>
                         <h1 className="text-4xl font-light tracking-tight mb-4">
                             Market Context Established
@@ -172,11 +201,11 @@ export default function OntologyContextPage() {
                     ) : (
                         <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
                             
-                            {/* Competitors Grid */}
+                             {/* Competitors Grid */}
                             <section>
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="text-white/15 text-sm font-bold">01</span>
-                                    <h2 className="text-xl font-medium text-white/90">Identified Competitors</h2>
+                                <div className="flex items-center gap-4 mb-8">
+                                    <SectionBadge number="01" />
+                                    <h2 className="text-2xl font-normal text-white/90 tracking-tight">Identified Competitors</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {(ontology.competitors || []).map((comp, i) => (
@@ -186,7 +215,7 @@ export default function OntologyContextPage() {
                                             </div>
                                             <div className="flex justify-between items-start mb-3">
                                                 <h3 className="font-bold text-lg text-white/90">{comp.name}</h3>
-                                                <span className={`text-[9px] px-2 py-1 rounded font-bold tracking-widest uppercase ${
+                                                <span className={`text-[11px] px-2 py-1 rounded font-bold tracking-widest uppercase ${
                                                     comp.threatLevel?.toLowerCase() === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white/50'
                                                 }`}>
                                                     {comp.type} • {comp.threatLevel}
@@ -198,11 +227,11 @@ export default function OntologyContextPage() {
                                 </div>
                             </section>
 
-                            {/* Risks Grid */}
+                             {/* Risks Grid */}
                             <section>
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="text-white/15 text-sm font-bold">02</span>
-                                    <h2 className="text-xl font-medium text-white/90">Market Risks & Regulations</h2>
+                                <div className="flex items-center gap-4 mb-8">
+                                    <SectionBadge number="02" />
+                                    <h2 className="text-2xl font-normal text-white/90 tracking-tight">Market Risks & Regulations</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {(ontology.risks || []).map((risk, i) => (
@@ -211,7 +240,7 @@ export default function OntologyContextPage() {
                                             <div>
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <h3 className="font-medium text-white/90">{risk.name}</h3>
-                                                    <span className="text-[9px] px-2 py-0.5 border border-white/10 rounded text-white/40 uppercase tracking-wider">{risk.category}</span>
+                                                    <span className="text-[11px] px-2 py-0.5 border border-white/10 rounded text-white/40 uppercase tracking-wider">{risk.category}</span>
                                                 </div>
                                                 <p className="text-sm text-white/50 leading-relaxed font-light">{risk.description}</p>
                                             </div>
@@ -220,11 +249,11 @@ export default function OntologyContextPage() {
                                 </div>
                             </section>
 
-                            {/* Macro Trends */}
+                             {/* Macro Trends */}
                             <section>
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="text-white/15 text-sm font-bold">03</span>
-                                    <h2 className="text-xl font-medium text-white/90">Behavioral Macro Trends</h2>
+                                <div className="flex items-center gap-4 mb-8">
+                                    <SectionBadge number="03" />
+                                    <h2 className="text-2xl font-normal text-white/90 tracking-tight">Behavioral Macro Trends</h2>
                                 </div>
                                 <div className="flex flex-col gap-3">
                                     {(ontology.trends || []).map((trend, i) => (
@@ -243,6 +272,52 @@ export default function OntologyContextPage() {
                                             <div className="text-[10px] uppercase font-mono tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full whitespace-nowrap">
                                                 {trend.direction}
                                             </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                             {/* Market Knowledge Graph */}
+                            <section className="border-t border-white/[0.05] pt-16">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center gap-4">
+                                        <SectionBadge number="04" />
+                                        <div>
+                                            <h2 className="text-2xl font-normal text-white/90 tracking-tight">Market Knowledge Graph</h2>
+                                            <span className="text-[10px] text-blue-400/60 uppercase tracking-widest font-black">Powered by Zep Cloud</span>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            const el = document.getElementById('graph-section');
+                                            if (el) el.classList.toggle('hidden');
+                                        }}
+                                        className="text-[11px] font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors"
+                                    >
+                                        [ Toggle View ]
+                                    </button>
+                                </div>
+                                
+                                <div id="graph-section" className="bg-[#0D0D0D] border border-white/[0.08] rounded-3xl overflow-hidden min-h-[600px] flex flex-col">
+                                    <GraphExplorer 
+                                        headless={true} 
+                                        graphId={marketContext?.graphId}
+                                        idea={idea}
+                                        marketContext={marketContext}
+                                    />
+                                </div>
+
+                                <div className="mt-6 flex flex-wrap gap-6 items-center justify-center">
+                                    {[
+                                        { label: 'Startup Idea', color: 'bg-purple-500' },
+                                        { label: 'Competitor', color: 'bg-red-500' },
+                                        { label: 'Market Risk', color: 'bg-amber-500' },
+                                        { label: 'Behavioral Trend', color: 'bg-blue-500' },
+                                        { label: 'Market Entity (Zep)', color: 'bg-indigo-900' }
+                                    ].map((l, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${l.color}`} />
+                                            <span className="text-[10px] uppercase tracking-widest text-white/30 font-bold">{l.label}</span>
                                         </div>
                                     ))}
                                 </div>

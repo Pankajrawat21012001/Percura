@@ -33,15 +33,15 @@ export default function ExecutionTimeline({ trace = [], idea = {}, stats = {} })
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h2 className="text-[10px] uppercase tracking-[0.4em] text-blue-400 font-black mb-1">● Execution Timeline</h2>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest">
+                    <h2 className="text-[11px] uppercase tracking-[0.4em] text-blue-400 font-black mb-1">● Execution Timeline</h2>
+                    <p className="text-[11px] text-white/30 uppercase tracking-widest">
                         Segments {stats.segmentCount || '—'}/{stats.segmentCount || '—'} &nbsp;&middot;&nbsp;
                         Elapsed {minutes}m {seconds}s &nbsp;&middot;&nbsp;
                         API Calls {trace.length} &nbsp;&middot;&nbsp;
                         Personas {stats.personaCount || '—'}
                     </p>
                 </div>
-                <span className="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-bold uppercase tracking-widest">
+                <span className="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 font-bold uppercase tracking-widest">
                     Completed
                 </span>
             </div>
@@ -54,13 +54,13 @@ export default function ExecutionTimeline({ trace = [], idea = {}, stats = {} })
                         className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-white/10 transition-all cursor-pointer"
                         onClick={() => setExpandedStep(expandedStep === i ? null : i)}
                     >
-                        <span className={`text-[10px] font-bold ${statusColor[t.status] || 'text-white/30'}`}>
+                        <span className={`text-[11px] font-bold ${statusColor[t.status] || 'text-white/30'}`}>
                             {statusIcon[t.status] || '●'}
                         </span>
-                        <span className="text-[10px] text-white/25 font-bold w-6">{String(i + 1).padStart(2, '0')}</span>
+                        <span className="text-[11px] text-white/25 font-bold w-6">{String(i + 1).padStart(2, '0')}</span>
                         <span className="flex-1 text-[11px] text-white/70 font-medium">{t.label}</span>
                         {t.status === 'done' || t.status === 'complete' ? (
-                            <span className="text-[10px] text-white/20 uppercase tracking-widest font-bold">
+                            <span className="text-[11px] text-white/20 uppercase tracking-widest font-bold">
                                 {t.status === 'complete' ? 'Complete' : 'Done'}
                             </span>
                         ) : null}
@@ -73,7 +73,7 @@ export default function ExecutionTimeline({ trace = [], idea = {}, stats = {} })
                 <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 animate-in fade-in duration-300">
                     <div className="flex items-center justify-between mb-4">
                         <h4 className="text-xs font-bold text-white/80 uppercase tracking-wider">{trace[expandedStep].label}</h4>
-                        <span className="text-[10px] text-white/25 font-mono">
+                        <span className="text-[11px] text-white/25 font-mono">
                             {trace[expandedStep].timestamp || '—'}
                         </span>
                     </div>
@@ -81,7 +81,7 @@ export default function ExecutionTimeline({ trace = [], idea = {}, stats = {} })
                     {/* Tool Call Badge */}
                     {trace[expandedStep].toolName && (
                         <div className="mb-4">
-                            <span className="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-[10px] text-purple-400 font-bold">
+                            <span className="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-400 font-bold">
                                 ⚡ {trace[expandedStep].toolName}
                             </span>
                         </div>
@@ -92,7 +92,7 @@ export default function ExecutionTimeline({ trace = [], idea = {}, stats = {} })
                         <div className="space-y-2 mb-4">
                             {Object.entries(trace[expandedStep].details).map(([key, val]) => (
                                 <div key={key} className="flex items-start gap-4">
-                                    <span className="text-[9px] text-white/25 uppercase tracking-widest font-bold w-28 shrink-0 pt-0.5">{key}</span>
+                                    <span className="text-[11px] text-white/25 uppercase tracking-widest font-bold w-28 shrink-0 pt-0.5">{key}</span>
                                     <span className="text-[11px] text-white/60 font-normal leading-relaxed">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
                                 </div>
                             ))}
@@ -101,8 +101,8 @@ export default function ExecutionTimeline({ trace = [], idea = {}, stats = {} })
 
                     {/* Latency */}
                     <div className="flex items-center gap-2 pt-3 border-t border-white/5">
-                        <span className="text-[9px] text-white/20 uppercase tracking-widest font-bold">Latency</span>
-                        <span className="text-[10px] text-white/50 font-mono">
+                        <span className="text-[11px] text-white/20 uppercase tracking-widest font-bold">Latency</span>
+                        <span className="text-[11px] text-white/50 font-mono">
                             {trace[expandedStep].latencyMs ? `${(trace[expandedStep].latencyMs / 1000).toFixed(1)}s` : '—'}
                         </span>
                     </div>
@@ -112,18 +112,18 @@ export default function ExecutionTimeline({ trace = [], idea = {}, stats = {} })
             {/* Simulation Start Context */}
             {idea?.idea && (
                 <div className="mt-8 pt-6 border-t border-white/5">
-                    <h4 className="text-[9px] uppercase tracking-[0.3em] text-white/25 font-bold mb-3">Simulation Input</h4>
+                    <h4 className="text-[11px] uppercase tracking-[0.3em] text-white/25 font-bold mb-3">Simulation Input</h4>
                     <div className="space-y-2">
                         <div className="flex gap-4">
-                            <span className="text-[9px] text-white/20 uppercase tracking-widest font-bold w-20 shrink-0">Idea</span>
+                            <span className="text-[11px] text-white/20 uppercase tracking-widest font-bold w-20 shrink-0">Idea</span>
                             <span className="text-[11px] text-white/60">{idea.idea}</span>
                         </div>
                         <div className="flex gap-4">
-                            <span className="text-[9px] text-white/20 uppercase tracking-widest font-bold w-20 shrink-0">Industry</span>
+                            <span className="text-[11px] text-white/20 uppercase tracking-widest font-bold w-20 shrink-0">Industry</span>
                             <span className="text-[11px] text-white/60">{idea.industry || 'General'}</span>
                         </div>
                         <div className="flex gap-4">
-                            <span className="text-[9px] text-white/20 uppercase tracking-widest font-bold w-20 shrink-0">Target</span>
+                            <span className="text-[11px] text-white/20 uppercase tracking-widest font-bold w-20 shrink-0">Target</span>
                             <span className="text-[11px] text-white/60">{idea.targetAudience || 'General public'}</span>
                         </div>
                     </div>

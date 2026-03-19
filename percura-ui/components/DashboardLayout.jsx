@@ -2,41 +2,36 @@
 
 import React, { useState } from "react";
 import Sidebar from "./Sidebar";
+import FlowDescriptionStrip from "./FlowDescriptionStrip";
 
-export default function DashboardLayout({ children, rightPanel }) {
+export default function DashboardLayout({ children, rightPanel, currentStep }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
 
     return (
         <div className="flex min-h-screen bg-black font-sans selection:bg-purple-500/30">
-            {/* Left Sidebar */}
-            <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+            {/* Left Sidebar - Fixed on desktop, slide-out on mobile */}
+            <Sidebar 
+                isOpen={isSidebarOpen} 
+                setIsOpen={setIsSidebarOpen} 
+                currentStep={currentStep} 
+            />
 
             {/* Main Content Area */}
-            <main className="flex-1 w-full relative">
+            <main className="flex-1 w-full relative lg:pl-24 transition-all duration-500">
                 {/* Header for small screens */}
                 <header className="lg:hidden flex items-center justify-between p-4 border-b border-white/10 bg-black/50 backdrop-blur-md z-30">
                     <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-white/60">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                     <span className="text-sm font-bold tracking-tighter">PERCURA</span>
-                    <div className="w-10" /> {/* Spacer to keep title centered */}
+                    <div className="w-10" />
                 </header>
 
-                {children}
-
-                {/* Floating Sidebar Toggle — Top Left */}
-                <button
-                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className={`
-                        fixed top-6 left-6 z-[80] p-4 rounded-2xl bg-white text-black shadow-2xl transition-all duration-500 hover:scale-110 active:scale-95
-                        ${isSidebarOpen ? "-translate-x-32 pointer-events-none" : "translate-x-0 pointer-events-auto"}
-                    `}
-                    title="Menu"
-                >
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                </button>
-
+                <div className="py-12">
+                    <FlowDescriptionStrip currentStep={currentStep || 1} />
+                    {children}
+                </div>
 
             </main>
 

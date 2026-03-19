@@ -218,7 +218,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl">
             <div className="flex items-center justify-between mb-10">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold mb-2">Your Lab</p>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-white/30 font-bold mb-2">Your Lab</p>
                 <h2 className="text-2xl font-light tracking-tight">Past Simulations</h2>
               </div>
               <Link href="/validate" className="text-xs text-purple-400 hover:text-purple-300 transition-colors uppercase tracking-widest font-bold">
@@ -236,8 +236,8 @@ export default function LandingPage() {
                 return (
                   <div key={entry.id} className="p-5 rounded-2xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.12] transition-all duration-300 group">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-[9px] uppercase tracking-widest text-white/25 font-bold">{timeAgo}</span>
-                      <span className={`text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full
+                      <span className="text-[11px] uppercase tracking-widest text-white/25 font-bold">{timeAgo}</span>
+                      <span className={`text-[11px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full
                         ${adoptionRate >= 50 ? 'text-emerald-400/80 bg-emerald-500/10' : adoptionRate >= 25 ? 'text-amber-400/80 bg-amber-500/10' : 'text-rose-400/80 bg-rose-500/10'}`}>
                         {adoptionRate}% adopted
                       </span>

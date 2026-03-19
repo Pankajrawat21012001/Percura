@@ -9,6 +9,8 @@ export const metadata = {
   manifest: "/site.webmanifest",
 };
 
+import { ToastProvider } from "../context/ToastContext";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -23,7 +25,9 @@ export default function RootLayout({ children }) {
       <body className="bg-black text-white min-h-screen antialiased">
         <AuthProvider>
           <IdeaProvider>
-            {children}
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </IdeaProvider>
         </AuthProvider>
       </body>

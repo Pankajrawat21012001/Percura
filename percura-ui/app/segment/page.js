@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { db } from "../../lib/firebase";
 import { doc, addDoc, updateDoc, collection, serverTimestamp } from "firebase/firestore";
 import API_BASE_URL from "../../lib/apiConfig";
+import FlowDescriptionStrip from "../../components/FlowDescriptionStrip";
 
 const ShaderPageBackground = dynamic(
     () => import("../../components/ui/shader-background"),
@@ -233,15 +234,14 @@ export default function SegmentPage() {
             setIsSimulating(false);
         }
     };
-
     return (
-        <div className="relative min-h-screen text-white bg-black selection:bg-purple-500/30 overflow-x-hidden">
+        <DashboardLayout currentStep={3}>
             <ShaderPageBackground overlayOpacity={0.8} blur={true} />
 
-            <div className="relative z-10 max-w-6xl mx-auto px-6 py-24 pb-48">
+            <div className="relative z-10 max-w-6xl mx-auto px-6 pt-6 pb-48">
                 {/* Header Section */}
                 <div className="text-center mb-20">
-                    <p className="text-[10px] uppercase tracking-[0.4em] text-purple-400 font-black mb-4 flex items-center justify-center gap-3">
+                    <p className="text-[11px] uppercase tracking-[0.4em] text-purple-400 font-black mb-4 flex items-center justify-center gap-3">
                         <span className="w-10 h-[1px] bg-purple-500/30" />
                         {segments.length} Look-alike Segments Identified
                         <span className="w-10 h-[1px] bg-purple-500/30" />
@@ -283,7 +283,7 @@ export default function SegmentPage() {
                         <div className="p-8 pb-4 flex flex-col h-full">
                             <div className="flex justify-between items-start mb-6">
                                 <div>
-                                    <span className="text-[9px] uppercase tracking-[0.2em] text-purple-400 font-bold block mb-2">Custom Segment</span>
+                                    <span className="text-[11px] uppercase tracking-[0.2em] text-purple-400 font-bold block mb-2">Custom Segment</span>
                                     <h3 className="text-xl font-normal text-white">Manual Audience</h3>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -295,7 +295,7 @@ export default function SegmentPage() {
                             </div>
 
                             <div className="space-y-4 mb-8">
-                                <div className="flex justify-between items-center text-[10px] uppercase tracking-widest text-white/40">
+                                <div className="flex justify-between items-center text-[11px] uppercase tracking-widest text-white/40">
                                     <span>Control</span>
                                     <span className="text-purple-400 font-bold">User Defined</span>
                                 </div>
@@ -308,27 +308,27 @@ export default function SegmentPage() {
                             <div className="flex-1 space-y-3 mb-8">
                                 {customSegment.personas.length > 0 ? (
                                     customSegment.personas.slice(0, 3).map((p, idx) => (
-                                        <div key={idx} className="p-3 rounded-xl bg-white/[0.03] border border-white/5 flex gap-3 text-[10px] items-center">
-                                            <div className="w-6 h-6 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-white/40">👤</div>
-                                            <div className="flex-1 truncate">
-                                                <p className="text-white/80 font-bold truncate">{p.metadata.name || p.metadata.occupation}</p>
-                                                <p className="text-white/30 truncate">{p.metadata.age}Y · {p.metadata.state}</p>
-                                            </div>
-                                            <button 
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleRemoveCustomPersona(p.persona_id);
-                                                }}
-                                                className="w-6 h-6 shrink-0 flex items-center justify-center text-white/20 hover:bg-red-500/10 hover:text-red-400 rounded-md transition-all"
-                                                title="Remove Persona"
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
+                                        <div key={idx} className="p-3 rounded-xl bg-white/[0.03] border border-white/5 flex gap-3 text-[11px] items-center">
+                                             <div className="w-6 h-6 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-white/40">👤</div>
+                                             <div className="flex-1 truncate">
+                                                 <p className="text-white/80 font-bold truncate">{p.metadata.name || p.metadata.occupation}</p>
+                                                 <p className="text-white/30 truncate">{p.metadata.age}Y · {p.metadata.state}</p>
+                                             </div>
+                                             <button 
+                                                 onClick={(e) => {
+                                                     e.stopPropagation();
+                                                     handleRemoveCustomPersona(p.persona_id);
+                                                 }}
+                                                 className="w-6 h-6 shrink-0 flex items-center justify-center text-white/20 hover:bg-red-500/10 hover:text-red-400 rounded-md transition-all"
+                                                 title="Remove Persona"
+                                             >
+                                                 ✕
+                                             </button>
+                                         </div>
                                     ))
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center text-center opacity-20 border-2 border-dashed border-white/5 rounded-2xl p-6">
-                                        <p className="text-[10px] tracking-widest uppercase mb-2">Empty Bucket</p>
+                                        <p className="text-[11px] tracking-widest uppercase mb-2">Empty Bucket</p>
                                     </div>
                                 )}
                             </div>
@@ -348,45 +348,45 @@ export default function SegmentPage() {
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div className="fixed bottom-12 left-0 w-full flex justify-center px-8 z-40 pointer-events-none">
-                    <div className="max-w-2xl w-full bg-[#080808]/90 backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-4 flex gap-4 pointer-events-auto shadow-2xl">
+            <div className="fixed bottom-12 left-0 w-full flex justify-center px-8 z-40 pointer-events-none">
+                <div className="max-w-2xl w-full bg-[#080808]/90 backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-4 flex gap-4 pointer-events-auto shadow-2xl">
+                    <Button 
+                        onClick={() => router.push("/validate")}
+                        variant="ghost"
+                        className="px-8 text-[11px] uppercase tracking-[0.2em] font-bold"
+                    >
+                        Modify Idea
+                    </Button>
+                    {phase === "selection" && (
                         <Button 
-                            onClick={() => router.push("/validate")}
-                            variant="ghost"
-                            className="px-8 text-[10px] uppercase tracking-[0.2em] font-bold"
+                            disabled={selectedSegments.size === 0 || isSimulating}
+                            onClick={handleRunPulseTest}
+                            showArrow={true}
+                            className="flex-1 uppercase tracking-widest text-[11px]"
                         >
-                            Modify Idea
+                            Run Deep Pulse Validation
                         </Button>
-                        {phase === "selection" && (
-                            <Button 
-                                disabled={selectedSegments.size === 0 || isSimulating}
-                                onClick={handleRunPulseTest}
-                                showArrow={true}
-                                className="flex-1 uppercase tracking-widest text-[11px]"
-                            >
-                                Run Deep Pulse Validation
-                            </Button>
-                        )}
-                        {phase === "pulsing" && (
-                            <Button 
-                                disabled={true}
-                                className="flex-1 uppercase tracking-widest text-[11px] opacity-70"
-                            >
-                                Running Zero-Shot Context Validation...
-                            </Button>
-                        )}
-                        {phase === "validated" && (
-                            <Button 
-                                disabled={isSimulating}
-                                onClick={handleRunSimulationFinal}
-                                showArrow={!isSimulating}
-                                className="flex-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500/30 uppercase tracking-widest text-[11px]"
-                            >
-                                {isSimulating ? "Initializing Horizon..." : `Proceed to 8-Week Simulation`}
-                            </Button>
-                        )}
-                    </div>
+                    )}
+                    {phase === "pulsing" && (
+                        <Button 
+                            disabled={true}
+                            className="flex-1 uppercase tracking-widest text-[11px] opacity-70"
+                        >
+                            Running Zero-Shot Context Validation...
+                        </Button>
+                    )}
+                    {phase === "validated" && (
+                        <Button 
+                            disabled={isSimulating}
+                            onClick={handleRunSimulationFinal}
+                            showArrow={!isSimulating}
+                            className="flex-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500/30 uppercase tracking-widest text-[11px]"
+                        >
+                            {isSimulating ? "Initializing Horizon..." : `Proceed to 8-Week Simulation`}
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -398,19 +398,19 @@ export default function SegmentPage() {
                         <h2 className="text-2xl font-light text-white mb-2">Create Target Persona</h2>
                         <div className="grid grid-cols-2 gap-6 mb-8 mt-8">
                             <div className="col-span-2">
-                                <label className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Full Name</label>
+                                <label className="text-[11px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Full Name</label>
                                 <input type="text" placeholder="e.g. Ramesh Singh" value={newPersona.name} onChange={e => setNewPersona({...newPersona, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20" />
                             </div>
                             <div>
-                                <label className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Occupation</label>
+                                <label className="text-[11px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Occupation</label>
                                 <input type="text" placeholder="e.g. Software Engineer" value={newPersona.occupation} onChange={e => setNewPersona({...newPersona, occupation: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20" />
                             </div>
                             <div>
-                                <label className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Age</label>
+                                <label className="text-[11px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Age</label>
                                 <input type="number" placeholder="e.g. 25" value={newPersona.age} onChange={e => setNewPersona({...newPersona, age: parseInt(e.target.value) || ""})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20" />
                             </div>
                             <div className="col-span-2">
-                                <label className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Summary</label>
+                                <label className="text-[11px] uppercase tracking-widest text-white/30 font-bold mb-2 block">Summary</label>
                                 <textarea placeholder="A brief description of this target user..." value={newPersona.summary} onChange={e => setNewPersona({...newPersona, summary: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white h-24 placeholder-white/20" />
                             </div>
                         </div>
@@ -424,7 +424,7 @@ export default function SegmentPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </DashboardLayout>
     );
 }
 
@@ -433,20 +433,49 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
     
     // Demographic shortcuts from profile
     const profile = segment.profile || {};
+    const verdict = pulseResult?.verdict;
     
+    // Define dynamic styles based on verdict and selection
+    const getVerdictStyles = () => {
+        if (!verdict) {
+            return isSelected 
+                ? "border-purple-500/50 bg-[#121212] shadow-[0_20px_50px_-20px_rgba(168,85,247,0.15)]" 
+                : "border-white/10 bg-[#0A0A0A] hover:border-white/30";
+        }
+
+        const isPositive = ['ENTHUSIASTIC', 'CURIOUS'].includes(verdict);
+        const isNeutral = verdict === 'NEUTRAL';
+        const isNegative = ['SKEPTICAL', 'CRITICAL'].includes(verdict);
+        if (isPositive) {
+            return isSelected
+                ? "border-emerald-500/50 bg-[#0d1210] shadow-[0_0_60px_-15px_rgba(16,185,129,0.2)]"
+                : "border-white/10 bg-[#0A0A0A] hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]";
+        }
+        if (isNeutral) {
+            return isSelected
+                ? "border-amber-500/40 bg-[#12110d] shadow-[0_0_50px_-15px_rgba(245,158,11,0.15)]"
+                : "border-white/10 bg-[#0A0A0A] hover:border-amber-500/30 hover:shadow-[0_0_15px_rgba(245,158,11,0.05)]";
+        }
+        if (isNegative) {
+            return isSelected
+                ? "border-red-500/30 bg-[#120d0d] shadow-[0_0_40px_-15px_rgba(239,68,68,0.1)]"
+                : "border-white/10 bg-[#0A0A0A] hover:border-red-500/20 hover:shadow-[0_0_10px_rgba(239,68,68,0.05)]";
+        }
+        
+        return "border-white/10 bg-[#0A0A0A]";
+    };
+
     return (
         <div 
             onClick={onToggle}
             className={`
             relative rounded-[2rem] border transition-all duration-700 p-8 flex flex-col h-full group cursor-pointer
-            ${isSelected 
-                ? "border-purple-500/50 bg-[#121212] shadow-[0_20px_50px_-20px_rgba(168,85,247,0.15)]" 
-                : "border-white/10 bg-[#0A0A0A] hover:border-white/20"}
+            ${getVerdictStyles()}
         `}>
             {/* Index & Selection Status */}
             <div className="flex justify-between items-start mb-6">
                 <div>
-                    <span className="text-[9px] uppercase tracking-[0.3em] text-purple-400/60 font-black block mb-2">Segment Cluster {index}</span>
+                    <span className="text-[11px] uppercase tracking-[0.3em] text-purple-400/60 font-black block mb-2">Segment Cluster {index}</span>
                     <h3 className="text-2xl font-normal text-white leading-tight">{segment.segment_name}</h3>
                 </div>
                 <div className={`w-6 h-6 shrink-0 rounded-full border flex items-center justify-center transition-all ${isSelected ? "bg-purple-500 border-purple-500" : "border-white/10"}`}>
@@ -457,12 +486,12 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
             {/* Strategic Resonance Bar, fallback to cosine match if no pulse available */}
             <div className="mb-8 p-4 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden">
                 {pulseResult && (
-                    <div className="absolute top-0 right-0 px-2 py-1 bg-white/10 rounded-bl-lg text-[8px] uppercase tracking-widest font-bold">
+                    <div className="absolute top-0 right-0 px-2 py-1 bg-white/10 rounded-bl-lg text-[11px] uppercase tracking-widest font-bold">
                         Pulse Verified
                     </div>
                 )}
                 <div className="flex justify-between items-center mb-2.5">
-                    <span className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Total Resonance</span>
+                    <span className="text-[11px] uppercase tracking-widest text-white/30 font-bold">Total Resonance</span>
                     <span className="text-xs font-black italic text-purple-400">
                         {pulseResult ? Math.round(pulseResult.resonanceScore || 0) : (segment.resonance_score || 0)}%
                     </span>
@@ -478,15 +507,15 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
                 {pulseResult && (
                     <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/10">
                         <div>
-                            <span className="block text-[8px] uppercase tracking-widest text-white/30 font-bold">Utility</span>
+                            <span className="block text-[11px] uppercase tracking-widest text-white/30 font-bold">Utility</span>
                             <span className="block text-sm font-bold text-white/90">{Math.round(pulseResult.utilityScore || 0)}%</span>
                         </div>
                         <div>
-                            <span className="block text-[8px] uppercase tracking-widest text-white/30 font-bold">Culture</span>
+                            <span className="block text-[11px] uppercase tracking-widest text-white/30 font-bold">Culture</span>
                             <span className="block text-sm font-bold text-white/90">{Math.round(pulseResult.culturalFitScore || 0)}%</span>
                         </div>
                         <div>
-                            <span className="block text-[8px] uppercase tracking-widest text-white/30 font-bold">Afford</span>
+                            <span className="block text-[11px] uppercase tracking-widest text-white/30 font-bold">Afford</span>
                             <span className="block text-sm font-bold text-white/90">{Math.round(pulseResult.affordabilityScore || 0)}%</span>
                         </div>
                     </div>
@@ -497,13 +526,13 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
             <div className="mb-8">
                 {pulseResult ? (
                     <div>
-                        <div className="inline-block px-2 py-1 rounded bg-white/10 border border-white/20 mb-3 text-[9px] uppercase tracking-widest font-bold">
+                        <div className="inline-block px-2 py-1 rounded bg-white/10 border border-white/20 mb-3 text-[11px] uppercase tracking-widest font-bold">
                             Verdict: <span className={pulseResult.verdict === 'CRITICAL' || pulseResult.verdict === 'SKEPTICAL' ? 'text-red-400' : 'text-emerald-400'}>{pulseResult.verdict}</span>
                         </div>
                         <p className="text-sm font-light text-white/70 leading-relaxed italic border-l-2 border-purple-500/50 pl-3">
                             "{pulseResult.verbatimQuote}"
                         </p>
-                        <p className="text-[10px] text-white/40 mt-3 font-normal uppercase tracking-wide">
+                        <p className="text-[11px] text-white/40 mt-3 font-normal uppercase tracking-wide">
                             Predicted Adoption: <strong className="text-white/80">{pulseResult.predictedAdoptionPattern}</strong>
                         </p>
                     </div>
@@ -549,11 +578,11 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
                                             return rawName;
                                         })()}
                                     </h4>
-                                    <span className="text-[9px] text-purple-400 font-bold">{Math.round((p.similarity_score || 0) * 100)}% Match</span>
+                                    <span className="text-[10px] text-purple-400 font-bold">{Math.round((p.similarity_score || 0) * 100)}% Match</span>
                                 </div>
-                                <p className="text-[10px] text-white/40 leading-relaxed font-normal">
-                                    {p.metadata?.age}Y · {p.metadata?.occupation} · {p.metadata?.state}
-                                </p>
+                                 <p className="text-[11px] text-white/40 leading-relaxed font-normal">
+                                     {p.metadata?.age}Y · {p.metadata?.occupation} · {p.metadata?.state}
+                                 </p>
                             </div>
                         ))}
                     </div>

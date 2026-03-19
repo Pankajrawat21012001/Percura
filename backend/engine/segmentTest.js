@@ -67,9 +67,9 @@ You must perform deep Chain-of-Thought reasoning to understand the segment's und
 RESPONSE FORMAT (JSON):
 {
   "segmentAnalysisRationale": "1-2 paragraphs analyzing the core utility, cultural fit, and economic viability for this segment.",
-  "utilityScore": number (0-100),
-  "culturalFitScore": number (0-100),
-  "affordabilityScore": number (0-100),
+  "utilityScore": number (0-100), // how much this segment values the core function and primary problem-solving ability
+  "culturalFitScore": number (0-100), // how well the product fits their specific lifestyle, social norms, and regional habits
+  "affordabilityScore": number (0-100), // how affordable it feels relative to their income bracket and price sensitivity
   "resonanceScore": number (0-100) // The final weighted average of the above scores,
   "verdict": "CRITICAL" | "SKEPTICAL" | "NEUTRAL" | "CURIOUS" | "ENTHUSIASTIC",
   "predictedAdoptionPattern": "Immediate Trial" | "Wait and See" | "Loyalist to Competitor" | "Hard Rejection",

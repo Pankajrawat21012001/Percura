@@ -14,7 +14,8 @@ import PremiumChatPanel from "../../components/PremiumChatPanel";
 import GraphExplorer from "../../components/GraphExplorer";
 import SimulationTimeline from "../../components/SimulationTimeline";
 import SimulationReport from "../../components/SimulationReport";
-import ExecutionTimeline from "../../components/ExecutionTimeline";
+import FlowDescriptionStrip from "../../components/FlowDescriptionStrip";
+import { useToast } from "../../context/ToastContext";
 import API_BASE_URL from "../../lib/apiConfig";
 
 const ShaderPageBackground = dynamic(
@@ -26,6 +27,7 @@ export default function SimulationResultsPage() {
     const router = useRouter();
     const { currentSimulationId, setCurrentSimulationId, idea, simulationResults, setSimulationResults, setIdea, fullSelectedSegments } = useIdea();
     const { user, loading: authLoading } = useAuth();
+    const { showToast } = useToast();
     
     const [simDoc, setSimDoc] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -321,7 +323,7 @@ export default function SimulationResultsPage() {
             console.log("[PDF] Generation Successful");
         } catch (err) {
             console.error("[PDF] Generation Failed:", err);
-            alert("PDF export failed. Please try again or use browser Print → Save as PDF (Ctrl+P) as an alternative.");
+            showToast("error", "Export Failed", "PDF export failed. Please try again or use browser Print → Save as PDF (Ctrl+P) as an alternative.");
         } finally {
             // Restore patched inline styles
             patchedElements.forEach(({ el, patches }) => {
@@ -329,15 +331,14 @@ export default function SimulationResultsPage() {
                     el.style[prop] = original;
                 });
             });
-            document.body.classList.remove('is-exporting-pdf');
         }
     };
 
-    if (loading) {
-        return <div className="min-h-screen bg-black flex items-center justify-center text-white/50">Loading Simulation...</div>;
+    if (loading || !simDoc) {
+        return <SkeletonResults />;
     }
 
-    if (!currentSimulationId || !simDoc) {
+    if (!currentSimulationId) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black">
                 <div className="text-center">
@@ -348,10 +349,11 @@ export default function SimulationResultsPage() {
         );
     }
 
-
     return (
-        <DashboardLayout>
-            <div className="relative min-h-screen text-white selection:bg-blue-500/30 overflow-x-hidden pt-40">
+        <DashboardLayout 
+            currentStep={4}
+        >
+            <div className="relative min-h-screen text-white selection:bg-blue-500/30 overflow-x-hidden pt-6">
                 <ShaderPageBackground overlayOpacity={0.9} blur={true} />
 
                 {/* Progress Bar (Sticky Top) */}
@@ -366,9 +368,8 @@ export default function SimulationResultsPage() {
 
                 <div className="relative z-10 max-w-5xl mx-auto px-6 pb-48" ref={reportRef}>
                     {/* Report Header — Structured Document Feel */}
-                    <div className="mb-10">
-                        {/* Top Row: Badges + Tab Nav + Step Indicator */}
-                        <div className="flex justify-between items-center mb-8">
+                    <div className="flex flex-col mb-10">
+                        <div className="flex justify-between items-start mb-6">
                             <div className="flex items-center gap-3">
                                 <span className="px-3 py-1.5 bg-white/[0.06] border border-white/15 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
                                     Prediction Report
@@ -376,34 +377,50 @@ export default function SimulationResultsPage() {
                                 <span className="text-[10px] text-white/25 font-mono">
                                     ID: PCT-{currentSimulationId ? currentSimulationId.substring(0, 8).toUpperCase() : '0000'}
                                 </span>
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest ${
+                                <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-widest ${
                                     simDoc?.status === 'completed' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
                                 }`}>
                                     {simDoc?.status === 'completed' ? 'Completed' : 'In Progress'}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-4">
-                                {/* Tab Navigation */}
-                                <div className="flex bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden">
-                                    {["Report", "Split", "Timeline"].map(tab => (
-                                        <button
-                                            key={tab}
-                                            onClick={() => setActiveTab(tab.toLowerCase())}
-                                            className={`px-4 py-2 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer ${
-                                                activeTab === tab.toLowerCase()
-                                                    ? 'bg-white/10 text-white'
-                                                    : 'text-white/30 hover:text-white/60'
-                                            }`}
-                                        >
-                                            {tab}
+                            
+                            {/* Top Right Action Group */}
+                            <div className="flex items-center gap-2">
+                                <button onClick={handleDownloadPDF} title="Download full PDF report" className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                </button>
+                                {deepSimResult && (
+                                    <>
+                                        <button onClick={() => {
+                                            const blob = new Blob([JSON.stringify(deepSimResult, null, 2)], { type: 'application/json' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `percura_simulation_${deepSimResult.id || Date.now()}.json`;
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                        }} title="Export result as JSON" className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                                         </button>
-                                    ))}
-                                </div>
-                                {/* Step Indicator */}
-                                <div className="text-[10px] text-white/30 font-medium">
-                                    Step <span className="text-white/60 font-bold">5/5</span> Simulation Results
-                                    <span className="ml-2 text-emerald-400">● Completed</span>
-                                </div>
+                                        <button onClick={() => {
+                                            const states = deepSimResult.personaFinalStates || {};
+                                            const rows = [['Name', 'Segment', 'Sentiment', 'Converted', 'Churned', 'Exposures']];
+                                            Object.values(states).forEach(ps => {
+                                                rows.push([ps.name || 'Unknown', ps.segmentName || '', (ps.sentimentScore || 0).toFixed(2), ps.converted ? 'Yes' : 'No', ps.churned ? 'Yes' : 'No', ps.exposureCount || 0]);
+                                            });
+                                            const csv = rows.map(r => r.join(',')).join('\n');
+                                            const blob = new Blob([csv], { type: 'text/csv' });
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = `percura_personas_${Date.now()}.csv`;
+                                            a.click();
+                                            URL.revokeObjectURL(url);
+                                        }} title="Export audience as CSV" className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -411,60 +428,46 @@ export default function SimulationResultsPage() {
                         <h1 className="text-4xl md:text-5xl font-light tracking-tight mb-4 leading-tight">
                             {idea?.idea || "Simulation Complete"}
                         </h1>
-                        <p className="text-white/40 text-sm font-normal leading-relaxed max-w-3xl mb-6" style={{ fontStyle: 'italic' }}>
+                        <p className="text-white/40 text-sm font-normal leading-relaxed max-w-3xl mb-8" style={{ fontStyle: 'italic' }}>
                             A {idea?.duration || 12}-week persona simulation across {results.length} demographic segments, testing market fit, willingness to pay, and adoption barriers for {idea?.industry ? `a ${idea.industry.toLowerCase()} platform` : 'this concept'}.
                         </p>
 
-                        {/* Action Buttons — Horizontal Row */}
-                        <div className="flex flex-wrap gap-3">
-                            <Button 
-                                onClick={handleDownloadPDF}
-                                variant="secondary"
-                                size="sm"
-                                className="flex items-center gap-2"
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                Download Report
-                            </Button>
-                            <Button
-                                onClick={() => setIsGraphOpen(true)}
-                                variant="secondary"
-                                size="sm"
-                                disabled={results.length === 0}
-                                className="flex items-center gap-2"
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                                </svg>
-                                Knowledge Graph
-                            </Button>
+                        {/* Tab Nav & Run Sim Strip */}
+                        <div className="flex justify-between items-center border-b border-white/5 pb-6">
+                            <div className="flex bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden">
+                                {["Report", "Split", "Timeline"].map(tab => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab.toLowerCase())}
+                                        className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer ${
+                                            activeTab === tab.toLowerCase()
+                                                ? 'bg-white/10 text-white'
+                                                : 'text-white/30 hover:text-white/60'
+                                        }`}
+                                    >
+                                        {tab}
+                                    </button>
+                                ))}
+                            </div>
+
                             <Button 
                                 onClick={async () => {
                                     setDeepSimLoading(true);
                                     setDeepSimError(null);
                                     try {
-                                        // UPGRADE 5: Recover rich segments (with personas) from localStorage
-                                        // Firestore only stores segments WITHOUT personas to save space.
                                         let segmentsToSend = null;
                                         try {
                                             const lsKey = `percura_segments_${currentSimulationId}`;
                                             const stored = localStorage.getItem(lsKey);
                                             if (stored) segmentsToSend = JSON.parse(stored);
                                         } catch (e) { /* ignore */ }
-
-                                        if (!segmentsToSend && fullSelectedSegments?.length) {
-                                            segmentsToSend = fullSelectedSegments;
-                                        }
-                                        
-                                        // Fallback if still null
+                                        if (!segmentsToSend && fullSelectedSegments?.length) segmentsToSend = fullSelectedSegments;
                                         if (!segmentsToSend) segmentsToSend = results;
-
                                         if (!segmentsToSend?.length || !segmentsToSend[0]?.personas?.length) {
                                             setDeepSimError("No persona data available. Please re-run the initial identification from the 'Segment Selection' page to restore memory.");
                                             setDeepSimLoading(false);
                                             return;
                                         }
-
                                         const res = await fetch(`${API_BASE_URL}/api/simulation/run`, {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
@@ -472,13 +475,8 @@ export default function SimulationResultsPage() {
                                         });
                                         const data = await res.json();
                                         if (!data.success) throw new Error(data.error || "Simulation failed");
-                                        
-                                        // Store result in local state but DO NOT change currentSimulationId
-                                        // Changing the ID causes the Firestore listener to unmount the entire page
                                         setDeepSimResult(data.simulation);
-                                        
-                                        // Show a success message to the user pointing them to the next step
-                                        alert("Deep Simulation completed successfully and loaded into temporal memory! You can now speak directly with the enriched personas in the Interrogation Lab.");
+                                        showToast("success", "Simulation Complete", "Deep Simulation completed successfully and loaded into temporal memory! You can now speak directly with the enriched personas in the Interrogation Lab.");
                                     } catch (err) {
                                         console.error("[DEEP-SIM]", err);
                                         setDeepSimError(err.message);
@@ -492,19 +490,10 @@ export default function SimulationResultsPage() {
                                 className="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-xl shadow-blue-600/20 disabled:opacity-40"
                             >
                                 {deepSimLoading ? (
-                                    <><div className="w-4 h-4 rounded-full border-2 border-t-white border-white/20 animate-spin" /> Running 8-week simulation...</>
+                                    <><div className="w-4 h-4 rounded-full border-2 border-t-white border-white/20 animate-spin" /> Running...</>
                                 ) : (
                                     <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Run Deep Simulation</>
                                 )}
-                            </Button>
-                            <Button 
-                                onClick={() => setIsInterrogationOpen(true)}
-                                variant="primary"
-                                size="sm"
-                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 shadow-xl shadow-purple-600/20"
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
-                                Interrogation Lab
                             </Button>
                         </div>
                     </div>
@@ -539,19 +528,19 @@ export default function SimulationResultsPage() {
                                     <div className="bg-[#0D0D0D]/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-6 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)]">
                                         <div className="grid grid-cols-2 gap-6">
                                             <div className="space-y-1">
-                                                <span className="text-[8px] uppercase tracking-[0.2em] text-white/30 font-bold">Total Sample</span>
+                                                <span className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold">Total Sample</span>
                                                 <div className="text-3xl font-black italic text-white">{results.length > 0 ? totalPersonasCount : '--'}</div>
                                             </div>
                                             <div className="space-y-1">
-                                                <span className="text-[8px] uppercase tracking-[0.2em] text-emerald-500/40 font-bold">Market Adoption</span>
+                                                <span className="text-[10px] uppercase tracking-[0.2em] text-emerald-500/40 font-bold">Market Adoption</span>
                                                 <div className="text-3xl font-black italic text-emerald-400">{results.length > 0 ? adoptionCount : '--'}</div>
                                             </div>
                                             <div className="space-y-1">
-                                                <span className="text-[8px] uppercase tracking-[0.2em] text-red-500/40 font-bold">Rejected</span>
+                                                <span className="text-[10px] uppercase tracking-[0.2em] text-red-500/40 font-bold">Rejected</span>
                                                 <div className="text-3xl font-black italic text-red-500/80">{results.length > 0 ? rejectedCount : '--'}</div>
                                             </div>
                                             <div className="space-y-1">
-                                                <span className="text-[8px] uppercase tracking-[0.2em] text-blue-500/40 font-bold">Market Fit</span>
+                                                <span className="text-[10px] uppercase tracking-[0.2em] text-blue-500/40 font-bold">Market Fit</span>
                                                 <div className="text-3xl font-black italic text-blue-400">{results.length > 0 ? `${survivalProb}%` : '--'}</div>
                                             </div>
                                         </div>
@@ -587,7 +576,7 @@ export default function SimulationResultsPage() {
                     {/* Summary Card */}
                     <div className="relative z-30 mb-16">
                         <div className="flex items-center gap-3 mb-6">
-                            <span className="text-white/15 text-sm font-bold">01</span>
+                            <span className="shrink-0 w-8 h-8 rounded-lg bg-white/[0.06] border border-white/10 flex items-center justify-center text-[11px] font-mono text-white/50">01</span>
                             <h2 className="text-lg font-medium text-white/80 tracking-tight">Executive Summary</h2>
                         </div>
                         <div className="bg-[#0D0D0D]/80 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 md:p-12 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)]">
@@ -596,24 +585,24 @@ export default function SimulationResultsPage() {
                                  <div className="space-y-10 border-r border-white/5 pr-8">
                                      <div className="grid grid-cols-2 gap-x-12 gap-y-10">
                                          <div className="space-y-1">
-                                             <span className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold">Total Sample</span>
+                                             <span className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-bold">Total Sample</span>
                                              <div className="text-4xl font-black italic text-white">{results.length > 0 ? totalPersonasCount : '--'}</div>
-                                             <p className="text-[9px] text-white/20 uppercase tracking-widest">Simulated Profiles</p>
+                                             <p className="text-[11px] text-white/20 uppercase tracking-widest">Simulated Profiles</p>
                                          </div>
                                          <div className="space-y-1">
-                                             <span className="text-[9px] uppercase tracking-[0.2em] text-emerald-500/40 font-bold">Market Adoption</span>
+                                             <span className="text-[11px] uppercase tracking-[0.2em] text-emerald-500/40 font-bold">Market Adoption</span>
                                              <div className="text-4xl font-black italic text-emerald-400">{results.length > 0 ? adoptionCount : '--'}</div>
-                                             <p className="text-[9px] text-emerald-500/20 uppercase tracking-widest">Would Adopt</p>
+                                             <p className="text-[11px] text-emerald-500/20 uppercase tracking-widest">Would Adopt</p>
                                          </div>
                                          <div className="space-y-1">
-                                             <span className="text-[9px] uppercase tracking-[0.2em] text-red-500/40 font-bold">Rejected</span>
+                                             <span className="text-[11px] uppercase tracking-[0.2em] text-red-500/40 font-bold">Rejected</span>
                                              <div className="text-4xl font-black italic text-red-500/80">{results.length > 0 ? rejectedCount : '--'}</div>
-                                             <p className="text-[9px] text-red-500/20 uppercase tracking-widest">Would Reject</p>
+                                             <p className="text-[11px] text-red-500/20 uppercase tracking-widest">Would Reject</p>
                                          </div>
                                          <div className="space-y-1">
-                                             <span className="text-[9px] uppercase tracking-[0.2em] text-blue-500/40 font-bold">Market Fit Score</span>
+                                             <span className="text-[11px] uppercase tracking-[0.2em] text-blue-500/40 font-bold">Market Fit Score</span>
                                              <div className="text-4xl font-black italic text-blue-400" title="Weighted score: (avg resonance × 0.8) + (adoption rate × 20)">{results.length > 0 ? `${survivalProb}%` : '--'}</div>
-                                             <p className="text-[9px] text-blue-500/20 uppercase tracking-widest">Predicted Outlook</p>
+                                             <p className="text-[11px] text-blue-500/20 uppercase tracking-widest">Predicted Outlook</p>
                                          </div>
                                      </div>
 
@@ -629,7 +618,7 @@ export default function SimulationResultsPage() {
 
                                          return (
                                              <div className="mt-8 pt-8 border-t border-white/5">
-                                                 <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">
+                                                 <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-bold mb-4">
                                                      Response Distribution
                                                  </p>
                                                  <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
@@ -650,15 +639,15 @@ export default function SimulationResultsPage() {
                                                      />
                                                  </div>
                                                  <div className="flex gap-6 mt-3">
-                                                     <span className="text-[10px] text-emerald-400/80 flex items-center gap-1.5">
+                                                     <span className="text-[11px] text-emerald-400/80 flex items-center gap-1.5">
                                                          <span className="w-2 h-2 rounded-full bg-emerald-500/70 inline-block" />
                                                          Adopt {adoptPct}%
                                                      </span>
-                                                     <span className="text-[10px] text-amber-400/70 flex items-center gap-1.5">
+                                                     <span className="text-[11px] text-amber-400/70 flex items-center gap-1.5">
                                                          <span className="w-2 h-2 rounded-full bg-amber-400/60 inline-block" />
                                                          Pilot {pilotPct}%
                                                      </span>
-                                                     <span className="text-[10px] text-red-400/70 flex items-center gap-1.5">
+                                                     <span className="text-[11px] text-red-400/70 flex items-center gap-1.5">
                                                          <span className="w-2 h-2 rounded-full bg-red-500/50 inline-block" />
                                                          Reject {rejectPct}%
                                                      </span>
@@ -672,7 +661,7 @@ export default function SimulationResultsPage() {
                                  <div className="flex flex-col h-full">
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-auto">
                                          <div>
-                                             <span className="text-[9px] uppercase tracking-widest text-emerald-400/40 font-bold block mb-4">Top Motivators</span>
+                                             <span className="text-[11px] uppercase tracking-widest text-emerald-400/40 font-bold block mb-4">Top Motivators</span>
                                              {topReasons.map((r, i) => (
                                                  <p key={i} className="text-[11px] text-white/70 mb-3 flex items-start gap-3 leading-relaxed">
                                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1 shrink-0" /> {r}
@@ -681,7 +670,7 @@ export default function SimulationResultsPage() {
                                              {topReasons.length === 0 && <p className="text-[11px] text-white/20 italic">Synthesizing drivers...</p>}
                                          </div>
                                          <div>
-                                             <span className="text-[9px] uppercase tracking-widest text-red-400/40 font-bold block mb-4">Core Objections</span>
+                                             <span className="text-[11px] uppercase tracking-widest text-red-400/40 font-bold block mb-4">Core Objections</span>
                                              {topObjections.map((o, i) => (
                                                  <p key={i} className="text-[11px] text-white/70 mb-3 flex items-start gap-3 leading-relaxed">
                                                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1 shrink-0" /> {o}
@@ -702,7 +691,7 @@ export default function SimulationResultsPage() {
                                          if (results.length === 0) return null;
                                          return (
                                              <div className="pt-8 mt-8 border-t border-white/5">
-                                                 <span className="text-[9px] uppercase tracking-widest text-white/30 font-bold block mb-3">
+                                                 <span className="text-[11px] uppercase tracking-widest text-white/30 font-bold block mb-3">
                                                      Willingness to Pay
                                                  </span>
                                                  <div className="flex flex-wrap gap-2">
@@ -742,7 +731,7 @@ export default function SimulationResultsPage() {
 
                         return (
                             <div className="mb-12">
-                                <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6">
+                                <p className="text-[11px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6">
                                     Voices from the Simulation
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -783,7 +772,7 @@ export default function SimulationResultsPage() {
                     {(insightsLoading || insightData) && (
                         <div className="mb-12">
                             <div className="flex items-center gap-3 mb-6">
-                                <span className="text-white/15 text-sm font-bold">02</span>
+                                <span className="shrink-0 w-8 h-8 rounded-lg bg-white/[0.06] border border-white/10 flex items-center justify-center text-[11px] font-mono text-white/50">02</span>
                                 <h2 className="text-lg font-medium text-white/80 tracking-tight">Key Insights</h2>
                             </div>
 
@@ -809,13 +798,13 @@ export default function SimulationResultsPage() {
                                                     <h4 className="text-base font-medium text-white mb-3">{ins.title}</h4>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <div>
-                                                            <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-2">
+                                                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-bold mb-2">
                                                                 Evidence
                                                             </p>
                                                             <p className="text-[12px] text-white/55 leading-relaxed">{ins.evidence}</p>
                                                         </div>
                                                         <div>
-                                                            <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-2">
+                                                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-bold mb-2">
                                                                 What this means
                                                             </p>
                                                             <p className="text-[12px] text-white/55 leading-relaxed">{ins.analysis}</p>
@@ -849,7 +838,7 @@ export default function SimulationResultsPage() {
                     {/* Result Cards */}
                     <div className="mb-16">
                         <div className="flex items-center gap-3 mb-8">
-                            <span className="text-white/15 text-sm font-bold">03</span>
+                            <span className="shrink-0 w-8 h-8 rounded-lg bg-white/[0.06] border border-white/10 flex items-center justify-center text-[11px] font-mono text-white/50">03</span>
                             <h2 className="text-lg font-medium text-white/80 tracking-tight">Segment Resonance Analysis</h2>
                         </div>
                         <div className="space-y-8">
@@ -860,7 +849,7 @@ export default function SimulationResultsPage() {
                         {/* Skeleton Loaders */}
                         {simDoc.status === "in progress" && Array.from({ length: totalSegments - completedCount }).map((_, i) => (
                             <div key={`skeleton-${i}`} className="h-48 rounded-[2.5rem] bg-white/[0.03] border border-white/5 animate-pulse flex items-center justify-center">
-                                <span className="text-[9px] uppercase tracking-[0.4em] text-white/10 font-black">Synthesizing Feedback Cluster...</span>
+                                <span className="text-[11px] uppercase tracking-[0.4em] text-white/10 font-black">Synthesizing Feedback Cluster...</span>
                             </div>
                         ))}
                         </div>
@@ -870,7 +859,7 @@ export default function SimulationResultsPage() {
                     {insightData?.nextSteps && insightData.nextSteps.length > 0 && (
                         <div className="mt-16">
                             <div className="flex items-center gap-3 mb-6">
-                                <span className="text-white/15 text-sm font-bold">04</span>
+                                <span className="shrink-0 w-8 h-8 rounded-lg bg-white/[0.06] border border-white/10 flex items-center justify-center text-[11px] font-mono text-white/50">04</span>
                                 <h2 className="text-lg font-medium text-white/80 tracking-tight">What to Do Next</h2>
                             </div>
                             <div className="bg-[#0D0D0D]/60 border border-white/10 rounded-[2.5rem] p-8 md:p-10">
@@ -910,7 +899,7 @@ export default function SimulationResultsPage() {
                     {/* Deep Simulation Report — New Components */}
                     {deepSimResult && (
                         <div className="mt-16 space-y-8">
-                            <p className="text-[9px] uppercase tracking-[0.3em] text-cyan-400/60 font-bold">
+                            <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-400/60 font-bold">
                                 Deep Simulation Report — {deepSimResult.weeks}-Week Behavioral Analysis
                             </p>
 
@@ -930,82 +919,28 @@ export default function SimulationResultsPage() {
                             )}
 
                             {/* Export Buttons */}
-                            <div className="flex flex-wrap gap-3 mt-8">
-                                <button
-                                    onClick={() => {
-                                        // JSON Export
-                                        const blob = new Blob([JSON.stringify(deepSimResult, null, 2)], { type: 'application/json' });
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `percura_simulation_${deepSimResult.id || Date.now()}.json`;
-                                        a.click();
-                                        URL.revokeObjectURL(url);
-                                    }}
-                                    className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest text-white/60 bg-white/[0.04] border border-white/10 rounded-xl hover:bg-white/[0.08] hover:text-white/80 transition-all duration-200 cursor-pointer"
-                                >
-                                    📄 Export JSON
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        // CSV Export — persona final states
-                                        const states = deepSimResult.personaFinalStates || {};
-                                        const rows = [['Name', 'Segment', 'Sentiment', 'Converted', 'Churned', 'Exposures']];
-                                        Object.values(states).forEach(ps => {
-                                            rows.push([
-                                                ps.name || 'Unknown',
-                                                ps.segmentName || '',
-                                                (ps.sentimentScore || 0).toFixed(2),
-                                                ps.converted ? 'Yes' : 'No',
-                                                ps.churned ? 'Yes' : 'No',
-                                                ps.exposureCount || 0
-                                            ]);
-                                        });
-                                        const csv = rows.map(r => r.join(',')).join('\n');
-                                        const blob = new Blob([csv], { type: 'text/csv' });
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `percura_personas_${Date.now()}.csv`;
-                                        a.click();
-                                        URL.revokeObjectURL(url);
-                                    }}
-                                    className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest text-white/60 bg-white/[0.04] border border-white/10 rounded-xl hover:bg-white/[0.08] hover:text-white/80 transition-all duration-200 cursor-pointer"
-                                >
-                                    📊 Export CSV
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        // PDF Export using jspdf
-                                        try {
-                                            const { default: jsPDF } = await import('jspdf');
-                                            const doc = new jsPDF();
-                                            const reportText = deepSimResult.finalReport || 'No report available';
-                                            
-                                            doc.setFontSize(18);
-                                            doc.text('Percura Simulation Report', 14, 20);
-                                            doc.setFontSize(10);
-                                            doc.text(`Idea: ${idea?.idea?.substring(0, 80) || 'N/A'}`, 14, 30);
-                                            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 36);
-                                            
-                                            doc.setFontSize(11);
-                                            const lines = doc.splitTextToSize(reportText.replace(/[#*]/g, ''), 180);
-                                            doc.text(lines, 14, 46);
-                                            
-                                            doc.save(`percura_report_${Date.now()}.pdf`);
-                                        } catch (e) {
-                                            console.error('PDF export failed:', e);
-                                            alert('PDF export failed. The report has been copied to clipboard instead.');
-                                            navigator.clipboard.writeText(deepSimResult.finalReport || '');
-                                        }
-                                    }}
-                                    className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest text-cyan-400/70 bg-cyan-500/[0.06] border border-cyan-500/20 rounded-xl hover:bg-cyan-500/[0.12] hover:text-cyan-300 transition-all duration-200 cursor-pointer"
-                                >
-                                    📑 Export PDF
-                                </button>
-                            </div>
                         </div>
                     )}
+                    {/* Final CTA — Interrogation Lab */}
+                    <div className="mt-20 border-t border-white/5 pt-20 text-center animate-in slide-in-from-bottom-4 fade-in duration-500 pb-20">
+                        <h3 className="text-2xl font-light text-white mb-4">Ready to confront your target audience?</h3>
+                        <p className="text-[12px] text-white/40 mb-8 max-w-lg mx-auto leading-relaxed uppercase tracking-widest">
+                            Step into the Interrogation Lab to speak directly with the simulated personas. 
+                            Ask about their hidden motivations, pricing sensitivity, and rejection drivers.
+                        </p>
+                        <Button 
+                            onClick={() => setIsInterrogationOpen(true)}
+                            size="lg"
+                            className="bg-purple-600 hover:bg-purple-700 shadow-xl shadow-purple-600/20 group relative overflow-hidden"
+                        >
+                            <span className="relative z-10 flex items-center gap-3 px-8">
+                                <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>
+                                Enter Interrogation Lab
+                            </span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </Button>
+                    </div>
+
                     </>
                     )}
                 </div>
@@ -1013,16 +948,6 @@ export default function SimulationResultsPage() {
 
             {isInterrogationOpen && (
                 <PremiumChatPanel onClose={() => setIsInterrogationOpen(false)} />
-            )}
-
-            {isGraphOpen && (
-                <GraphExplorer
-                    graphId={graphId}
-                    idea={idea}
-                    segments={fullSelectedSegments?.length ? fullSelectedSegments : results}
-                    marketContext={simDoc?.results?.marketContext || null}
-                    onClose={() => setIsGraphOpen(false)}
-                />
             )}
         </DashboardLayout>
     );
@@ -1035,20 +960,13 @@ function PersonaResultCard({ result, index }) {
     if (!tr) return null;
 
     // Verdict color mapping
-    const verdictColor = {
-        'ENTHUSIASTIC': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-        'CURIOUS': 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-        'NEUTRAL': 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-        'SKEPTICAL': 'text-orange-400 bg-orange-500/10 border-orange-500/20',
-        'CRITICAL': 'text-red-400 bg-red-500/10 border-red-500/20',
-    }[tr.verdict] || 'text-white/50 bg-white/5 border-white/10';
-
-    const wtpColor = {
-        'High': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-        'Medium': 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-        'Low': 'text-red-400 bg-red-500/10 border-red-500/20',
-        'Zero': 'text-red-400 bg-red-500/10 border-red-500/20',
-    }[tr.willingnessToPay] || 'text-white/40 bg-white/5 border-white/10';
+    const verdictColor = tr.verdict === 'ENTHUSIASTIC' || tr.verdict === 'CURIOUS' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' :
+                        tr.verdict === 'NEUTRAL' ? 'bg-amber-500/20 text-amber-400 border-amber-500/20' : 
+                        'bg-red-500/20 text-red-400 border-red-500/20';
+    
+    const wtpColor = tr.willingnessToPay === 'HIGH' ? 'bg-emerald-500/10 text-emerald-400/80 border-emerald-500/20' :
+                     tr.willingnessToPay === 'MID' ? 'bg-amber-500/10 text-amber-400/80 border-amber-500/20' : 
+                     'bg-white/10 text-white/40 border-white/20';
 
     // Helper to get a display name for a persona
     const getPersonaName = (p, pIdx) => {
@@ -1067,8 +985,14 @@ function PersonaResultCard({ result, index }) {
     // Top 3 persona voices (always visible)
     const topPersonas = (result.personas || []).slice(0, 3);
 
+    const hoverClass = 
+        tr.verdict === 'ENTHUSIASTIC' || tr.verdict === 'CURIOUS' ? 'hover:border-emerald-500/40 hover:shadow-[0_0_30px_rgba(16,185,129,0.05)]' :
+        tr.verdict === 'NEUTRAL' ? 'hover:border-amber-500/30' :
+        tr.verdict === 'SKEPTICAL' || tr.verdict === 'CRITICAL' ? 'hover:border-red-500/20' :
+        'hover:border-white/20';
+
     return (
-        <div className="group bg-[#0D0D0D]/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-blue-500/40 transition-all duration-500">
+        <div className={`group bg-[#0D0D0D]/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden ${hoverClass} transition-all duration-500`}>
             <div className="p-8 md:p-10">
                 {/* Header: Score + Name + Badges */}
                 <div className="flex flex-col md:flex-row gap-8">
@@ -1093,10 +1017,10 @@ function PersonaResultCard({ result, index }) {
                                 <h3 className="text-2xl font-normal text-white">{result.segment_name}</h3>
                                 {/* Verdict + WTP Badges — Always Visible */}
                                 <div className="flex items-center gap-2 mt-2">
-                                    <span className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${verdictColor}`}>
+                                    <span className={`px-2.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ${verdictColor}`}>
                                         ● {tr.verdict}
                                     </span>
-                                    <span className={`px-2.5 py-1 rounded-full border text-[10px] font-bold ${wtpColor}`}>
+                                    <span className={`px-2.5 py-1 rounded-full border text-[11px] font-bold ${wtpColor}`}>
                                         {tr.willingnessToPay} WTP
                                     </span>
                                 </div>
@@ -1120,39 +1044,42 @@ function PersonaResultCard({ result, index }) {
                         {/* Behavioral Tags — Always Visible */}
                         <div className="flex flex-wrap gap-2 mb-6">
                             {tr.keyDrivers?.slice(0, 4).map((d, idx) => (
-                                <span key={idx} className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400/80 font-medium">✦ {d}</span>
+                                <span key={idx} className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400/80 font-medium">✦ {d}</span>
                             ))}
                             {tr.frictionPoints?.slice(0, 3).map((f, idx) => (
-                                <span key={`f-${idx}`} className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] text-red-400/80 font-medium">✕ {f}</span>
+                                <span key={`f-${idx}`} className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-[11px] text-red-400/80 font-medium">✕ {f}</span>
                             ))}
                         </div>
 
                         {/* Demographics Row — Always Visible */}
                         <div className="flex items-center gap-6 text-[11px] text-white/50 border-t border-white/5 pt-4 mb-6">
-                            <div><span className="text-[9px] text-white/25 uppercase tracking-widest font-bold mr-2">Region</span>{result.profile?.dominant_state || "India"} · {result.profile?.dominant_zone || "Mixed"}</div>
-                            <div><span className="text-[9px] text-white/25 uppercase tracking-widest font-bold mr-2">Occupation</span>{result.profile?.dominant_occupation || "Various"}</div>
-                            <div><span className="text-[9px] text-white/25 uppercase tracking-widest font-bold mr-2">Age</span>{result.profile?.age_range || "N/A"}</div>
+                            <div><span className="text-[11px] text-white/25 uppercase tracking-widest font-bold mr-2">Region</span>{result.profile?.dominant_state || "India"} · {result.profile?.dominant_zone || "Mixed"}</div>
+                            <div><span className="text-[11px] text-white/25 uppercase tracking-widest font-bold mr-2">Occupation</span>{result.profile?.dominant_occupation || "Various"}</div>
+                            <div><span className="text-[11px] text-white/25 uppercase tracking-widest font-bold mr-2">Age</span>{result.profile?.age_range || "N/A"}</div>
                         </div>
 
-                        {/* Multi-dimensional Scores — Always Visible */}
-                        <div className="grid grid-cols-3 gap-4">
-                            {(() => {
-                                const base = tr.resonanceScore || 50;
-                                return [
-                                    { label: 'Utility', score: tr.utilityScore || Math.min(100, base + 5), color: 'blue' },
-                                    { label: 'Cultural Fit', score: tr.culturalFitScore || Math.max(0, base - 8), color: 'purple' },
-                                    { label: 'Affordability', score: tr.affordabilityScore || Math.max(0, base - 3), color: 'emerald' },
-                                ];
-                            })().map(({ label, score, color }) => (
-                                <div key={label}>
-                                    <div className="flex justify-between mb-1">
-                                        <span className="text-[9px] text-white/30 uppercase tracking-widest font-bold">{label}</span>
-                                        <span className="text-[10px] text-white/60 font-bold">{Math.round(score || 0)}%</span>
+                        {/* Multi-dimensional Scores — Conditionally Rendered */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[
+                                { label: 'Utility', score: tr.utilityScore, color: 'text-blue-400', bg: 'bg-blue-500', desc: 'Core problem-solving value for this segment.' },
+                                { label: 'Cultural Fit', score: tr.culturalFitScore, color: 'text-purple-400', bg: 'bg-purple-500', desc: 'Alignment with lifestyle, social norms, and regional habits.' },
+                                { label: 'Affordability', score: tr.affordabilityScore, color: 'text-emerald-400', bg: 'bg-emerald-500', desc: 'Sentiment towards pricing relative to income bracket.' },
+                            ].map(({ label, score, color, bg, desc }) => (score !== undefined && score !== null) && (
+                                <div key={label} className="group/score relative">
+                                    <div className="flex justify-between mb-2">
+                                        <span className={`text-[11px] uppercase tracking-[0.2em] font-black ${color} flex items-center gap-1.5`}>
+                                            {label}
+                                            <div className="w-3 h-3 rounded-full border border-current/20 flex items-center justify-center text-[8px] cursor-help">?</div>
+                                        </span>
+                                        <span className="text-[11px] text-white/60 font-mono font-bold">{Math.round(score)}%</span>
                                     </div>
-                                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                        <div className={`h-full rounded-full transition-all duration-1000 ${
-                                            color === 'blue' ? 'bg-blue-500' : color === 'purple' ? 'bg-purple-500' : 'bg-emerald-500'
-                                        }`} style={{ width: `${score || 0}%` }} />
+                                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <div className={`h-full rounded-full transition-all duration-[1500ms] ${bg}`} style={{ width: `${score}%` }} />
+                                    </div>
+                                    
+                                    {/* Tooltip */}
+                                    <div className="absolute bottom-full left-0 mb-2 w-48 p-3 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl opacity-0 group-hover/score:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
+                                        <p className="text-[11px] text-white/70 leading-relaxed">{desc}</p>
                                     </div>
                                 </div>
                             ))}
@@ -1163,7 +1090,7 @@ function PersonaResultCard({ result, index }) {
                 {/* Top 3 Individual Persona Voices — Always Visible */}
                 {topPersonas.length > 0 && (
                     <div className="mt-8 pt-6 border-t border-white/5">
-                        <h4 className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-bold mb-4">Individual Persona Voices</h4>
+                        <h4 className="text-[11px] uppercase tracking-[0.3em] text-white/30 font-bold mb-4">Individual Persona Voices</h4>
                         <div className="space-y-3">
                             {topPersonas.map((p, pIdx) => {
                                 const individualFeedback = tr.personaFeedbacks?.[pIdx];
@@ -1172,13 +1099,13 @@ function PersonaResultCard({ result, index }) {
                                 const score = individualFeedback?.resonanceScore || tr.resonanceScore || 0;
                                 return (
                                     <div key={pIdx} className="flex items-start gap-4 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.05] rounded-xl p-4 transition-all">
-                                        <div className="shrink-0 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-black text-white/30 uppercase">
+                                        <div className="shrink-0 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[11px] font-black text-white/30 uppercase">
                                             {(name || 'P')[0]}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="text-[11px] font-bold text-white/80">{name}</span>
-                                                <span className="text-[10px] text-white/30">{m.age || '??'}</span>
+                                                <span className="text-[11px] text-white/30">{m.age || '??'}</span>
                                             </div>
                                             <p className="text-[11px] italic text-white/55 leading-relaxed">
                                                 "{individualFeedback?.feedback || "Synthesizing individual reaction..."}"
@@ -1202,21 +1129,21 @@ function PersonaResultCard({ result, index }) {
                         {/* CoT Rationale */}
                         {tr.segmentAnalysisRationale && (
                             <div className="mb-8 bg-white/[0.02] rounded-2xl p-6 border border-white/5">
-                                <h4 className="text-[9px] uppercase tracking-[0.3em] text-purple-400/60 font-bold mb-3">Chain-of-Thought Reasoning</h4>
+                                <h4 className="text-[11px] uppercase tracking-[0.3em] text-purple-400/60 font-bold mb-3">Chain-of-Thought Reasoning</h4>
                                 <p className="text-[12px] text-white/60 leading-relaxed font-normal">{tr.segmentAnalysisRationale}</p>
                             </div>
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                             <div>
-                                <h4 className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Summary</h4>
+                                <h4 className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Summary</h4>
                                 <p className="text-[12px] text-white/60 leading-relaxed font-normal">{tr.summary}</p>
                             </div>
                             <div>
-                                <h4 className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Competitive Advantage</h4>
+                                <h4 className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Competitive Advantage</h4>
                                 <p className="text-[12px] text-white/60 leading-relaxed font-normal">{tr.competitiveAdvantage || "Not determined"}</p>
                                 <div className="mt-4 pt-4 border-t border-white/5">
-                                    <span className="text-[9px] text-white/25 uppercase tracking-widest font-bold">Predicted Adoption</span>
+                                    <span className="text-[10px] text-white/25 uppercase tracking-widest font-bold">Predicted Adoption</span>
                                     <p className="text-[11px] text-white/70 font-bold mt-1">{tr.predictedAdoptionPattern || "Unknown"}</p>
                                 </div>
                             </div>
@@ -1225,7 +1152,7 @@ function PersonaResultCard({ result, index }) {
                         {/* All Persona Voices (remaining beyond top 3) */}
                         {(result.personas || []).length > 3 && (
                             <div className="pt-6 border-t border-white/5">
-                                <h4 className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-bold mb-4">All Persona Reactions ({(result.personas || []).length} total)</h4>
+                                <h4 className="text-[11px] uppercase tracking-[0.3em] text-white/30 font-bold mb-4">All Persona Reactions ({(result.personas || []).length} total)</h4>
                                 <div className="space-y-2">
                                     {(result.personas || []).slice(3).map((p, pIdx) => {
                                         const actualIdx = pIdx + 3;
@@ -1235,16 +1162,16 @@ function PersonaResultCard({ result, index }) {
                                         const score = individualFeedback?.resonanceScore || tr.resonanceScore || 0;
                                         return (
                                             <div key={actualIdx} className="flex items-center gap-4 bg-white/[0.02] border border-white/[0.04] rounded-xl p-3 transition-all">
-                                                <div className="shrink-0 w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/20">
+                                                <div className="shrink-0 w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold text-white/20">
                                                     {(name || 'P')[0]}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <span className="text-[10px] font-bold text-white/70">{name}, {m.age || '??'}</span>
-                                                    <p className="text-[10px] italic text-white/40 leading-relaxed truncate">
+                                                    <span className="text-[11px] font-bold text-white/70">{name}, {m.age || '??'}</span>
+                                                    <p className="text-[11px] italic text-white/40 leading-relaxed truncate">
                                                         "{individualFeedback?.feedback || "Awaiting reaction..."}"
                                                     </p>
                                                 </div>
-                                                <div className={`text-[10px] font-black italic shrink-0 ${score >= 70 ? "text-emerald-400" : score < 50 ? "text-red-400" : "text-amber-400"}`}>
+                                                <div className={`text-[11px] font-black italic shrink-0 ${score >= 70 ? "text-emerald-400" : score < 50 ? "text-red-400" : "text-amber-400"}`}>
                                                     {score}%
                                                 </div>
                                             </div>
@@ -1260,6 +1187,49 @@ function PersonaResultCard({ result, index }) {
     );
 }
 
+function SkeletonResults() {
+    return (
+        <DashboardLayout currentStep={4}>
+            <div className="relative min-h-screen text-white pt-6 overflow-hidden">
+                <ShaderPageBackground overlayOpacity={0.9} blur={true} />
+                
+                <div className="relative z-10 max-w-5xl mx-auto px-6 pb-48">
+                    {/* Header Skeleton */}
+                    <div className="flex flex-col mb-12 animate-pulse">
+                        <div className="flex justify-between items-start mb-8">
+                            <div className="h-6 w-32 bg-white/5 rounded-lg" />
+                            <div className="h-8 w-48 bg-white/5 rounded-xl" />
+                        </div>
+                        <div className="h-12 w-3/4 bg-white/10 rounded-2xl mb-4" />
+                        <div className="h-4 w-1/2 bg-white/5 rounded-lg mb-10" />
+                        <div className="h-px w-full bg-white/5 mb-10" />
+                    </div>
+
+                    {/* Stats Skeleton */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="h-32 bg-white/[0.03] border border-white/5 rounded-[2rem] animate-pulse" />
+                        ))}
+                    </div>
+
+                    {/* Content Strips Skeleton */}
+                    <div className="space-y-12">
+                        <div className="h-64 bg-white/[0.03] border border-white/5 rounded-[3rem] animate-pulse" />
+                        <div className="grid grid-cols-3 gap-4">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="h-40 bg-white/[0.02] border border-white/5 rounded-2xl animate-pulse" />
+                            ))}
+                        </div>
+                        <div className="h-96 bg-white/[0.03] border border-white/5 rounded-[2.5rem] animate-pulse flex items-center justify-center">
+                            <span className="text-[10px] uppercase tracking-[0.4em] text-white/10 font-black">Synthesizing Demographic Resonance...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </DashboardLayout>
+    );
+}
+
 function MarketContextPanel({ marketContext }) {
     if (!marketContext) return null;
     
@@ -1268,9 +1238,9 @@ function MarketContextPanel({ marketContext }) {
 
     return (
         <div className="mb-12">
-            <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6 flex items-center gap-3">
+            <p className="text-[11px] uppercase tracking-[0.3em] text-white/30 font-bold mb-6 flex items-center gap-3">
                 Market Context
-                <span className="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[8px] normal-case tracking-normal">
+                <span className="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] normal-case tracking-normal">
                     Zep Graph
                 </span>
             </p>
@@ -1281,7 +1251,7 @@ function MarketContextPanel({ marketContext }) {
                     { label: 'Market Trends', items: trends, color: 'blue' },
                 ].map(({ label, items, color }) => items.length > 0 && (
                     <div key={label} className="bg-[#0D0D0D]/60 border border-white/[0.07] rounded-2xl p-5">
-                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-4 ${
+                        <p className={`text-[11px] uppercase tracking-widest font-bold mb-4 ${
                             color === 'red' ? 'text-red-400/60' : 
                             color === 'amber' ? 'text-amber-400/60' : 
                             'text-blue-400/60'
@@ -1303,6 +1273,15 @@ function MarketContextPanel({ marketContext }) {
                     </div>
                 ))}
             </div>
+
+            {/* Premium Knowledge Graph Component */}
+            <div className="mt-8 bg-[#0D0D0D]/60 border border-white/[0.08] rounded-3xl overflow-hidden min-h-[400px] flex flex-col">
+                <GraphExplorer 
+                    headless={true} 
+                    graphId={marketContext?.graphId}
+                    marketContext={marketContext}
+                />
+            </div>
         </div>
     );
-}
+}

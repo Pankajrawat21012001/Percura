@@ -356,31 +356,31 @@ export default function PremiumChatPanel({ onClose }) {
                         <div className="flex flex-wrap gap-1.5 bg-white/[0.03] rounded-2xl p-1.5 border border-white/5">
                             <button
                                 onClick={() => setMode("single")}
-                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "single" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "single" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
                             >
                                 1:1
                             </button>
                             <button
                                 onClick={() => setMode("panel")}
-                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "panel" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "panel" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
                             >
                                 Panel
                             </button>
                             <button
                                 onClick={() => setMode("analyst")}
-                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "analyst" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "analyst" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-white/30 hover:text-white/60"}`}
                             >
                                 Analyst
                             </button>
                             <button
                                 onClick={() => setMode("debate")}
-                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "debate" ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "debate" ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" : "text-white/30 hover:text-white/60"}`}
                             >
                                 Debate
                             </button>
                             <button
                                 onClick={() => setMode("survey")}
-                                className={`flex-1 text-[10px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "survey" ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "survey" ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/20" : "text-white/30 hover:text-white/60"}`}
                             >
                                 Survey
                             </button>
@@ -402,7 +402,7 @@ export default function PremiumChatPanel({ onClose }) {
                         <div className="relative">
                             <button
                                 onClick={() => setIsSegmentDropdownOpen(!isSegmentDropdownOpen)}
-                                className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 text-[10px] text-white/70 font-bold uppercase tracking-widest focus:outline-none focus:border-purple-500/50 transition-all flex items-center justify-between group hover:bg-white/[0.06]"
+                                className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 text-[11px] text-white/70 font-bold uppercase tracking-widest focus:outline-none focus:border-purple-500/50 transition-all flex items-center justify-between group hover:bg-white/[0.06]"
                             >
                                 <span>
                                     {selectedSegmentFilter === "all"
@@ -416,7 +416,7 @@ export default function PremiumChatPanel({ onClose }) {
                                 <div className="absolute top-full left-0 w-full mt-2 bg-[#1A1A1F] border border-white/10 rounded-xl py-2 shadow-2xl z-50 animate-in slide-in-from-top-2 fade-in duration-200 backdrop-blur-xl">
                                     <button
                                         onClick={() => { setSelectedSegmentFilter("all"); setIsSegmentDropdownOpen(false); }}
-                                        className={`w-full text-left px-4 py-2.5 text-[10px] uppercase tracking-widest font-bold transition-colors ${selectedSegmentFilter === "all" ? "text-purple-400 bg-purple-500/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+                                        className={`w-full text-left px-4 py-2.5 text-[11px] uppercase tracking-widest font-bold transition-colors ${selectedSegmentFilter === "all" ? "text-purple-400 bg-purple-500/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
                                     >
                                         Any Segment
                                     </button>
@@ -424,7 +424,7 @@ export default function PremiumChatPanel({ onClose }) {
                                         <button
                                             key={seg.segment_id}
                                             onClick={() => { setSelectedSegmentFilter(seg.segment_id); setIsSegmentDropdownOpen(false); }}
-                                            className={`w-full text-left px-4 py-2.5 text-[10px] uppercase tracking-widest font-bold transition-colors ${selectedSegmentFilter === seg.segment_id ? "text-purple-400 bg-purple-500/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+                                            className={`w-full text-left px-4 py-2.5 text-[11px] uppercase tracking-widest font-bold transition-colors ${selectedSegmentFilter === seg.segment_id ? "text-purple-400 bg-purple-500/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
                                         >
                                             {seg.segment_name}
                                         </button>
@@ -436,7 +436,7 @@ export default function PremiumChatPanel({ onClose }) {
 
                     {/* Agent List */}
                     <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2 custom-scrollbar">
-                        <p className="text-[9px] uppercase tracking-[0.2em] text-white/20 font-black mb-4 px-2">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/20 font-black mb-4 px-2">
                             Available Agents ({filteredAgents.length})
                         </p>
                         {filteredAgents.map((agent) => {
@@ -471,24 +471,24 @@ export default function PremiumChatPanel({ onClose }) {
                                             )}
                                             <div>
                                                 <p className={`text-sm font-bold transition-colors ${isSelected ? "text-white" : "text-white/80 group-hover:text-white"}`}>{agent.displayName}</p>
-                                                <p className="text-[10px] text-white/30 font-medium group-hover:text-white/40">{agent.archetype}</p>
+                                                <p className="text-[11px] text-white/30 font-medium group-hover:text-white/40">{agent.archetype}</p>
                                             </div>
                                         </div>
                                         <div className={`w-2 h-2 rounded-full mt-1.5 shadow-[0_0_8px_rgba(0,0,0,0.5)] ${agent.state === "ADOPTED" ? "bg-emerald-500 shadow-emerald-500/20" : agent.state === "REJECTED" ? "bg-rose-500 shadow-rose-500/20" : "bg-white/20"}`} />
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <span className={`text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md ${agent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400" : agent.state === "REJECTED" ? "bg-rose-500/10 text-rose-400" : "bg-white/5 text-white/30"}`}>
+                                        <span className={`text-[11px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md ${agent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400" : agent.state === "REJECTED" ? "bg-rose-500/10 text-rose-400" : "bg-white/5 text-white/30"}`}>
                                             {agent.state}
                                         </span>
                                         {agent.simState && (
                                             <div className="flex items-center gap-1">
                                                 <div className={`w-2 h-2 rounded-full ${agent.simState.converted ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : agent.simState.churned ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' : 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.3)]'}`} />
-                                                <span className="text-[9px] font-mono text-white/30">{(agent.simState.sentimentScore * 100).toFixed(0)}%</span>
+                                                <span className="text-[11px] font-mono text-white/30">{(agent.simState.sentimentScore * 100).toFixed(0)}%</span>
                                             </div>
                                         )}
                                         {!agent.simState && (
-                                            <span className="text-[10px] text-white/20 font-mono">Inf: <span className="text-white/40">{agent.influence}/10</span></span>
+                                            <span className="text-[11px] text-white/20 font-mono">Inf: <span className="text-white/40">{agent.influence}/10</span></span>
                                         )}
                                     </div>
                                 </div>
@@ -499,12 +499,12 @@ export default function PremiumChatPanel({ onClose }) {
                     {/* Selection Summary (for Panel) */}
                     {mode === "panel" && panelAgents.length > 0 && (
                         <div className="p-6 border-t border-white/5 bg-purple-600/5">
-                            <p className="text-[9px] uppercase tracking-widest text-purple-400/60 font-black mb-3">
+                            <p className="text-[11px] uppercase tracking-widest text-purple-400/60 font-black mb-3">
                                 Panel: {panelAgents.length} Personas
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {panelAgents.map((a) => (
-                                    <span key={a.id} className="text-[9px] px-2 py-1 bg-purple-600/20 text-purple-300 rounded-lg border border-purple-500/20 font-bold">
+                                    <span key={a.id} className="text-[11px] px-2 py-1 bg-purple-600/20 text-purple-300 rounded-lg border border-purple-500/20 font-bold">
                                         {a.displayName}
                                     </span>
                                 ))}
@@ -515,18 +515,18 @@ export default function PremiumChatPanel({ onClose }) {
                     {/* Selection Summary (for Debate) */}
                     {mode === "debate" && (
                         <div className="p-6 border-t border-white/5 bg-rose-600/5">
-                            <p className="text-[9px] uppercase tracking-widest text-rose-400/60 font-black mb-3">
+                            <p className="text-[11px] uppercase tracking-widest text-rose-400/60 font-black mb-3">
                                 Debate Participants ({debateAgents.length}/2)
                             </p>
                             <div className="flex flex-wrap gap-1.5 flex-col">
                                 {debateAgents.map((a, i) => (
-                                    <div key={a.id} className="text-[10px] px-3 py-2 bg-rose-600/10 text-rose-300 rounded-lg border border-rose-500/20 font-bold flex items-center justify-between">
+                                    <div key={a.id} className="text-[11px] px-3 py-2 bg-rose-600/10 text-rose-300 rounded-lg border border-rose-500/20 font-bold flex items-center justify-between">
                                         <span>Candidate {i+1}: {a.displayName}</span>
                                         <div className={`w-2 h-2 rounded-full ${a.state === "ADOPTED" ? "bg-emerald-500" : a.state === "REJECTED" ? "bg-rose-500" : "bg-amber-400"}`} />
                                     </div>
                                 ))}
                                 {debateAgents.length < 2 && (
-                                    <div className="text-[10px] px-3 py-2 border border-dashed border-rose-500/30 text-rose-500/50 rounded-lg font-bold">
+                                    <div className="text-[11px] px-3 py-2 border border-dashed border-rose-500/30 text-rose-500/50 rounded-lg font-bold">
                                         Select another persona...
                                     </div>
                                 )}
@@ -538,19 +538,19 @@ export default function PremiumChatPanel({ onClose }) {
                     {mode === "survey" && surveySelectedIds.size > 0 && (
                         <div className="p-6 border-t border-white/5 bg-cyan-600/5">
                             <div className="flex items-center justify-between mb-3">
-                                <p className="text-[9px] uppercase tracking-widest text-cyan-400/60 font-black">
+                                <p className="text-[11px] uppercase tracking-widest text-cyan-400/60 font-black">
                                     Survey: {surveySelectedIds.size}/{allAgents.length} selected
                                 </p>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setSurveySelectedIds(new Set(allAgents.map(a => a.id)))}
-                                        className="text-[9px] text-cyan-400/60 hover:text-cyan-400 transition-colors font-bold"
+                                        className="text-[11px] text-cyan-400/60 hover:text-cyan-400 transition-colors font-bold"
                                     >
                                         All
                                     </button>
                                     <button
                                         onClick={() => setSurveySelectedIds(new Set())}
-                                        className="text-[9px] text-white/30 hover:text-white/60 transition-colors font-bold"
+                                        className="text-[11px] text-white/30 hover:text-white/60 transition-colors font-bold"
                                     >
                                         Clear
                                     </button>
@@ -572,7 +572,7 @@ export default function PremiumChatPanel({ onClose }) {
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-white tracking-tight">AI Analyst</h2>
-                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Data-driven insights &middot; Zep Knowledge Graph</p>
+                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">Data-driven insights &middot; Zep Knowledge Graph</p>
                                 </div>
                             </div>
                         ) : mode === "single" && selectedAgent ? (
@@ -582,26 +582,26 @@ export default function PremiumChatPanel({ onClose }) {
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-white tracking-tight">{selectedAgent.displayName}</h2>
-                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">{selectedAgent.archetype} &middot; <span className={selectedAgent.state === "ADOPTED" ? "text-emerald-400/60" : "text-rose-400/60"}>{selectedAgent.segmentName}</span></p>
+                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">{selectedAgent.archetype} &middot; <span className={selectedAgent.state === "ADOPTED" ? "text-emerald-400/60" : "text-rose-400/60"}>{selectedAgent.segmentName}</span></p>
                                 </div>
                             </div>
                         ) : mode === "panel" ? (
                             <div className="flex items-center gap-4 animate-in slide-in-from-left-4 duration-500">
                                 <div className="flex -space-x-3">
                                     {panelAgents.slice(0, 3).map((a, i) => (
-                                        <div key={i} className="w-10 h-10 rounded-xl bg-purple-600 border-2 border-[#0F0F12] flex items-center justify-center text-[10px] font-black text-white shadow-xl">
+                                        <div key={i} className="w-10 h-10 rounded-xl bg-purple-600 border-2 border-[#0F0F12] flex items-center justify-center text-[11px] font-black text-white shadow-xl">
                                             {a.name[0]}
                                         </div>
                                     ))}
                                     {panelAgents.length > 3 && (
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 border-2 border-[#0F0F12] flex items-center justify-center text-[10px] font-black text-white/40 backdrop-blur-md">
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 border-2 border-[#0F0F12] flex items-center justify-center text-[11px] font-black text-white/40 backdrop-blur-md">
                                             +{panelAgents.length - 3}
                                         </div>
                                     )}
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-white tracking-tight">Panel Discussion</h2>
-                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">{panelAgents.length} personas listening &middot; Collective intelligence</p>
+                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">{panelAgents.length} personas listening &middot; Collective intelligence</p>
                                 </div>
                             </div>
                         ) : mode === "debate" ? (
@@ -611,13 +611,13 @@ export default function PremiumChatPanel({ onClose }) {
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-white tracking-tight">Debate Mode</h2>
-                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Observe contrasting perspectives</p>
+                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">Observe contrasting perspectives</p>
                                 </div>
                             </div>
                         ) : (
                             <div>
                                 <h2 className="text-lg font-bold text-white/20 tracking-tight">Interrogation Lab</h2>
-                                <p className="text-[10px] text-white/10 font-bold uppercase tracking-[0.2em]">Select an agent to begin the interview</p>
+                                <p className="text-[11px] text-white/10 font-bold uppercase tracking-[0.2em]">Select an agent to begin the interview</p>
                             </div>
                         )}
                     </div>
@@ -631,7 +631,7 @@ export default function PremiumChatPanel({ onClose }) {
                                 <p className="text-white/30 text-sm leading-relaxed mb-10 font-medium italic">
                                     {mode === "single"
                                         ? "Direct 1:1 interaction with a persona to understand their deep psychological barriers and motivations."
-                                        : mode === "debate" 
+                                        : mode === "debate"
                                             ? "Select exactly TWO personas to debate a topic. Watch how their contrasting backgrounds shape their arguments."
                                             : "Ask a question to multiple personas simultaneously. Watch how different demographic segments react to the same prompt."
                                     }
@@ -655,8 +655,8 @@ export default function PremiumChatPanel({ onClose }) {
                                 return (
                                     <div key={i} className="flex justify-end animate-in fade-in slide-in-from-bottom-4 duration-500">
                                         <div className={`max-w-[70%] border rounded-3xl rounded-br-none px-6 py-4 shadow-2xl ${
-                                            mode === "debate" 
-                                                ? "bg-rose-600/20 border-rose-500/30 shadow-rose-500/5 text-rose-100" 
+                                            mode === "debate"
+                                                ? "bg-rose-600/20 border-rose-500/30 shadow-rose-500/5 text-rose-100"
                                                 : "bg-purple-600/20 border-purple-500/30 shadow-purple-500/5 text-white/90"
                                             }`}>
                                             <p className="text-sm leading-relaxed font-bold">{msg.text}</p>
@@ -670,7 +670,7 @@ export default function PremiumChatPanel({ onClose }) {
                                         <div className="max-w-[85%] space-y-2">
                                             <div className="flex items-center gap-2 px-1">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60" />
-                                                <p className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em]">{msg.senderName}</p>
+                                                <p className="text-[11px] text-white/30 font-black uppercase tracking-[0.2em]">{msg.senderName}</p>
                                             </div>
                                             <div className="bg-white/[0.05] border border-white/10 rounded-3xl rounded-bl-none px-6 py-4 backdrop-blur-md">
                                                 <p className="text-sm text-white/80 leading-relaxed">{msg.text}</p>
@@ -687,7 +687,7 @@ export default function PremiumChatPanel({ onClose }) {
                                                 <div className="max-w-[85%] space-y-2">
                                                     <div className="flex items-center gap-2 px-1">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60" />
-                                                        <p className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em]">{r.name}</p>
+                                                        <p className="text-[11px] text-white/30 font-black uppercase tracking-[0.2em]">{r.name}</p>
                                                     </div>
                                                     <div className="bg-white/[0.04] border border-white/10 rounded-3xl rounded-bl-none px-6 py-4 backdrop-blur-md">
                                                         <p className="text-sm text-white/80 leading-relaxed">{r.reply}</p>
@@ -706,7 +706,7 @@ export default function PremiumChatPanel({ onClose }) {
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 px-1">
                                         <div className={`w-2 h-2 rounded-full animate-pulse ${mode === "debate" ? "bg-rose-500" : "bg-purple-500"}`} />
-                                        <p className="text-[10px] text-white/30 font-black uppercase tracking-[0.2em]">{isDebating ? "Synthesizing Counter-Argument..." : "Synthesizing Response..."}</p>
+                                        <p className="text-[11px] text-white/30 font-black uppercase tracking-[0.2em]">{isDebating ? "Synthesizing Counter-Argument..." : "Synthesizing Response..."}</p>
                                     </div>
                                     <div className="bg-white/[0.03] border border-white/10 rounded-3xl px-6 py-5 flex gap-1.5 items-center justify-center w-24">
                                         <div className={`w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.3s] ${mode === "debate" ? "bg-rose-500/50" : "bg-purple-500/50"}`} />
@@ -748,7 +748,7 @@ export default function PremiumChatPanel({ onClose }) {
                                 </svg>
                             </button>
                         </div>
-                        <p className="text-center text-[9px] text-white/10 uppercase tracking-[0.3em] mt-6 font-black">
+                        <p className="text-center text-[11px] text-white/10 uppercase tracking-[0.3em] mt-6 font-black">
                             Neural Simulation Engine &middot; Real-time Synthesis
                         </p>
                     </div>
@@ -764,7 +764,7 @@ export default function PremiumChatPanel({ onClose }) {
                                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xl shadow-inner">📋</div>
                                 <div>
                                     <h2 className="text-lg font-bold text-white tracking-tight">Mass Survey</h2>
-                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">
+                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">
                                         Send one question to {surveySelectedIds.size} personas simultaneously
                                     </p>
                                 </div>
@@ -775,7 +775,7 @@ export default function PremiumChatPanel({ onClose }) {
                         <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6 custom-scrollbar">
                             {/* Persona Selection Grid */}
                             <div>
-                                <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-black mb-4">Select Personas to Survey</p>
+                                <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-black mb-4">Select Personas to Survey</p>
                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                                     {allAgents.map(agent => {
                                         const isChecked = surveySelectedIds.has(agent.id);
@@ -812,7 +812,7 @@ export default function PremiumChatPanel({ onClose }) {
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-xs font-bold text-white/80 truncate">{agent.displayName}</p>
-                                                    <p className="text-[9px] text-white/30 truncate">{agent.segmentName}</p>
+                                                    <p className="text-[10px] text-white/30 truncate">{agent.segmentName}</p>
                                                 </div>
                                                 {agent.simState && (
                                                     <div
@@ -830,7 +830,7 @@ export default function PremiumChatPanel({ onClose }) {
 
                             {/* Question Input */}
                             <div>
-                                <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-black mb-3">Your Question</p>
+                                <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-black mb-3">Your Question</p>
                                 <textarea
                                     value={surveyQuestion}
                                     onChange={(e) => setSurveyQuestion(e.target.value)}
@@ -888,7 +888,7 @@ export default function PremiumChatPanel({ onClose }) {
                             {/* Survey Results */}
                             {surveyResults.length > 0 && (
                                 <div>
-                                    <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-black mb-4">
+                                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-black mb-4">
                                         Responses ({surveyResults.length})
                                     </p>
                                     <div className="space-y-3">
@@ -900,11 +900,11 @@ export default function PremiumChatPanel({ onClose }) {
                                                     </div>
                                                     <div>
                                                         <p className="text-xs font-bold text-white/80">{result.personaName}</p>
-                                                        <p className="text-[9px] text-white/30">{result.segmentName}</p>
+                                                        <p className="text-[10px] text-white/30">{result.segmentName}</p>
                                                     </div>
                                                 </div>
                                                 <p className="text-sm text-white/70 leading-relaxed">{result.answer}</p>
-                                                <p className="text-[9px] text-white/20 mt-2 italic">Q: {result.question}</p>
+                                                <p className="text-[10px] text-white/20 mt-2 italic">Q: {result.question}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -918,14 +918,14 @@ export default function PremiumChatPanel({ onClose }) {
                 {mode === "single" && selectedAgent && (
                     <div className="w-[300px] shrink-0 border-l border-white/5 bg-black/40 overflow-y-auto p-6 hidden xl:flex flex-col custom-scrollbar animate-in slide-in-from-right-4 duration-500">
                         <div className="mb-8">
-                            <p className="text-[9px] uppercase tracking-[0.2em] text-white/20 font-black mb-6">Neural Signature</p>
+                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/20 font-black mb-6">Neural Signature</p>
                             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-white/10 flex items-center justify-center text-3xl mb-4 group hover:scale-105 transition-transform duration-500">
                                 {selectedAgent.name[0]}
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">{selectedAgent.displayName}</h3>
                             <div className="flex flex-wrap gap-2">
-                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-[9px] text-white/50 uppercase tracking-widest font-black border border-white/5">{selectedAgent.archetype}</span>
-                                <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black tracking-widest uppercase border ${selectedAgent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : selectedAgent.state === "REJECTED" ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-white/5 text-white/30 border-white/10"}`}>
+                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-[11px] text-white/50 uppercase tracking-widest font-black border border-white/5">{selectedAgent.archetype}</span>
+                                <span className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-widest uppercase border ${selectedAgent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : selectedAgent.state === "REJECTED" ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-white/5 text-white/30 border-white/10"}`}>
                                     {selectedAgent.state}
                                 </span>
                             </div>
@@ -935,7 +935,7 @@ export default function PremiumChatPanel({ onClose }) {
                         <div className="space-y-6 mb-10">
                             <div>
                                 <div className="flex justify-between text-[10px] mb-2">
-                                    <span className="text-white/30 uppercase tracking-[0.1em] font-bold text-[9px]">Influence</span>
+                                    <span className="text-white/30 uppercase tracking-[0.1em] font-bold text-[10px]">Influence</span>
                                     <span className="text-purple-400 font-bold">{selectedAgent.influence}/10</span>
                                 </div>
                                 <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
@@ -944,7 +944,7 @@ export default function PremiumChatPanel({ onClose }) {
                             </div>
                             <div>
                                 <div className="flex justify-between text-[10px] mb-2">
-                                    <span className="text-white/30 uppercase tracking-[0.1em] font-bold text-[9px]">Decision Confidence</span>
+                                    <span className="text-white/30 uppercase tracking-[0.1em] font-bold text-[10px]">Decision Confidence</span>
                                     <span className="text-blue-400 font-bold">8/10</span>
                                 </div>
                                 <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
@@ -955,7 +955,7 @@ export default function PremiumChatPanel({ onClose }) {
 
                         {/* Capital */}
                         <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 mb-8">
-                            <p className="text-[9px] uppercase tracking-[0.2em] text-white/20 font-black mb-2">Disposable Capital</p>
+                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/20 font-black mb-2">Disposable Capital</p>
                             <p className="text-2xl font-black italic text-white/90 font-mono tracking-tighter">${selectedAgent.metadata?.capital || "4,200"}</p>
                         </div>
 

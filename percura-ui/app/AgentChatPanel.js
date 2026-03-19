@@ -161,7 +161,7 @@ export default function AgentChatPanel({ agents }) {
 
                     {/* Agent Cards */}
                     <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
-                        <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-2 ml-1">
+                        <p className="text-[11px] uppercase tracking-widest text-white/30 font-bold mb-2 ml-1">
                             Personas ({agents.length})
                         </p>
                         {agents.map((agent) => {
@@ -188,7 +188,7 @@ export default function AgentChatPanel({ agents }) {
                                         </div>
                                         <div className={`w-2 h-2 rounded-full mt-1 ${agent.state === "adopted" ? "bg-emerald-500" : agent.state === "rejected" ? "bg-rose-500" : agent.state === "churned" ? "bg-amber-500" : "bg-white/20"}`} />
                                     </div>
-                                    <div className="flex items-center gap-3 text-[9px] text-white/30">
+                                    <div className="flex items-center gap-3 text-[10px] text-white/30">
                                         <span className={`uppercase font-bold ${agent.state === "adopted" ? "text-emerald-400/70" : agent.state === "rejected" ? "text-rose-400/70" : "text-white/40"}`}>
                                             {agent.state}
                                         </span>
@@ -201,12 +201,12 @@ export default function AgentChatPanel({ agents }) {
 
                     {mode === "panel" && panelAgents.length > 0 && (
                         <div className="p-3 border-t border-white/5">
-                            <p className="text-[9px] uppercase tracking-widest text-blue-400/60 font-bold mb-1">
+                            <p className="text-[11px] uppercase tracking-widest text-blue-400/60 font-bold mb-1">
                                 Panel: {panelAgents.length} selected
                             </p>
                             <div className="flex flex-wrap gap-1">
                                 {panelAgents.map((a) => (
-                                    <span key={a.id} className="text-[9px] px-2 py-0.5 bg-blue-500/10 text-blue-300 rounded border border-blue-500/20">
+                                    <span key={a.id} className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-300 rounded border border-blue-500/20">
                                         {a.name}
                                     </span>
                                 ))}
@@ -351,7 +351,7 @@ export default function AgentChatPanel({ agents }) {
 
                         {/* Neural Traits */}
                         <div className="mb-6">
-                            <p className="text-[9px] uppercase tracking-widest text-white/40 font-bold mb-3">Neural Traits</p>
+                            <p className="text-[11px] uppercase tracking-widest text-white/40 font-bold mb-3">Neural Traits</p>
                             <div className="space-y-2">
                                 {[
                                     { label: "Risk Tolerance", value: selectedAgent.riskTolerance, color: "bg-rose-500" },
@@ -373,17 +373,17 @@ export default function AgentChatPanel({ agents }) {
 
                         {/* Capital */}
                         <div className="mb-6">
-                            <p className="text-[9px] uppercase tracking-widest text-white/40 font-bold mb-2">Capital</p>
+                            <p className="text-[11px] uppercase tracking-widest text-white/40 font-bold mb-2">Capital</p>
                             <p className="text-xl font-mono text-white/90">${selectedAgent.capital}</p>
                         </div>
 
                         {/* Biases */}
                         {selectedAgent.biases?.length > 0 && (
                             <div className="mb-6">
-                                <p className="text-[9px] uppercase tracking-widest text-white/40 font-bold mb-2">Cognitive Biases</p>
+                                <p className="text-[11px] uppercase tracking-widest text-white/40 font-bold mb-2">Cognitive Biases</p>
                                 <div className="flex flex-wrap gap-1.5">
                                     {selectedAgent.biases.map((b, i) => (
-                                        <span key={i} className="text-[9px] px-2 py-1 bg-rose-500/10 text-rose-300 rounded border border-rose-500/20">{b}</span>
+                                        <span key={i} className="text-[10px] px-2 py-1 bg-rose-500/10 text-rose-300 rounded border border-rose-500/20">{b}</span>
                                     ))}
                                 </div>
                             </div>
@@ -391,7 +391,7 @@ export default function AgentChatPanel({ agents }) {
 
                         {/* Simulation Timeline */}
                         <div>
-                            <p className="text-[9px] uppercase tracking-widest text-white/40 font-bold mb-3">Simulation Events</p>
+                            <p className="text-[11px] uppercase tracking-widest text-white/40 font-bold mb-3">Simulation Events</p>
                             <div className="space-y-2">
                                 {(selectedAgent.knowledge || []).map((k, i) => (
                                     <div key={i} className="flex items-start gap-2">
