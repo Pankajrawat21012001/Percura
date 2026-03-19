@@ -266,7 +266,7 @@ export default function ValidatePage() {
                 {/* Neural shader background */}
                 <ShaderPageBackground overlayOpacity={0.75} blur={true} />
 
-                <div className="relative z-10 w-full max-w-3xl mx-auto px-6 pt-6 pb-24">
+                <div className="relative z-10 w-full max-w-5xl mx-auto px-6 lg:px-12 pt-6 pb-24">
                     {/* Header */}
                     <div className="text-center mb-12 fade-in-blur">
                         <h1 className="text-4xl md:text-5xl lg:text-7xl font-light tracking-tight mb-6 text-white">

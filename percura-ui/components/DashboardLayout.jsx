@@ -18,7 +18,7 @@ export default function DashboardLayout({ children, rightPanel, currentStep }) {
             />
 
             {/* Main Content Area */}
-            <main className="flex-1 w-full relative lg:pl-24 transition-all duration-500">
+            <main className="flex-1 w-full relative lg:pl-[72px] transition-all duration-500">
                 {/* Header for small screens */}
                 <header className="lg:hidden flex items-center justify-between p-4 border-b border-white/10 bg-black/50 backdrop-blur-md z-30">
                     <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-white/60">

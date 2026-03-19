@@ -366,7 +366,7 @@ export default function SimulationResultsPage() {
                     </div>
                 )}
 
-                <div className="relative z-10 max-w-5xl mx-auto px-6 pb-48" ref={reportRef}>
+                <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-10 pb-48" ref={reportRef}>
                     {/* Report Header — Structured Document Feel */}
                     <div className="flex flex-col mb-10">
                         <div className="flex justify-between items-start mb-6">

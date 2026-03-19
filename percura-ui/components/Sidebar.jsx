@@ -2,63 +2,114 @@
 
 import { useState, useEffect, useRef } from "react";
 import { db } from "../lib/firebase";
-import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { useIdea } from "../context/IdeaContext";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 const STEPS = [
     { 
         number: 1, 
-        label: "Market Validation", 
+        label: "Validate Idea", 
+        shortLabel: "Validate",
         path: "/validate", 
+        description: "Define & test your startup concept",
         icon: (
-            <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
         )
     },
     { 
         number: 2, 
-        label: "Ontology Context", 
+        label: "Market Context", 
+        shortLabel: "Context",
         path: "/context", 
+        description: "Ontology & competitive landscape",
         icon: (
-            <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5S19.832 5.477 21 6.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
         )
     },
     { 
         number: 3, 
-        label: "Recursive Segments", 
+        label: "Audience Segments", 
+        shortLabel: "Segments",
         path: "/segment", 
+        description: "Persona clustering & selection",
         icon: (
-            <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
         )
     },
     { 
         number: 4, 
-        label: "Simulation Reports", 
+        label: "Results & Report", 
+        shortLabel: "Results",
         path: "/simulation-results", 
+        description: "Simulation output & analysis",
         icon: (
-            <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
         )
     },
 ];
 
+// Map pathname to step number for completion tracking
+const PATH_TO_STEP = {
+    "/validate": 1,
+    "/context": 2,
+    "/segment": 3,
+    "/simulation-results": 4,
+};
+
 export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
     const { user, logOut } = useAuth();
-    const { setCurrentSimulationId, currentSimulationId, setIdea, setSimulationResults, setValidation } = useIdea();
+    const { setCurrentSimulationId, currentSimulationId, setIdea, setSimulationResults, setValidation, reset } = useIdea();
     const [history, setHistory] = useState([]);
     const [isHovered, setIsHovered] = useState(false);
+    const [showChats, setShowChats] = useState(false);
+    const [deletingId, setDeletingId] = useState(null);
     const sidebarRef = useRef(null);
     const router = useRouter();
     const pathname = usePathname();
+
+    // Track completed steps persistently per session
+    const [completedSteps, setCompletedSteps] = useState(() => {
+        if (typeof window !== "undefined") {
+            const stored = sessionStorage.getItem("percura_completed_steps");
+            return stored ? JSON.parse(stored) : [];
+        }
+        return [];
+    });
+
+    // Mark current step as completed whenever it changes
+    useEffect(() => {
+        const stepNum = PATH_TO_STEP[pathname];
+        if (stepNum && !completedSteps.includes(stepNum)) {
+            const updated = [...completedSteps, stepNum];
+            setCompletedSteps(updated);
+            if (typeof window !== "undefined") {
+                sessionStorage.setItem("percura_completed_steps", JSON.stringify(updated));
+            }
+        }
+    }, [pathname]);
+
+    // Also mark the currentStep from props
+    useEffect(() => {
+        if (currentStep && !completedSteps.includes(currentStep)) {
+            const updated = [...completedSteps, currentStep];
+            setCompletedSteps(updated);
+            if (typeof window !== "undefined") {
+                sessionStorage.setItem("percura_completed_steps", JSON.stringify(updated));
+            }
+        }
+    }, [currentStep]);
 
     useEffect(() => {
         if (!user) return;
@@ -92,23 +143,6 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isOpen, setIsOpen]);
 
-    const groupHistory = (items) => {
-        const groups = { Today: [], Yesterday: [], "Last 7 Days": [], Older: [] };
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
-        const last7Days = new Date(today); last7Days.setDate(last7Days.getDate() - 7);
-
-        items.forEach(item => {
-            const date = item.timestamp?.toDate() || new Date();
-            if (date >= today) groups.Today.push(item);
-            else if (date >= yesterday) groups.Yesterday.push(item);
-            else if (date >= last7Days) groups["Last 7 Days"].push(item);
-            else groups.Older.push(item);
-        });
-        return groups;
-    };
-
     const handleSelectSimulation = (sim) => {
         setCurrentSimulationId(sim.id || sim.docId);
         setIdea(sim.ideaData);
@@ -118,23 +152,47 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
             personas: sim.results?.personas || [],
             totalMatched: sim.results?.totalMatched || 0,
         });
-
-        if (sim.results?.segmentsWithResults?.length > 0 || sim.status === "completed") {
-            router.push("/simulation-results");
-        } else {
-            router.push("/segment");
-        }
+        router.push("/simulation-results");
         if (window.innerWidth < 1024) setIsOpen(false);
     };
 
-    const groupedHistory = groupHistory(history);
+    const handleDeleteSimulation = async (e, simId) => {
+        e.stopPropagation();
+        setDeletingId(simId);
+        try {
+            await deleteDoc(doc(db, "simulations", simId));
+            if (currentSimulationId === simId) {
+                setCurrentSimulationId(null);
+            }
+        } catch (err) {
+            console.error("Failed to delete simulation:", err);
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
+    const handleNewSimulation = () => {
+        // Reset all idea/simulation state in context
+        reset();
+        // Clear completed steps so the flow starts fresh
+        if (typeof window !== "undefined") {
+            sessionStorage.removeItem("percura_completed_steps");
+        }
+        router.push("/validate");
+        if (window.innerWidth < 1024) setIsOpen(false);
+    };
+
+    const isExpanded = isOpen || isHovered;
+
+    // Only show recent 5 chats
+    const recentHistory = history.slice(0, 5);
 
     return (
         <>
             {/* Backdrop for Mobile */}
             {isOpen && (
                 <div 
-                    className="fixed inset-0 bg-black/40 backdrop-blur-xl z-[65] lg:hidden animate-in fade-in duration-300" 
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[65] lg:hidden animate-in fade-in duration-300" 
                     onClick={() => setIsOpen(false)}
                 />
             )}
@@ -142,130 +200,264 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
             <aside 
                 ref={sidebarRef}
                 onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
+                onMouseLeave={() => { setIsHovered(false); setShowChats(false); }}
                 className={`
-                    fixed top-0 left-0 h-full bg-[#050505] border-r border-white/10 z-[70] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-[0_0_80px_rgba(0,0,0,1)]
+                    fixed top-0 left-0 h-full bg-[#0A0A0A] border-r border-white/[0.06] z-[70] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
                     ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-                    ${isHovered ? "w-80" : "w-80 lg:w-24"}
+                    ${isExpanded ? "w-72" : "w-72 lg:w-[72px]"}
                     flex flex-col
                 `}
             >
-                {/* Brand & Toggle Header */}
-                <div className="p-8 pb-10 flex items-center justify-between lg:justify-start">
-                    <Link href="/validate" className="flex items-center gap-5 group">
-                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-700 flex items-center justify-center text-white font-black shadow-[0_8px_30px_rgba(99,102,241,0.4)] group-hover:scale-110 group-active:scale-95 transition-all duration-300 shrink-0">
-                            P
+                {/* Brand Header */}
+                <div className={`p-5 flex items-center justify-between border-b border-white/[0.04] ${isExpanded ? 'px-6' : 'px-4 justify-center'}`}>
+                    <Link href="/validate" className="flex items-center gap-3 group">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-600 to-indigo-700 flex items-center justify-center shadow-[0_4px_20px_rgba(99,102,241,0.3)] group-hover:shadow-[0_4px_30px_rgba(99,102,241,0.5)] group-hover:scale-105 group-active:scale-95 transition-all duration-300 shrink-0 overflow-hidden">
+                            <Image
+                                src="/percura-icon.png"
+                                alt="Percura"
+                                width={28}
+                                height={28}
+                                className="object-contain"
+                            />
                         </div>
-                        <span className={`text-2xl font-black tracking-tighter text-white transition-all duration-500 delay-75 ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 lg:hidden"}`}>
+                        <span className={`text-lg font-bold tracking-tight text-white/90 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
                             PERCURA
                         </span>
                     </Link>
-                    <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 text-white/40 hover:text-white">✕</button>
+                    <button onClick={() => setIsOpen(false)} className="lg:hidden p-1.5 text-white/30 hover:text-white rounded-lg hover:bg-white/5">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
 
-                {/* Content Area */}
-                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-5 space-y-12">
-                    {/* Framework Section */}
-                    <div className="space-y-3">
-                        <p className={`text-[11px] uppercase tracking-[0.4em] text-white/40 font-black mb-6 px-5 transition-all duration-500 ${isHovered ? "opacity-100" : "opacity-0 lg:hidden"}`}>Framework</p>
-                        {STEPS.map((step) => {
-                            const isCompleted = currentStep > step.number;
-                            const isActive = currentStep === step.number;
+                {/* New Simulation Button */}
+                <div className={`px-3 pt-3 pb-1`}>
+                    <button
+                        onClick={handleNewSimulation}
+                        title={!isExpanded ? "New Simulation" : undefined}
+                        className={`
+                            w-full flex items-center gap-3 transition-all duration-300 group
+                            bg-gradient-to-r from-purple-600/20 to-indigo-600/10 hover:from-purple-600/30 hover:to-indigo-600/20
+                            border border-purple-500/20 hover:border-purple-500/40
+                            rounded-xl shadow-[0_0_15px_-5px_rgba(147,51,234,0.2)] hover:shadow-[0_0_20px_-5px_rgba(147,51,234,0.35)]
+                            ${isExpanded ? 'p-3 justify-start' : 'p-3 justify-center'}
+                        `}
+                    >
+                        <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-purple-500/20 border border-purple-500/20 text-purple-300 shrink-0 group-hover:scale-110 transition-transform">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </div>
+                        <span className={`text-[13px] font-semibold text-purple-300/90 whitespace-nowrap transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden lg:hidden'}`}>
+                            New Simulation
+                        </span>
+                    </button>
+                </div>
+
+                {/* Navigation Steps */}
+                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    <nav className={`py-4 space-y-1 ${isExpanded ? 'px-3' : 'px-2'}`}>
+                        {STEPS.map((step, idx) => {
+                            const isActive = pathname === step.path;
+                            const isDone = completedSteps.includes(step.number) && !isActive;
+                            const isAccessible = isDone || isActive || completedSteps.includes(step.number - 1) || step.number === 1;
+
                             return (
                                 <button
                                     key={step.number}
-                                    onClick={() => isCompleted && router.push(step.path)}
-                                    disabled={!isCompleted && !isActive}
+                                    onClick={() => isAccessible && router.push(step.path)}
+                                    disabled={!isAccessible}
+                                    title={!isExpanded ? step.label : undefined}
                                     className={`
-                                        w-full flex items-center gap-6 p-4 rounded-3xl transition-all duration-500 group relative
-                                        ${isActive ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_15px_40px_-10px_rgba(147,51,234,0.5)] scale-[1.03]" : 
-                                          isCompleted ? "text-purple-400 hover:bg-white/[0.08] hover:translate-x-1" : "text-white/20 cursor-not-allowed"}
+                                        w-full flex items-center gap-3 transition-all duration-300 group relative
+                                        ${isExpanded ? 'p-3 rounded-xl' : 'p-3 rounded-xl justify-center'}
+                                        ${isActive 
+                                            ? "bg-gradient-to-r from-purple-600/90 to-indigo-600/90 text-white shadow-[0_4px_20px_-4px_rgba(147,51,234,0.4)]" 
+                                            : isDone 
+                                                ? "text-white/70 hover:bg-white/[0.05] hover:text-white cursor-pointer" 
+                                                : isAccessible
+                                                    ? "text-white/40 hover:bg-white/[0.03] hover:text-white/60 cursor-pointer"
+                                                    : "text-white/15 cursor-not-allowed"}
                                     `}
                                 >
+                                    {/* Step Icon with status indicator */}
                                     <div className={`
-                                        w-8 h-8 flex items-center justify-center transition-all duration-500 shrink-0
-                                        ${isActive ? "scale-110 text-white drop-shadow-[0_0_10px_white]" : 
-                                          isCompleted ? "text-purple-400 bg-purple-500/10 rounded-xl" : "text-white/40 bg-white/5 rounded-xl"}
+                                        relative w-9 h-9 flex items-center justify-center rounded-lg shrink-0 transition-all duration-300
+                                        ${isActive ? "bg-white/20 text-white" : 
+                                          isDone ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : 
+                                          isAccessible ? "bg-white/[0.05] text-white/40 border border-white/[0.06]" :
+                                          "bg-white/[0.02] text-white/15 border border-white/[0.03]"}
                                     `}>
-                                        {step.icon}
+                                        {isDone ? (
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        ) : (
+                                            step.icon
+                                        )}
                                     </div>
-                                    <span className={`text-[14px] font-black tracking-tight whitespace-nowrap transition-all duration-500 ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 lg:hidden"}`}>
-                                        {step.label}
+
+                                    {/* Label & Description */}
+                                    <div className={`flex-1 text-left min-w-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
+                                        <p className={`text-[13px] font-semibold leading-tight truncate ${isActive ? 'text-white' : isDone ? 'text-white/80' : 'text-inherit'}`}>
+                                            {step.label}
+                                        </p>
+                                        <p className={`text-[10px] mt-0.5 truncate ${isActive ? 'text-white/60' : 'text-white/25'}`}>
+                                            {step.description}
+                                        </p>
+                                    </div>
+
+                                    {/* Step number indicator */}
+                                    <span className={`text-[10px] font-mono shrink-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"} ${isActive ? 'text-white/50' : 'text-white/15'}`}>
+                                        {String(step.number).padStart(2, '0')}
                                     </span>
                                 </button>
                             );
                         })}
-                    </div>
+                    </nav>
 
-                    {/* Exploration Section */}
-                    <div className="space-y-3">
-                        <p className={`text-[11px] uppercase tracking-[0.4em] text-white/40 font-black mb-6 px-5 transition-all duration-500 ${isHovered ? "opacity-100" : "opacity-0 lg:hidden"}`}>Exploration</p>
+                    {/* Divider */}
+                    <div className={`mx-4 my-2 border-t border-white/[0.04]`} />
+
+                    {/* Interrogation Lab */}
+                    <div className={`py-2 ${isExpanded ? 'px-3' : 'px-2'}`}>
                         <button
-                            onClick={() => router.push("/simulation-results")}
+                            onClick={() => {
+                                if (currentSimulationId) {
+                                    router.push("/simulation-results");
+                                    // Trigger interrogation panel open
+                                    setTimeout(() => window.dispatchEvent(new Event('open-interrogation')), 300);
+                                }
+                            }}
                             disabled={!currentSimulationId}
-                            className={`w-full flex items-center gap-6 p-4 rounded-3xl transition-all group scale-100 active:scale-95 ${!currentSimulationId ? "opacity-20 cursor-not-allowed" : "text-white/60 hover:text-white hover:bg-white/[0.08] hover:translate-x-1"}`}
+                            title={!isExpanded ? "Interrogation Lab" : undefined}
+                            className={`
+                                w-full flex items-center gap-3 transition-all duration-300 group
+                                ${isExpanded ? 'p-3 rounded-xl' : 'p-3 rounded-xl justify-center'}
+                                ${!currentSimulationId ? "opacity-25 cursor-not-allowed" : "text-white/50 hover:text-white hover:bg-white/[0.05]"}
+                            `}
                         >
-                            <div className="w-8 h-8 flex items-center justify-center shrink-0 grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all text-2xl group-hover:scale-125 duration-500">
+                            <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.06] shrink-0 text-lg group-hover:scale-105 transition-all">
                                 🧠
                             </div>
-                            <span className={`text-[14px] font-black tracking-tight whitespace-nowrap transition-all duration-500 ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 lg:hidden"}`}>
+                            <span className={`text-[13px] font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
                                 Interrogation Lab
                             </span>
                         </button>
                     </div>
 
-                    {/* Chat History Section */}
-                    <div className="space-y-8 pb-10">
-                        <p className={`text-[11px] uppercase tracking-[0.4em] text-white/30 font-black px-5 transition-all duration-500 ${isHovered ? "opacity-100" : "opacity-0 lg:hidden"}`}>Chat History</p>
-                        {Object.entries(groupedHistory).map(([group, items]) => (
-                            items.length > 0 && (
-                                <div key={group} className="space-y-4 px-2">
-                                    <h4 className={`text-[11px] uppercase tracking-[0.2em] text-white/10 font-black px-4 transition-all duration-500 ${isHovered ? "opacity-100" : "opacity-0 lg:hidden"}`}>{group}</h4>
-                                    {items.map(item => (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => handleSelectSimulation(item)}
-                                            className={`
-                                                w-full text-left p-4 rounded-2xl transition-all border group shrink-0
-                                                ${currentSimulationId === item.id
-                                                    ? "bg-purple-600/20 border-purple-500/50 text-white shadow-2xl"
-                                                    : "bg-transparent border-transparent hover:bg-white/[0.04] text-white/30 hover:text-white/60"}
-                                            `}
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-2.5 h-2.5 transition-all duration-500 rounded-full border ${currentSimulationId === item.id ? "bg-purple-500 border-white/20 animate-pulse" : "bg-white/5 border-transparent"}`} />
-                                                <div className={`transition-all duration-500 ${isHovered ? "opacity-100 translate-x-0 overflow-hidden" : "opacity-0 -translate-x-4 lg:hidden"}`}>
-                                                    <p className="text-[12px] font-bold truncate max-w-[140px] leading-tight grayscale group-hover:grayscale-0 opacity-40 group-hover:opacity-100">
-                                                        {item.ideaData?.idea || "Alpha Exploration"}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))}
+                    {/* Divider */}
+                    <div className={`mx-4 my-2 border-t border-white/[0.04]`} />
+
+                    {/* Chat History Toggle */}
+                    <div className={`py-2 ${isExpanded ? 'px-3' : 'px-2'}`}>
+                        <button
+                            onClick={() => { if (isExpanded) setShowChats(!showChats); }}
+                            title={!isExpanded ? "Past Simulations" : undefined}
+                            className={`
+                                w-full flex items-center gap-3 transition-all duration-300
+                                ${isExpanded ? 'p-3 rounded-xl' : 'p-3 rounded-xl justify-center'}
+                                text-white/40 hover:text-white/70 hover:bg-white/[0.03]
+                            `}
+                        >
+                            <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.06] shrink-0">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <span className={`flex-1 text-left text-[13px] font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
+                                Past Simulations
+                            </span>
+                            {isExpanded && history.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] bg-white/[0.06] text-white/30 px-1.5 py-0.5 rounded-md font-mono">
+                                        {history.length}
+                                    </span>
+                                    <svg className={`w-3.5 h-3.5 transition-transform duration-300 text-white/20 ${showChats ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
                                 </div>
-                            )
-                        ))}
+                            )}
+                        </button>
+
+                        {/* Recent Simulations List (collapsible) */}
+                        {showChats && isExpanded && (
+                            <div className="mt-1 space-y-0.5 animate-in slide-in-from-top-2 fade-in duration-300">
+                                {recentHistory.length === 0 && (
+                                    <p className="text-[11px] text-white/20 px-4 py-3 text-center italic">No simulations yet</p>
+                                )}
+                                {recentHistory.map(item => (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => handleSelectSimulation(item)}
+                                        className={`
+                                            group flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all cursor-pointer
+                                            ${currentSimulationId === item.id
+                                                ? "bg-purple-500/10 border border-purple-500/20 text-white"
+                                                : "hover:bg-white/[0.03] text-white/40 hover:text-white/70 border border-transparent"}
+                                        `}
+                                    >
+                                        {/* Status dot */}
+                                        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                            item.status === "completed" ? "bg-emerald-500" : 
+                                            item.status === "in progress" ? "bg-amber-500 animate-pulse" : "bg-white/15"
+                                        }`} />
+                                        
+                                        {/* Text */}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[12px] font-medium truncate leading-tight">
+                                                {item.ideaData?.idea?.substring(0, 40) || "Untitled Simulation"}
+                                                {(item.ideaData?.idea?.length || 0) > 40 ? "..." : ""}
+                                            </p>
+                                            <p className="text-[10px] text-white/20 mt-0.5">
+                                                {item.ideaData?.industry || "General"} · {item.status === "completed" ? "Done" : "In Progress"}
+                                            </p>
+                                        </div>
+
+                                        {/* Delete button */}
+                                        <button
+                                            onClick={(e) => handleDeleteSimulation(e, item.id)}
+                                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-500/10 hover:text-red-400 text-white/15 transition-all shrink-0"
+                                            title="Delete simulation"
+                                        >
+                                            {deletingId === item.id ? (
+                                                <div className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
+                                            ) : (
+                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </div>
+                                ))}
+
+                                {history.length > 5 && (
+                                    <p className="text-[10px] text-white/20 text-center py-2">
+                                        +{history.length - 5} more simulations
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* User Context Area */}
-                <div className="p-6 mt-auto">
-                    <div className={`bg-white/[0.04] border border-white/10 rounded-[2.5rem] p-4 flex items-center transition-all duration-500 group relative hover:border-white/20 ${isHovered ? "gap-5 px-5" : "gap-0 px-2 justify-center"}`}>
-                        <div className="relative shrink-0 group-hover:scale-105 transition-transform duration-500">
+                {/* User Profile Footer */}
+                <div className={`p-3 mt-auto border-t border-white/[0.04] ${isExpanded ? 'px-4' : ''}`}>
+                    <div className={`flex items-center transition-all duration-300 rounded-xl p-2 hover:bg-white/[0.03] ${isExpanded ? 'gap-3' : 'justify-center'}`}>
+                        <div className="relative shrink-0">
                             {user?.photoURL ? (
-                                <img src={user.photoURL} alt={user.displayName} className="w-12 h-12 rounded-[1.2rem] border-2 border-white/10 object-cover shadow-2xl transition-all group-hover:border-white/30" />
+                                <img src={user.photoURL} alt={user.displayName} className="w-9 h-9 rounded-lg border border-white/10 object-cover" />
                             ) : (
-                                <div className="w-12 h-12 rounded-[1.2rem] bg-gradient-to-tr from-indigo-500 to-purple-700 border-2 border-white/20 flex items-center justify-center text-white text-lg font-black uppercase shadow-2xl">
+                                <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-700 border border-white/15 flex items-center justify-center text-white text-sm font-bold uppercase">
                                     {user?.displayName?.[0] || "U"}
                                 </div>
                             )}
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-[3px] border-[#050505] rounded-full shadow-2xl animate-pulse" />
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#0A0A0A] rounded-full" />
                         </div>
-                        <div className={`flex-1 min-w-0 transition-all duration-500 ${isHovered ? "opacity-100 translate-x-0 w-auto" : "opacity-0 w-0 pointer-events-none lg:hidden"}`}>
-                            <p className="text-[13px] font-black text-white/90 truncate uppercase tracking-tighter leading-none mb-2">{user?.displayName || "Alpha Specialist"}</p>
+                        <div className={`flex-1 min-w-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden pointer-events-none lg:hidden"}`}>
+                            <p className="text-[12px] font-semibold text-white/80 truncate leading-tight">{user?.displayName || "User"}</p>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); logOut(); }}
-                                className="text-[11px] text-red-500 font-black uppercase tracking-[0.2em] transition-all hover:text-red-400 hover:tracking-[0.3em] active:scale-90"
+                                className="text-[10px] text-red-400/70 font-semibold uppercase tracking-wider transition-all hover:text-red-400"
                             >
                                 Sign Out
                             </button>
