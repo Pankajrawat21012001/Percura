@@ -87,7 +87,7 @@ function PremiumSelect({ label, value, options, onChange, placeholder = "Select 
 
 export default function ValidatePage() {
     const router = useRouter();
-    const { idea, setIdea, setValidation, setPersonas, reset, setCurrentSimulationId } = useIdea();
+    const { idea, setIdea, setValidation, setPersonas, reset, setCurrentSimulationId, setMarketContext } = useIdea();
     const { user, signInWithGoogle } = useAuth();
 
     const [form, setForm] = useState({
@@ -101,7 +101,7 @@ export default function ValidatePage() {
     const [loading, setLoading] = useState(false);
     const [backendStatus, setBackendStatus] = useState("checking");
     const [step, setStep] = useState(1);
-    const [marketContext, setMarketContext] = useState(null);
+    const [localMarketContext, setLocalMarketContext] = useState(null);
     const [loadingMessage, setLoadingMessage] = useState("Finding matching personas...");
 
     // We no longer reset global state automatically on mount 
@@ -159,6 +159,12 @@ export default function ValidatePage() {
         setLoadingMessage("Initializing Market Context Engine...");
         setLoading(true);
 
+        // Clear previous simulation states but keep the new form
+        setMarketContext(null);
+        setValidation(null);
+        setPersonas(null);
+        setCurrentSimulationId(null);
+
         // Save form to global context
         setIdea(form);
         
@@ -167,7 +173,7 @@ export default function ValidatePage() {
     };
 
     const handleMatchPersonas = async (fallbackContext) => {
-        const ctxToUse = fallbackContext !== undefined ? fallbackContext : marketContext;
+        const ctxToUse = fallbackContext !== undefined ? fallbackContext : localMarketContext;
         setLoadingMessage("Scanning 1M+ Personas for Top Matches...");
         setLoading(true);
 

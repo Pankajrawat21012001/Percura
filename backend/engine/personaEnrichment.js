@@ -247,22 +247,21 @@ function buildFallbackProfile(m, ideaText) {
 async function enrichSegments(segments, idea, perSegment = 3) {
     console.log(`🧬 [ENRICH] Starting enrichment across ${segments.length} segments (top ${perSegment} each)...`);
 
-    const enrichmentPromises = [];
+    const results = [];
 
     for (const segment of segments) {
         const personasToEnrich = (segment.personas || []).slice(0, perSegment);
         for (const persona of personasToEnrich) {
-            enrichmentPromises.push(
-                enrichPersona(persona, idea).then(enriched => ({
-                    segmentId: segment.segment_id,
-                    personaId: enriched.persona_id || enriched.id,
-                    enriched
-                }))
-            );
+            const enriched = await enrichPersona(persona, idea);
+            results.push({
+                segmentId: segment.segment_id,
+                personaId: enriched.persona_id || enriched.id,
+                enriched
+            });
+            // Small stagger to stay under TPM limits
+            await new Promise(resolve => setTimeout(resolve, 600));
         }
     }
-
-    const results = await Promise.all(enrichmentPromises);
 
     // Map enriched personas back into their segments
     const enrichedSegments = segments.map(segment => {

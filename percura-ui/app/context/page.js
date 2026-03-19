@@ -41,14 +41,20 @@ function LoadingState() {
 
 export default function OntologyContextPage() {
     const router = useRouter();
-    const { idea, setIdea } = useIdea();
-    const [ontology, setOntology] = useState(null);
+    const { idea, setIdea, marketContext, setMarketContext, setValidation, setPersonas, setCurrentSimulationId } = useIdea();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [scanning, setScanning] = useState(false);
 
     useEffect(() => {
         if (!idea) {
             router.push('/validate');
+            return;
+        }
+
+        // 1. If we already have the marketContext, skip fetching
+        if (marketContext) {
+            setLoading(false);
             return;
         }
 
@@ -63,12 +69,20 @@ export default function OntologyContextPage() {
                 
                 if (!data.success) throw new Error(data.error || "Extraction failed");
                 
-                // Update idea context in global state if we need it later
-                const updatedIdea = { ...idea, zepContext: data.context.groqContext };
-                setIdea(updatedIdea);
-                setOntology(data.context.ontology || { competitors: [], risks: [], trends: [] });
+                const ctx = data.context;
                 
-                // Keep loading state active for a tiny bit longer to ensure smooth transition
+                // 2. Save EVERYTHING into marketContext
+                setMarketContext({
+                    ontology: ctx.ontology || { competitors: [], risks: [], trends: [] },
+                    groqContext: ctx.groqContext || '',
+                    graphId: ctx.graphId
+                });
+
+                // Update idea only if needed for context injection downstream
+                if (ctx.groqContext !== idea.zepContext) {
+                    setIdea(prev => ({ ...prev, zepContext: ctx.groqContext }));
+                }
+                
                 setTimeout(() => setLoading(false), 800);
             } catch (err) {
                 console.error("Graph build failed", err);
@@ -78,9 +92,50 @@ export default function OntologyContextPage() {
         };
 
         buildGraph();
-    }, [idea, router, setIdea]);
+    }, [idea, router, setIdea, marketContext, setMarketContext]);
+
+    const handlePersonaScan = async () => {
+        setScanning(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/retrieve-personas`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    idea: idea.idea,
+                    targetAudience: idea.targetAudience,
+                    industry: idea.industry,
+                    businessModel: idea.businessModel,
+                    segmentCount: 5,
+                    marketContext: marketContext
+                }),
+            });
+
+            if (!response.ok) throw new Error("Persona retrieval engine unavailable");
+
+            const data = await response.json();
+            
+            // Sync with global state
+            setValidation({
+                segments: data.segments || [],
+                personas: data.personas || [],
+                totalMatched: data.totalMatched || 0,
+                filtersApplied: data.filtersApplied || {},
+                testType: idea.testType,
+                marketContext: marketContext,  
+            });
+            setPersonas(data.personas || []);
+
+            router.push("/segment");
+        } catch (err) {
+            console.error("Persona scan failed:", err);
+            setError("Failed to scan personas: " + err.message);
+            setScanning(false);
+        }
+    };
 
     if (!idea) return null;
+
+    const ontology = marketContext?.ontology;
 
     return (
         <DashboardLayout>
@@ -108,7 +163,9 @@ export default function OntologyContextPage() {
                         <div className="p-8 border border-red-500/30 bg-red-500/10 rounded-2xl">
                             <h3 className="text-red-400 font-medium mb-2">Extraction Error</h3>
                             <p className="text-white/60 text-sm mb-4">{error}</p>
-                            <Button onClick={() => router.push('/segment')}>Skip to Persona Search</Button>
+                            <Button onClick={handlePersonaScan} disabled={scanning}>
+                                {scanning ? "Scanning..." : "Proceed to Persona Search"}
+                            </Button>
                         </div>
                     ) : loading || !ontology ? (
                         <LoadingState />
@@ -194,11 +251,12 @@ export default function OntologyContextPage() {
                             {/* Action Footer */}
                             <div className="pt-12 mt-12 border-t border-white/[0.05] flex justify-center">
                                 <Button 
-                                    onClick={() => router.push('/segment')}
+                                    onClick={handlePersonaScan}
+                                    disabled={scanning}
                                     size="lg"
                                     className="bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-500/20 px-12 py-4"
                                 >
-                                    Scan 1M+ Personas →
+                                    {scanning ? "Scanning 1M+ Personas..." : "Scan 1M+ Personas →"}
                                 </Button>
                             </div>
 

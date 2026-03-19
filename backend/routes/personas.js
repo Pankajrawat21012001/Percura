@@ -550,14 +550,19 @@ router.post('/simulate', async (req, res) => {
         const { idea, segments } = req.body;
         console.log(`📡 Simulating resonance across ${segments.length} segments`);
         
-        // Run tests in parallel
-        const results = await Promise.all(segments.map(async (s) => {
+        // Run tests sequentially to avoid hitting Groq rate limits (low TPM)
+        const results = [];
+        for (const s of segments) {
             const testResult = await testSegmentResonance(idea, s);
-            return {
+            results.push({
                 ...s,
                 testResult
-            };
-        }));
+            });
+            // Small stagger to let Groq TPM reset
+            if (segments.indexOf(s) < segments.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 800));
+            }
+        }
 
         res.json({
             success: true,

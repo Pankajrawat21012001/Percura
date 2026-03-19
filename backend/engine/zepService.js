@@ -20,7 +20,7 @@ function getZepClient() {
 // In-memory cache: ideaKey → { graphId, context, extractedAt }
 const graphCache = new Map();
 
-const { generateAIResponse } = require('./groqClient');
+const { generateAIResponse } = require('./groqService');
 
 /**
  * Build a Zep graph from the idea and extract market context
@@ -89,13 +89,22 @@ Generate the specific JSON ontology for this concept in the Indian market contex
                 try {
                     await client.user.get(userId);
                 } catch (userErr) {
-                    if (userErr?.body?.message === 'not found' || userErr?.status === 404 || userErr?.message?.includes('404')) {
+                    // If get fails, we try to add. If add fails with "already exists", we ignore it.
+                    try {
                         await client.user.add({
                             userId: userId,
                             firstName: 'Percura',
                             lastName: 'Simulation',
                             metadata: { source: 'percura_ontology', idea: idea.slice(0, 100) }
                         });
+                        console.log(`✅ [ZEP] New user created: ${userId}`);
+                    } catch (addErr) {
+                        const errMsg = addErr.message || '';
+                        const isAlreadyExists = errMsg.includes('already exists') || (addErr.body && JSON.stringify(addErr.body).includes('already exists'));
+                        
+                        if (!isAlreadyExists) {
+                            console.warn(`⚠️ [ZEP] Failed to create user ${userId}:`, errMsg);
+                        }
                     }
                 }
 

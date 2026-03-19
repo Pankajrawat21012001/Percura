@@ -350,7 +350,7 @@ export default function SimulationResultsPage() {
 
 
     return (
-        <DashboardLayout rightPanel={<ChatPanel />}>
+        <DashboardLayout>
             <div className="relative min-h-screen text-white selection:bg-blue-500/30 overflow-x-hidden pt-40">
                 <ShaderPageBackground overlayOpacity={0.9} blur={true} />
 
