@@ -12,15 +12,23 @@ const SIMULATION_STEPS = [
     "Preparing results"
 ];
 
-export default function LoadingScreen({ message = "Finding matching personas..." }) {
+export default function LoadingScreen({ message = "Finding matching personas...", customSteps }) {
     const [stepIndex, setStepIndex] = useState(0);
+    const stepsToUse = customSteps || SIMULATION_STEPS;
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setStepIndex((prev) => (prev + 1) % SIMULATION_STEPS.length);
+            setStepIndex((prev) => (prev + 1) % stepsToUse.length);
         }, 1200);
-        return () => clearInterval(interval);
-    }, []);
+        
+        // Prevent body scroll during loading overlay
+        document.body.style.overflow = "hidden";
+        
+        return () => { 
+            clearInterval(interval);
+            document.body.style.overflow = "unset";
+        };
+    }, [stepsToUse.length]);
 
     return (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black">
@@ -106,7 +114,7 @@ export default function LoadingScreen({ message = "Finding matching personas..."
 
                 <div className="h-6 overflow-hidden relative mb-12">
                     <p key={stepIndex} className="text-sm text-purple-400 font-bold tracking-[0.2em] uppercase transition-all duration-500 transform translate-y-0 opacity-100">
-                        {SIMULATION_STEPS[stepIndex]}
+                        {stepsToUse[stepIndex]}
                     </p>
                 </div>
             </div>

@@ -76,27 +76,27 @@ FINAL: ${convertedCount} converted, ${churnedCount} churned, ${activeCount} acti
     const sectionPrompts = [
         {
             name: 'Executive Summary',
-            system: `You are a ruthless market analyst. Write ONE powerful paragraph (max 4 sentences) summarizing whether this startup idea will succeed or fail in India. Be specific about numbers. No headers — just the paragraph.`,
+            system: `You are a ruthless market analyst. Write ONE powerful paragraph (max 4 sentences) summarizing whether this startup idea will succeed or fail in India. USE **BOLDING** FOR NUMBERS. Do NOT include headers — just the core text.`,
             user: `${baseContext}\n\nWEEKLY DATA:\n${weeklyData}\n${adoptionEvidence}\n${successEvidence}`
         },
         {
             name: 'Adoption Curve Analysis',
-            system: `You are a growth analyst. Analyze the week-by-week adoption trajectory. Did it stall? Go viral? Plateau? Reference specific weeks and percentages. Write 3-5 bullet points. No header.`,
+            system: `You are a growth analyst. Analyze the week-by-week trajectory. Format as a bulleted list. Each bullet MUST start with **Week X: [Category]** followed by the analysis. No header.`,
             user: `${baseContext}\n\nWEEKLY DATA:\n${weeklyData}\n${adoptionEvidence}`
         },
         {
             name: 'Segment Resonance Ranking',
-            system: `You are a market segmentation expert. Rank the segments from best to worst performer. For each, explain WHY in one sentence. Format as a numbered list. No header.`,
+            system: `You are a market segmentation expert. Rank performing segments. Format as a bulleted list. Each bullet MUST be **Segment Name**: One sentence of depth why they performed this way. No header.`,
             user: `${baseContext}\n\nSEGMENT DATA:\n${segmentData}\n${successEvidence}`
         },
         {
             name: 'Key Friction Points',
-            system: `You are a product strategist. Identify the top 3-5 reasons personas churned or rejected this product. Be specific to the Indian market context (pricing, trust, language, family influence). Bullet list. No header.`,
+            system: `You are a product strategist. Identify top 3-5 churn reasons. Format as a bulleted list. Each bullet MUST be **Reason Category**: Why this matters in India. No header.`,
             user: `${baseContext}\n\nCHURN DATA: ${churnedCount} out of ${totalPersonas} churned\n${frictionEvidence}`
         },
         {
             name: 'Launch Recommendations',
-            system: `You are a startup advisor specializing in Indian market launches. Give exactly 5 specific, actionable recommendations for the founder. Each must be one sentence. Bullet list. No header.`,
+            system: `You are a startup advisor. Give 5 specific action points. Format as a bulleted list. Each MUST be **Verb-based Action**: Detailed tactical next step. No header.`,
             user: `${baseContext}\n\n${frictionEvidence}\n${successEvidence}`
         }
     ];

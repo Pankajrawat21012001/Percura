@@ -6,12 +6,11 @@ import dynamic from "next/dynamic";
 import { useIdea } from "../../context/IdeaContext";
 import Button from "../../components/ui/Button";
 import DashboardLayout from "../../components/DashboardLayout";
-import ChatPanel from "../../components/ChatPanel";
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../lib/firebase";
 import { doc, addDoc, updateDoc, collection, serverTimestamp } from "firebase/firestore";
 import API_BASE_URL from "../../lib/apiConfig";
-import FlowDescriptionStrip from "../../components/FlowDescriptionStrip";
+import LoadingScreen from "../../components/ui/LoadingScreen";
 
 const ShaderPageBackground = dynamic(
     () => import("../../components/ui/shader-background"),
@@ -153,25 +152,32 @@ export default function SegmentPage() {
                 });
                 setPulseResults(resultsMap);
                 setPhase("validated");
+                
+                // Automatically proceed to finalization to avoid "Run Simulation" twice
+                // We pass the newly built resultsMap directly since setPulseResults is async
+                await finalizeSimulation(resultsMap);
             } else {
                 throw new Error("Pulse Test failed");
             }
         } catch (err) {
             console.error("Failed to run pulse test:", err);
             setPhase("selection");
+            setIsSimulating(false);
         }
     };
 
-    const handleRunSimulationFinal = async () => {
+    const finalizeSimulation = async (pResults) => {
         if (!user || selectedSegments.size === 0) return;
         setIsSimulating(true);
 
+        const resultsToUse = pResults || pulseResults;
+
         // Build selected list with full persona data AND attach pulse validation results
         const selectedList = [];
-        if (selectedSegments.has("custom")) selectedList.push({...customSegment, testResult: pulseResults["custom"]});
+        if (selectedSegments.has("custom")) selectedList.push({...customSegment, testResult: resultsToUse["custom"]});
         segments.forEach(seg => {
             if (selectedSegments.has(seg.segment_id)) {
-                selectedList.push({...seg, testResult: pulseResults[seg.segment_id]});
+                selectedList.push({...seg, testResult: resultsToUse[seg.segment_id]});
             }
         });
 
@@ -238,6 +244,21 @@ export default function SegmentPage() {
             setIsSimulating(false);
         }
     };
+    if (isSimulating) {
+        return (
+            <LoadingScreen 
+                message="Initializing Deep Pulse Simulation..."
+                customSteps={[
+                    "Loading persona profiles into neural buffer...",
+                    "Injecting market context and ontology bias...",
+                    "Running zero-shot response synthesis...",
+                    "Aggregating cross-segment sentiments...",
+                    "Generating final 8-week horizon report..."
+                ]}
+            />
+        );
+    }
+
     return (
         <DashboardLayout currentStep={3}>
             <ShaderPageBackground overlayOpacity={0.8} blur={true} />
@@ -370,25 +391,15 @@ export default function SegmentPage() {
                             showArrow={true}
                             className="flex-1 uppercase tracking-widest text-[11px]"
                         >
-                            Run Deep Pulse Validation
+                            {isSimulating ? "Running Neural Simulation..." : "Run Deep Pulse Validation"}
                         </Button>
                     )}
-                    {phase === "pulsing" && (
+                    {(phase === "pulsing" || phase === "validated") && (
                         <Button 
                             disabled={true}
                             className="flex-1 uppercase tracking-widest text-[11px] opacity-70"
                         >
-                            Running Zero-Shot Context Validation...
-                        </Button>
-                    )}
-                    {phase === "validated" && (
-                        <Button 
-                            disabled={isSimulating}
-                            onClick={handleRunSimulationFinal}
-                            showArrow={!isSimulating}
-                            className="flex-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500/30 uppercase tracking-widest text-[11px]"
-                        >
-                            {isSimulating ? "Initializing Horizon..." : `Proceed to 8-Week Simulation`}
+                            {isSimulating ? "Synthesizing 8-Week Horizon..." : "Finalizing Neural Results..."}
                         </Button>
                     )}
                 </div>
@@ -452,17 +463,17 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
         const isNegative = ['SKEPTICAL', 'CRITICAL'].includes(verdict);
         if (isPositive) {
             return isSelected
-                ? "border-emerald-500/50 bg-[#0d1210] shadow-[0_0_60px_-15px_rgba(16,185,129,0.2)]"
+                ? "border-purple-500/50 bg-[#121212] shadow-[0_20px_50px_-20px_rgba(168,85,247,0.15)]"
                 : "border-white/10 bg-[#0A0A0A] hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]";
         }
         if (isNeutral) {
             return isSelected
-                ? "border-amber-500/40 bg-[#12110d] shadow-[0_0_50px_-15px_rgba(245,158,11,0.15)]"
+                ? "border-purple-500/50 bg-[#121212] shadow-[0_20px_50px_-20px_rgba(168,85,247,0.15)]"
                 : "border-white/10 bg-[#0A0A0A] hover:border-amber-500/30 hover:shadow-[0_0_15px_rgba(245,158,11,0.05)]";
         }
         if (isNegative) {
             return isSelected
-                ? "border-red-500/30 bg-[#120d0d] shadow-[0_0_40px_-15px_rgba(239,68,68,0.1)]"
+                ? "border-purple-500/50 bg-[#121212] shadow-[0_20px_50px_-20px_rgba(168,85,247,0.15)]"
                 : "border-white/10 bg-[#0A0A0A] hover:border-red-500/20 hover:shadow-[0_0_10px_rgba(239,68,68,0.05)]";
         }
         

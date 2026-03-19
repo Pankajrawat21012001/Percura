@@ -31,17 +31,27 @@ export default function SimulationReport({ report, reportData }) {
                 </div>
             </div>
 
-            <div className="prose prose-invert prose-purple max-w-none relative z-10
-                prose-headings:font-black prose-headings:tracking-tight 
-                prose-h1:text-3xl prose-h1:mb-8
-                prose-h2:text-xl prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-4 prose-h2:mt-12 prose-h2:uppercase prose-h2:tracking-widest prose-h2:text-purple-400
-                prose-h3:text-lg prose-h3:text-white/90
-                prose-p:text-white/70 prose-p:leading-relaxed
-                prose-li:text-white/70 prose-li:marker:text-purple-500
-                prose-strong:text-white prose-strong:font-bold
-                prose-blockquote:border-l-purple-500 prose-blockquote:bg-purple-500/5 prose-blockquote:py-2 prose-blockquote:px-5 prose-blockquote:rounded-r-xl prose-blockquote:not-italic prose-blockquote:shadow-md
-                prose-a:text-purple-400 prose-a:no-underline hover:prose-a:text-purple-300 transition-colors">
-                <ReactMarkdown>{content}</ReactMarkdown>
+            <div className="relative z-10">
+                <ReactMarkdown
+                    components={{
+                        h1: ({node, ...props}) => <h1 className="text-3xl font-black text-white mb-10 border-b border-white/20 pb-6 tracking-tighter" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="text-xl font-black text-purple-400 mt-16 mb-8 uppercase tracking-widest flex items-center gap-3 before:content-[''] before:block before:w-1.5 before:h-8 before:bg-purple-600 before:rounded-full" {...props} />,
+                        h3: ({node, ...props}) => <h3 className="text-lg font-bold text-white mb-4 mt-8" {...props} />,
+                        p: ({node, ...props}) => <p className="text-base text-white/70 leading-[1.8] mb-8 font-medium last:mb-0" {...props} />,
+                        ul: ({node, ...props}) => <ul className="space-y-4 mb-8 list-none" {...props} />,
+                        ol: ({node, ...props}) => <ol className="space-y-4 mb-8 list-decimal list-inside" {...props} />,
+                        li: ({node, ...props}) => (
+                            <li className="text-base text-white/70 leading-relaxed pl-6 relative before:content-[''] before:absolute before:left-0 before:top-2.5 before:w-2 before:h-2 before:bg-purple-500 before:rounded-full" {...props} />
+                        ),
+                        strong: ({node, ...props}) => <strong className="text-white font-black" {...props} />,
+                        blockquote: ({node, ...props}) => (
+                            <blockquote className="border-l-4 border-purple-500 bg-white/[0.03] p-8 rounded-r-3xl my-10 italic text-white/90 shadow-2xl" {...props} />
+                        ),
+                        hr: () => <hr className="my-12 border-white/10" />,
+                    }}
+                >
+                    {content}
+                </ReactMarkdown>
             </div>
         </div>
     );

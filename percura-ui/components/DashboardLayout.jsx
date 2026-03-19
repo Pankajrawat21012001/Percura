@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Sidebar from "./Sidebar";
-import FlowDescriptionStrip from "./FlowDescriptionStrip";
 
 export default function DashboardLayout({ children, rightPanel, currentStep }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -28,8 +27,7 @@ export default function DashboardLayout({ children, rightPanel, currentStep }) {
                     <div className="w-10" />
                 </header>
 
-                <div className="py-12">
-                    <FlowDescriptionStrip currentStep={currentStep || 1} />
+                <div className="py-8">
                     {children}
                 </div>
 

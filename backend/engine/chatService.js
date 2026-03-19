@@ -16,14 +16,14 @@ async function handlePersonaChat(simulationId, target, message, history, context
     const isPanel = !isAll && targets.length > 1;
 
     if (isPanel) {
-        const replies = [];
-        for (const targetId of targets) {
-            const personaReply = await getSingleTargetResponse(targetId, message, history, idea, simulationResults);
-            replies.push({
-                name: String(personaReply.name || "Persona"),
-                reply: String(personaReply.reply || "...")
-            });
-        }
+        const replyPromises = targets.map(targetId => 
+            getSingleTargetResponse(targetId, message, history, idea, simulationResults)
+        );
+        const results = await Promise.all(replyPromises);
+        const replies = results.map(personaReply => ({
+            name: String(personaReply.name || "Persona"),
+            reply: String(personaReply.reply || "...")
+        }));
         return { isPanel: true, replies };
     }
 

@@ -12,7 +12,6 @@ import LoadingScreen from "../../components/ui/LoadingScreen";
 import API_BASE_URL from "../../lib/apiConfig";
 
 import DashboardLayout from "../../components/DashboardLayout";
-import FlowDescriptionStrip from "../../components/FlowDescriptionStrip";
 
 const ShaderPageBackground = dynamic(
     () => import("../../components/ui/shader-background"),

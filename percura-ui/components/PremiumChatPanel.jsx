@@ -35,7 +35,7 @@ const SUGGESTED_QUESTIONS = [
     "What was the biggest risk you saw?",
 ];
 
-export default function PremiumChatPanel({ onClose }) {
+export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
     const { currentSimulationId, idea, simulationResults } = useIdea();
 
     // Chat mode: 'single' or 'panel'
@@ -97,14 +97,15 @@ export default function PremiumChatPanel({ onClose }) {
             const age = p.metadata?.age || p.age;
             const displayName = age ? `${rawName} (${age})` : rawName;
 
-            // Build simulation state from enrichedProfile or simulationState
-            const ss = p.simulationState || ep?.memoryState || {};
-            const simState = ep ? {
+            // Build simulation state: Deep results (if any) > Initial resonance > enrichedProfile > default
+            const finalState = deepSimResult?.personaFinalStates?.[personaId];
+            const ss = finalState || p.simulationState || ep?.memoryState || {};
+            const simState = {
                 converted: ss.converted || false,
                 churned: ss.churned || false,
                 sentimentScore: ss.sentimentScore !== undefined ? ss.sentimentScore : 0.5,
                 exposureCount: ss.exposureCount || 0,
-            } : null;
+            };
 
             return {
                 ...p,
@@ -113,7 +114,7 @@ export default function PremiumChatPanel({ onClose }) {
                 displayName: displayName,
                 age: age,
                 archetype: p.metadata?.occupation || p.metadata?.archetype || p.archetype || segment.segment_name,
-                state: simState?.converted ? "ADOPTED" : simState?.churned ? "REJECTED" : (p.state || (segment.testResult?.resonanceScore >= 70 ? "ADOPTED" : segment.testResult?.resonanceScore < 50 ? "REJECTED" : "NEUTRAL")),
+                state: simState.converted ? "ADOPTED" : simState.churned ? "REJECTED" : (p.state || (segment.testResult?.resonanceScore >= 70 ? "ADOPTED" : segment.testResult?.resonanceScore < 50 ? "REJECTED" : "NEUTRAL")),
                 influence: p.influence || Math.floor(Math.random() * 6) + 3,
                 segmentId: segment.segment_id,
                 segmentName: segment.segment_name,
@@ -177,7 +178,7 @@ export default function PremiumChatPanel({ onClose }) {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        simulationId: currentSimulationId,
+                        simulationId: deepSimResult?.id || currentSimulationId,
                         target: [agentId],
                         message: message,
                         history: updatedHistory.slice(-10),
@@ -219,10 +220,11 @@ export default function PremiumChatPanel({ onClose }) {
                 // If the context contains a graphId, pass it. We extract it from simulationResults if available.
                 const firstSim = simulationResults && simulationResults[0] ? simulationResults[0] : null;
                 const reqBody = {
-                    simulationId: currentSimulationId,
+                    simulationId: deepSimResult?.id || currentSimulationId,
                     message: message,
                     chatHistory: updatedHistory,
-                    simulationResult: firstSim
+                    simulationResult: simulationResults, // Send all segments
+                    graphId: graphId
                 };
 
                 const res = await fetch(`${API_BASE_URL}/api/report-chat`, {
@@ -252,7 +254,7 @@ export default function PremiumChatPanel({ onClose }) {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        simulationId: currentSimulationId,
+                        simulationId: deepSimResult?.id || currentSimulationId,
                         target: panelAgents.map(a => a.id),
                         message: message,
                         history: newMessages.slice(-10),
@@ -291,7 +293,7 @@ export default function PremiumChatPanel({ onClose }) {
                 // Turn 1: Agent A opening statement
                 const resA = await fetch(`${API_BASE_URL}/api/chat`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ simulationId: currentSimulationId, target: [agentA.id], message: `Please give your opening arguments on: "${message}"`, history: currentHistory.slice(-5), context: { idea, simulationResults } }),
+                    body: JSON.stringify({ simulationId: deepSimResult?.id || currentSimulationId, target: [agentA.id], message: `Please give your opening arguments on: "${message}"`, history: currentHistory.slice(-5), context: { idea, simulationResults } }),
                 });
                 const dataA = await resA.json();
                 const replyA = dataA.reply || "No response.";
@@ -302,7 +304,7 @@ export default function PremiumChatPanel({ onClose }) {
                 // Turn 2: Agent B rebuttal
                 const resB = await fetch(`${API_BASE_URL}/api/chat`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ simulationId: currentSimulationId, target: [agentB.id], message: `${agentA.displayName} just argued: "${replyA}". Please provide your rebuttal and counter-perspective.`, history: currentHistory.slice(-5), context: { idea, simulationResults } }),
+                    body: JSON.stringify({ simulationId: deepSimResult?.id || currentSimulationId, target: [agentB.id], message: `${agentA.displayName} just argued: "${replyA}". Please provide your rebuttal and counter-perspective.`, history: currentHistory.slice(-5), context: { idea, simulationResults } }),
                 });
                 const dataB = await resB.json();
                 const replyB = dataB.reply || "No response.";

@@ -9,11 +9,10 @@ import { db } from "../../lib/firebase";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import Button from "../../components/ui/Button";
 import DashboardLayout from "../../components/DashboardLayout";
-import ChatPanel from "../../components/ChatPanel";
 import PremiumChatPanel from "../../components/PremiumChatPanel";
 import SimulationTimeline from "../../components/SimulationTimeline";
+import ExecutionTimeline from "../../components/ExecutionTimeline";
 import SimulationReport from "../../components/SimulationReport";
-import FlowDescriptionStrip from "../../components/FlowDescriptionStrip";
 import { useToast } from "../../context/ToastContext";
 import API_BASE_URL from "../../lib/apiConfig";
 
@@ -107,6 +106,9 @@ export default function SimulationResultsPage() {
                     if (data.ideaData) setIdea(data.ideaData);
                     if (data.results?.segmentsWithResults) {
                         setSimulationResults(data.results.segmentsWithResults);
+                    }
+                    if (data.results?.deepSimulation) {
+                        setDeepSimResult(data.results.deepSimulation);
                     }
                     // Task 2: Pre-populate insightData if it exists
                     if (data.results?.insights && data.results?.nextSteps) {
@@ -251,84 +253,144 @@ export default function SimulationResultsPage() {
     }, [simDoc?.status, results.length]);
 
     const handleDownloadPDF = async () => {
-        console.log("[PDF] Initializing Report Generation...");
-        const html2pdf = (await import("html2pdf.js")).default;
-        const element = reportRef.current;
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        console.log("[PDF] Initializing Text-Only Export...");
+        const { jsPDF } = await import("jspdf");
+        const doc = new jsPDF();
+        let y = 20;
 
-        // ── Sanitize unsupported CSS color functions (oklab, oklch, color()) ──
-        // html2canvas cannot parse modern color spaces. We walk the DOM and replace
-        // any computed inline style or class-applied color that uses these functions
-        // with a safe fallback before rendering, then restore after.
-        const patchedElements = [];
-        const colorProps = ["color", "backgroundColor", "borderColor", "borderTopColor", "borderBottomColor", "borderLeftColor", "borderRightColor", "outlineColor", "boxShadow", "textDecorationColor"];
-        const unsafePattern = /oklab|oklch|lab\(|lch\(|hwb\(|color-mix\(|color\(display-p3/i;
-
-        const allEls = element.querySelectorAll("*");
-        allEls.forEach(el => {
-            const computed = window.getComputedStyle(el);
-            const patches = {};
-            colorProps.forEach(prop => {
-                const val = computed[prop];
-                if (val && unsafePattern.test(val)) {
-                    patches[prop] = { original: el.style[prop], safe: "#1a1a2e" };
-                    el.style[prop] = "#1a1a2e"; // dark navy fallback
+        const addText = (text, size = 11, style = "normal") => {
+            doc.setFontSize(size);
+            doc.setFont("helvetica", style);
+            const lines = doc.splitTextToSize(text, 170);
+            lines.forEach(line => {
+                if (y > 280) {
+                    doc.addPage();
+                    y = 20;
                 }
+                doc.text(line, 20, y);
+                y += (size * 0.4) + 2;
             });
-            if (Object.keys(patches).length > 0) patchedElements.push({ el, patches });
+            y += 2;
+        };
+
+        const addHeading = (text, size = 14) => {
+            y += 5;
+            addText(text.toUpperCase(), size, "bold");
+            y += 2;
+        };
+
+        // Header
+        addText("PERCURA MARKET VALIDATION REPORT", 18, "bold");
+        addText(`Generated on: ${new Date().toLocaleString()}`, 9);
+        y += 10;
+
+        // Core Idea
+        addHeading("Product Concept");
+        addText(idea?.idea || "No idea text provided.");
+        addText(`Industry: ${idea?.industry || "General"} | Target: ${idea?.targetAudience || "General"}`, 10);
+        
+        // High Level Stats
+        addHeading("Market Fit Statistics");
+        addText(`Total Personas Sampled: ${totalPersonasCount}`);
+        addText(`Simulated Market Adoption: ${adoptionCount} personas (${Math.round(adoptionRate * 100)}%)`);
+        addText(`Rejected / Churned: ${rejectedCount} personas`);
+        addText(`Projected Survival Probability: ${survivalProb}%`);
+
+        // Segment Analysis
+        addHeading("Segment Resonance Analysis");
+        results.forEach((res, i) => {
+            const tr = res.testResult;
+            addText(`${i + 1}. ${res.segment_name}`, 12, "bold");
+            addText(`Verdict: ${tr?.verdict || "N/A"} | Resonance: ${tr?.resonanceScore || 0}% | WTP: ${tr?.willingnessToPay || "N/A"}`, 10);
+            addText(`Voice: "${tr?.verbatimQuote || ""}"`, 10, "italic");
+            addText(`Drivers: ${(tr?.keyDrivers || []).join(", ")}`, 9);
+            addText(`Friction: ${(tr?.frictionPoints || []).join(", ")}`, 9);
+            y += 4;
         });
 
-        const opt = {
-            margin: 10,
-            filename: `Percura_Validation_${idea?.industry || 'Idea'}_${timestamp}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-                scale: 2, 
-                backgroundColor: '#000000', 
-                useCORS: true,
-                logging: false,
-                letterRendering: true,
-                allowTaint: true,
-                onclone: (clonedDoc) => {
-                    // Global safety net: find all style tags and strip lab/oklch/lch/hwb/color-mix
-                    const styles = clonedDoc.querySelectorAll('style');
-                    styles.forEach(s => {
-                        const content = s.textContent;
-                        if (/lab\(|oklab\(|lch\(|oklch\(|color-mix\(|hwb\(/i.test(content)) {
-                            // Replace complex color functions with basic transparent or inheritance
-                            s.textContent = content.replace(/(lab|oklab|lch|oklch|color-mix|hwb)\([^)]+\)/gi, 'inherit');
-                        }
-                    });
-                    
-                    const style = clonedDoc.createElement("style");
-                    style.textContent = `
-                        * {
-                            color: inherit !important;
-                            border-color: rgba(255,255,255,0.1) !important;
-                            box-shadow: none !important;
-                            text-shadow: none !important;
-                        }
-                    `;
-                    clonedDoc.head.appendChild(style);
-                }
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        
-        try {
-            document.body.classList.add('is-exporting-pdf');
-            await html2pdf().set(opt).from(element).save();
-            console.log("[PDF] Generation Successful");
-        } catch (err) {
-            console.error("[PDF] Generation Failed:", err);
-            showToast("error", "Export Failed", "PDF export failed. Please try again or use browser Print → Save as PDF (Ctrl+P) as an alternative.");
-        } finally {
-            // Restore patched inline styles
-            patchedElements.forEach(({ el, patches }) => {
-                Object.entries(patches).forEach(([prop, { original }]) => {
-                    el.style[prop] = original;
-                });
+        // Insights
+        if (insightData?.insights) {
+            addHeading("AI Synthesis Insights");
+            insightData.insights.forEach((ins, i) => {
+                addText(`${i + 1}. ${ins.title}`, 11, "bold");
+                addText(`Evidence: ${ins.evidence}`, 10);
+                addText(`Analysis: ${ins.analysis}`, 10);
+                y += 2;
             });
+        }
+
+        // Final Report Text (Markdown stripped)
+        if (deepSimResult?.finalReport) {
+            addHeading("Synthesis Executive Summary");
+            const cleanReport = deepSimResult.finalReport
+                .replace(/#+\s/g, '') // strip headers
+                .replace(/\*\*/g, '') // strip bold
+                .replace(/---/g, ''); // strip dividers
+            addText(cleanReport, 10);
+        }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        doc.save(`Percura_Report_${idea?.industry || 'Idea'}_${timestamp}.pdf`);
+        showToast("success", "Export Complete", "Text-only PDF report downloaded successfully.");
+    };
+
+    const handleRunDeepSim = async () => {
+        setDeepSimLoading(true);
+        setDeepSimError(null);
+        try {
+            let segmentsToSend = null;
+            try {
+                const lsKey = `percura_segments_${currentSimulationId}`;
+                const stored = localStorage.getItem(lsKey);
+                if (stored) segmentsToSend = JSON.parse(stored);
+            } catch (e) { /* ignore */ }
+            if (!segmentsToSend && fullSelectedSegments?.length) segmentsToSend = fullSelectedSegments;
+            if (!segmentsToSend) segmentsToSend = results;
+            if (!segmentsToSend?.length) {
+                setDeepSimError("No persona data available. Please re-run the initial identification from the 'Segment Selection' page to restore memory.");
+                setDeepSimLoading(false);
+                return;
+            }
+
+            // [OPTIMIZATION] Strip redundant large text fields before sending to API 
+            // This prevents "413 Payload Too Large" errors
+            const cleanedSegments = segmentsToSend.map(seg => ({
+                ...seg,
+                personas: (seg.personas || []).map(p => {
+                    const { full_metadata, ...rest } = p;
+                    return rest;
+                })
+            }));
+
+            const res = await fetch(`${API_BASE_URL}/api/simulation/run`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idea, segments: cleanedSegments, weeks: 8 }),
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || "Simulation failed");
+            setDeepSimResult(data.simulation);
+
+            // SAVE TO FIRESTORE FOR PERSISTENCE
+            if (currentSimulationId) {
+                try {
+                    await setDoc(doc(db, "simulations", currentSimulationId), {
+                        results: {
+                            ...simDoc?.results,
+                            deepSimulation: data.simulation
+                        }
+                    }, { merge: true });
+                } catch (fsErr) {
+                    console.error("[FIRESTORE-SAVE] Failed to save deep sim results:", fsErr);
+                }
+            }
+
+            showToast("success", "Simulation Complete", "Deep Simulation completed successfully and loaded into temporal memory! Persistence enabled.");
+        } catch (err) {
+            console.error("[DEEP-SIM]", err);
+            setDeepSimError(err.message);
+        } finally {
+            setDeepSimLoading(false);
         }
     };
 
@@ -449,49 +511,13 @@ export default function SimulationResultsPage() {
                             </div>
 
                             <Button 
-                                onClick={async () => {
-                                    setDeepSimLoading(true);
-                                    setDeepSimError(null);
-                                    try {
-                                        let segmentsToSend = null;
-                                        try {
-                                            const lsKey = `percura_segments_${currentSimulationId}`;
-                                            const stored = localStorage.getItem(lsKey);
-                                            if (stored) segmentsToSend = JSON.parse(stored);
-                                        } catch (e) { /* ignore */ }
-                                        if (!segmentsToSend && fullSelectedSegments?.length) segmentsToSend = fullSelectedSegments;
-                                        if (!segmentsToSend) segmentsToSend = results;
-                                        if (!segmentsToSend?.length || !segmentsToSend[0]?.personas?.length) {
-                                            setDeepSimError("No persona data available. Please re-run the initial identification from the 'Segment Selection' page to restore memory.");
-                                            setDeepSimLoading(false);
-                                            return;
-                                        }
-                                        const res = await fetch(`${API_BASE_URL}/api/simulation/run`, {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({ idea, segments: segmentsToSend, weeks: 8 }),
-                                        });
-                                        const data = await res.json();
-                                        if (!data.success) throw new Error(data.error || "Simulation failed");
-                                        setDeepSimResult(data.simulation);
-                                        showToast("success", "Simulation Complete", "Deep Simulation completed successfully and loaded into temporal memory! You can now speak directly with the enriched personas in the Interrogation Lab.");
-                                    } catch (err) {
-                                        console.error("[DEEP-SIM]", err);
-                                        setDeepSimError(err.message);
-                                    } finally {
-                                        setDeepSimLoading(false);
-                                    }
-                                }}
+                                onClick={() => setIsInterrogationOpen(true)}
                                 variant="primary"
                                 size="sm"
-                                disabled={deepSimLoading || results.length === 0}
-                                className="flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-xl shadow-blue-600/20 disabled:opacity-40"
+                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 shadow-xl shadow-purple-600/20"
                             >
-                                {deepSimLoading ? (
-                                    <><div className="w-4 h-4 rounded-full border-2 border-t-white border-white/20 animate-spin" /> Running...</>
-                                ) : (
-                                    <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Run Deep Simulation</>
-                                )}
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>
+                                Enter Interrogation Lab
                             </Button>
                         </div>
                     </div>
@@ -919,25 +945,29 @@ export default function SimulationResultsPage() {
                             {/* Export Buttons */}
                         </div>
                     )}
-                    {/* Final CTA — Interrogation Lab */}
+                    {!deepSimResult && (
                     <div className="mt-20 border-t border-white/5 pt-20 text-center animate-in slide-in-from-bottom-4 fade-in duration-500 pb-20">
-                        <h3 className="text-2xl font-light text-white mb-4">Ready to confront your target audience?</h3>
+                        <h3 className="text-2xl font-light text-white mb-4">Want a deeper temporal analysis?</h3>
                         <p className="text-[12px] text-white/40 mb-8 max-w-lg mx-auto leading-relaxed uppercase tracking-widest">
-                            Step into the Interrogation Lab to speak directly with the simulated personas. 
-                            Ask about their hidden motivations, pricing sensitivity, and rejection drivers.
+                            Run an 8-week behavioral simulation where personas discover, react, and influence each other over time.
                         </p>
                         <Button 
-                            onClick={() => setIsInterrogationOpen(true)}
+                            onClick={handleRunDeepSim}
+                            disabled={deepSimLoading || results.length === 0}
                             size="lg"
-                            className="bg-purple-600 hover:bg-purple-700 shadow-xl shadow-purple-600/20 group relative overflow-hidden"
+                            className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-xl shadow-blue-600/20 group relative overflow-hidden px-12"
                         >
-                            <span className="relative z-10 flex items-center gap-3 px-8">
-                                <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>
-                                Enter Interrogation Lab
+                            <span className="relative z-10 flex items-center gap-3">
+                                {deepSimLoading ? (
+                                    <><div className="w-5 h-5 rounded-full border-2 border-t-white border-white/20 animate-spin" /> Running Simulation...</>
+                                ) : (
+                                    <><svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Run Deep 8-Week Simulation</>
+                                )}
                             </span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         </Button>
                     </div>
+                    )}
 
                     </>
                     )}
@@ -945,7 +975,11 @@ export default function SimulationResultsPage() {
             </div>
 
             {isInterrogationOpen && (
-                <PremiumChatPanel onClose={() => setIsInterrogationOpen(false)} />
+                <PremiumChatPanel 
+                    onClose={() => setIsInterrogationOpen(false)} 
+                    graphId={graphId}
+                    deepSimResult={deepSimResult}
+                />
             )}
         </DashboardLayout>
     );

@@ -7,59 +7,15 @@ import { useIdea } from "../../context/IdeaContext";
 import Button from "../../components/ui/Button";
 import DashboardLayout from "../../components/DashboardLayout";
 import API_BASE_URL from "../../lib/apiConfig";
-
+import LoadingScreen from "../../components/ui/LoadingScreen";
 import GraphExplorer from "../../components/GraphExplorer";
-import FlowDescriptionStrip from "../../components/FlowDescriptionStrip";
 
 const ShaderPageBackground = dynamic(
     () => import("../../components/ui/shader-background"),
     { ssr: false }
 );
 
-function LoadingState() {
-    const [step, setStep] = useState(0);
-    const steps = [
-        "Analyzing core value proposition...",
-        "Identifying direct & indirect competitors in India...",
-        "Evaluating regulatory and operational risks...",
-        "Synthesizing macro consumer trends...",
-        "Structuring Market Ontology..."
-    ];
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setStep(s => Math.min(s + 1, steps.length - 1));
-        }, 1800);
-        return () => clearInterval(interval);
-    }, [steps.length]);
-
-    return (
-        <div className="flex flex-col items-center">
-            <div className="flex flex-col items-center justify-center py-10">
-                <div className="w-16 h-16 rounded-full border-4 border-t-blue-500 border-r-purple-500 border-white/10 animate-spin mb-8" />
-                <h3 className="text-xl font-medium text-white/80 tracking-tight animate-pulse">{steps[step]}</h3>
-                <p className="text-sm text-white/40 mt-4 uppercase tracking-[0.2em]">Neural Extraction Engine</p>
-            </div>
-
-            {/* Skeleton Preview */}
-            <div className="w-full max-w-6xl mt-16 space-y-16 opacity-20 pointer-events-none">
-                {[1, 2, 3].map((s) => (
-                    <div key={s} className="space-y-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-8 bg-white/10 rounded-lg animate-pulse" />
-                            <div className="w-48 h-6 bg-white/10 rounded-md animate-pulse" />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {[1, 2, 3].map(i => (
-                                <div key={i} className="h-40 bg-white/5 border border-white/10 rounded-2xl animate-pulse shimmer" />
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
 
 function SectionBadge({ number }) {
     return (
@@ -159,6 +115,21 @@ export default function OntologyContextPage() {
     };
 
     if (!idea) return null;
+    
+    if (scanning) {
+        return (
+            <LoadingScreen 
+                message="Scanning Neural Persona Network..."
+                customSteps={[
+                    "Querying vector database for top matching personas...",
+                    "Identifying behavioral clusters in audience data...",
+                    "Calculating resonance scores across 1M+ profiles...",
+                    "Synthesizing persona archetypes for your idea...",
+                    "Structuring target audience segments..."
+                ]} 
+            />
+        );
+    }
 
     const ontology = marketContext?.ontology;
 
@@ -192,14 +163,68 @@ export default function OntologyContextPage() {
                             </Button>
                         </div>
                     ) : loading || !ontology ? (
-                        <LoadingState />
+                        <div className="py-24">
+                            <LoadingScreen 
+                                message="Extracting Market Ontology..."
+                                customSteps={[
+                                    "Analyzing core value proposition...",
+                                    "Identifying direct & indirect competitors in India...",
+                                    "Evaluating regulatory and operational risks...",
+                                    "Synthesizing macro consumer trends...",
+                                    "Structuring Market Ontology..."
+                                ]} 
+                            />
+                        </div>
                     ) : (
-                        <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                             <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
                             
+                             {/* Market Knowledge Graph - MOVED TO TOP */}
+                            <section>
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center gap-4">
+                                        <SectionBadge number="01" />
+                                        <div>
+                                            <h2 className="text-2xl font-normal text-white/90 tracking-tight">Market Knowledge Graph</h2>
+                                            <span className="text-[10px] text-blue-400/60 uppercase tracking-widest font-black">Powered by Zep Cloud</span>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setIsGraphVisible(!isGraphVisible)}
+                                        className="text-[11px] font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors"
+                                    >
+                                        [ {isGraphVisible ? 'Hide' : 'Show'} View ]
+                                    </button>
+                                </div>
+                                
+                                <div id="graph-section" className={`bg-[#0D0D0D] border border-white/[0.08] rounded-3xl overflow-hidden h-[750px] flex flex-col transition-all duration-300 ${isGraphVisible ? 'opacity-100 shadow-2xl shadow-blue-500/5' : 'hidden opacity-0'}`}>
+                                    <GraphExplorer 
+                                        headless={true} 
+                                        graphId={marketContext?.graphId}
+                                        idea={idea}
+                                        marketContext={marketContext}
+                                    />
+                                </div>
+
+                                <div className="mt-6 flex flex-wrap gap-6 items-center justify-center">
+                                    {[
+                                        { label: 'Startup Idea', color: 'bg-purple-500' },
+                                        { label: 'Competitor', color: 'bg-red-500' },
+                                        { label: 'Market Risk', color: 'bg-amber-500' },
+                                        { label: 'Behavioral Trend', color: 'bg-blue-500' },
+                                        { label: 'Market Entity (Zep)', color: 'bg-indigo-900' }
+                                    ].map((l, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${l.color}`} />
+                                            <span className="text-[10px] uppercase tracking-widest text-white/30 font-bold">{l.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
                              {/* Competitors Grid */}
                             <section>
                                 <div className="flex items-center gap-4 mb-8">
-                                    <SectionBadge number="01" />
+                                    <SectionBadge number="02" />
                                     <h2 className="text-2xl font-normal text-white/90 tracking-tight">Identified Competitors</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -225,7 +250,7 @@ export default function OntologyContextPage() {
                              {/* Risks Grid */}
                             <section>
                                 <div className="flex items-center gap-4 mb-8">
-                                    <SectionBadge number="02" />
+                                    <SectionBadge number="03" />
                                     <h2 className="text-2xl font-normal text-white/90 tracking-tight">Market Risks & Regulations</h2>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -247,7 +272,7 @@ export default function OntologyContextPage() {
                              {/* Macro Trends */}
                             <section>
                                 <div className="flex items-center gap-4 mb-8">
-                                    <SectionBadge number="03" />
+                                    <SectionBadge number="04" />
                                     <h2 className="text-2xl font-normal text-white/90 tracking-tight">Behavioral Macro Trends</h2>
                                 </div>
                                 <div className="flex flex-col gap-3">
@@ -267,49 +292,6 @@ export default function OntologyContextPage() {
                                             <div className="text-[10px] uppercase font-mono tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full whitespace-nowrap">
                                                 {trend.direction}
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-
-                             {/* Market Knowledge Graph */}
-                            <section className="border-t border-white/[0.05] pt-16">
-                                <div className="flex items-center justify-between mb-8">
-                                    <div className="flex items-center gap-4">
-                                        <SectionBadge number="04" />
-                                        <div>
-                                            <h2 className="text-2xl font-normal text-white/90 tracking-tight">Market Knowledge Graph</h2>
-                                            <span className="text-[10px] text-blue-400/60 uppercase tracking-widest font-black">Powered by Zep Cloud</span>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        onClick={() => setIsGraphVisible(!isGraphVisible)}
-                                        className="text-[11px] font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors"
-                                    >
-                                        [ {isGraphVisible ? 'Hide' : 'Show'} View ]
-                                    </button>
-                                </div>
-                                
-                                <div id="graph-section" className={`bg-[#0D0D0D] border border-white/[0.08] rounded-3xl overflow-hidden min-h-[600px] flex flex-col transition-all duration-300 ${isGraphVisible ? 'opacity-100' : 'hidden opacity-0'}`}>
-                                    <GraphExplorer 
-                                        headless={true} 
-                                        graphId={marketContext?.graphId}
-                                        idea={idea}
-                                        marketContext={marketContext}
-                                    />
-                                </div>
-
-                                <div className="mt-6 flex flex-wrap gap-6 items-center justify-center">
-                                    {[
-                                        { label: 'Startup Idea', color: 'bg-purple-500' },
-                                        { label: 'Competitor', color: 'bg-red-500' },
-                                        { label: 'Market Risk', color: 'bg-amber-500' },
-                                        { label: 'Behavioral Trend', color: 'bg-blue-500' },
-                                        { label: 'Market Entity (Zep)', color: 'bg-indigo-900' }
-                                    ].map((l, i) => (
-                                        <div key={i} className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${l.color}`} />
-                                            <span className="text-[10px] uppercase tracking-widest text-white/30 font-bold">{l.label}</span>
                                         </div>
                                     ))}
                                 </div>

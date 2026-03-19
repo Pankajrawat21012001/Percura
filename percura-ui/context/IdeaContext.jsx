@@ -18,12 +18,15 @@ export function IdeaProvider({ children }) {
     const [marketContext, setMarketContext] = useState(null);
 
     // Initialize from localStorage so page refreshes restore the last session
-    const [currentSimulationId, setCurrentSimulationIdRaw] = useState(() => {
-        if (typeof window !== "undefined") {
-            return localStorage.getItem(STORAGE_KEY) || null;
+    const [currentSimulationId, setCurrentSimulationIdRaw] = useState(null);
+
+    // Load from localStorage after mount to avoid hydration mismatch
+    useEffect(() => {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            setCurrentSimulationIdRaw(stored);
         }
-        return null;
-    });
+    }, []);
 
     // Wrapper that also saves to localStorage
     const setCurrentSimulationId = (id) => {

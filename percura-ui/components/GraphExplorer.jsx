@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import * as d3 from 'd3';
 import API_BASE_URL from '../lib/apiConfig';
 
@@ -69,16 +69,75 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
             .catch(err => setError(err.message))
             .finally(() => setLoading(false));
     }, [graphId, idea, segments, marketContext]);
+    
+    // ── Data Normalization ──
+    const { nodes, edges } = useMemo(() => {
+        if (!graphData) return { nodes: [], edges: [] };
+        
+        const rawNodes = graphData.nodes || [];
+        const rawEdges = graphData.edges || [];
+
+        const processedNodes = rawNodes
+            .filter(n => n.uuid || n.id)
+            .map(n => ({
+                id: n.uuid || n.id,
+                name: n.name || 'Unknown',
+                type: (n.labels || []).find(l => !['Entity', 'Node'].includes(l)) || 'Entity',
+                rawData: n,
+            }));
+
+        const nodeIds = new Set(processedNodes.map(n => n.id));
+
+        const processedEdges = rawEdges
+            .filter(e => e.source && e.target && nodeIds.has(e.source) && nodeIds.has(e.target))
+            .map(e => ({
+                source: e.source,
+                target: e.target,
+                type: e.type,
+                rawData: e
+            }));
+            
+        return { nodes: processedNodes, edges: processedEdges };
+    }, [graphData]);
+    
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+    // ── Handle Dimensions ──
+    useEffect(() => {
+        if (!containerRef.current) return;
+        
+        const updateDims = () => {
+             const { clientWidth, clientHeight } = containerRef.current;
+             if (clientWidth > 0 && clientHeight > 0) {
+                 setDimensions({ width: clientWidth, height: clientHeight });
+             }
+        };
+
+        // Initialize immediately
+        updateDims();
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+                const { width, height } = entry.contentRect;
+                if (width > 0 && height > 0) {
+                    setDimensions({ width, height });
+                }
+            }
+        });
+        
+        resizeObserver.observe(containerRef.current);
+        return () => resizeObserver.disconnect();
+    }, [isFullscreen, activeTab]); // Re-observe if layout drastically shifts
 
     // ── D3 Rendering ──
     useEffect(() => {
-        if (!graphData || !svgRef.current || !containerRef.current || activeTab !== 'force') return;
+        // Fallback to client dimensions if state hasn't updated yet but we have nodes
+        const width = dimensions.width || (containerRef.current?.clientWidth) || 0;
+        const height = dimensions.height || (containerRef.current?.clientHeight) || 0;
+        
+        if (!nodes.length || !svgRef.current || !containerRef.current || activeTab !== 'force' || width <= 0) return;
+        
         if (simulationRef.current) simulationRef.current.stop();
-
-        const { nodes: rawNodes, edges: rawEdges } = graphData;
-        const container = containerRef.current;
-        const width = container.clientWidth;
-        const height = container.clientHeight;
 
         const svg = d3.select(svgRef.current)
             .attr('width', width)
@@ -93,48 +152,41 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
             g.attr('transform', event.transform);
         });
         svg.call(zoom);
+        
+        // Initial transform - Center the graph
         svg.call(zoom.transform, d3.zoomIdentity.translate(width/2, height/2).scale(0.8));
 
-        // Build node objects
-        const nodes = rawNodes.map(n => ({
-            id: n.uuid,
-            name: n.name || 'Unknown',
-            type: (n.labels || []).find(l => !['Entity', 'Node'].includes(l)) || 'Entity',
-            rawData: n,
-        }));
+        console.log(`[GRAPH] Initializing simulation: ${width}x${height} with ${nodes.length} nodes`);
 
-        const edges = rawEdges.map(e => ({
-            source: e.source,
-            target: e.target,
-            type: e.type,
-            rawData: e
-        }));
+        // Create LOCAL copies for simulation as d3 modifies them in-place
+        const simNodes = nodes.map(d => ({...d}));
+        const simEdges = edges.map(d => ({...d}));
 
-        const simulation = d3.forceSimulation(nodes)
-            .force('link', d3.forceLink(edges).id(d => d.id).distance(150))
+        const simulation = d3.forceSimulation(simNodes)
+            .force('link', d3.forceLink(simEdges).id(d => d.id).distance(150))
             .force('charge', d3.forceManyBody().strength(-300))
             .force('center', d3.forceCenter(0, 0))
             .force('collision', d3.forceCollide().radius(60));
 
         simulationRef.current = simulation;
 
-        const link = g.append('g')
+        const linkLayer = g.append('g')
             .selectAll('line')
-            .data(edges)
+            .data(simEdges)
             .enter().append('line')
             .attr('stroke', 'rgba(255,255,255,0.1)')
             .attr('stroke-width', 1.5);
 
-        const node = g.append('g')
+        const nodeLayer = g.append('g')
             .selectAll('g')
-            .data(nodes)
+            .data(simNodes)
             .enter().append('g')
             .call(d3.drag()
                 .on('start', dragstarted)
                 .on('drag', dragged)
                 .on('end', dragended));
 
-        node.append('circle')
+        nodeLayer.append('circle')
             .attr('r', 12)
             .attr('fill', d => getColor(d.type))
             .attr('stroke', '#000')
@@ -142,7 +194,7 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
             .attr('class', 'cursor-pointer hover:scale-125 transition-transform')
             .on('click', (e, d) => setSelectedItem({ type: 'node', data: d }));
 
-        node.append('text')
+        nodeLayer.append('text')
             .text(d => d.name)
             .attr('fill', 'rgba(255,255,255,0.7)')
             .attr('font-size', '11px')
@@ -152,13 +204,13 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
             .attr('class', 'pointer-events-none');
 
         simulation.on('tick', () => {
-            link
+            linkLayer
                 .attr('x1', d => d.source.x)
                 .attr('y1', d => d.source.y)
                 .attr('x2', d => d.target.x)
                 .attr('y2', d => d.target.y);
 
-            node
+            nodeLayer
                 .attr('transform', d => `translate(${d.x},${d.y})`);
         });
 
@@ -177,7 +229,10 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
             event.subject.fy = null;
         }
 
-    }, [graphData, activeTab]);
+        return () => {
+            simulation.stop();
+        };
+    }, [nodes, edges, activeTab, dimensions]);
 
     // ── Controls ──
     const handleZoomIn = () => {
@@ -205,8 +260,6 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
             </div>
         );
     }
-
-    const { nodes = [], edges = [] } = graphData || {};
 
     const renderTabs = () => (
         <div className="flex items-center gap-1 p-1 bg-white/[0.03] border-b border-white/[0.08]">
@@ -258,8 +311,8 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                 </div>
             </div>
 
-            <div className="flex-1 relative flex overflow-hidden">
-                <div className="flex-1 relative flex overflow-hidden bg-[#050505]">
+            <div className="flex-1 relative flex overflow-hidden h-full w-full">
+                <div className="flex-1 relative flex overflow-hidden bg-[#050505] h-full w-full">
                     {activeTab === 'force' && (
                         <>
                             <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing overflow-hidden">
@@ -330,8 +383,8 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                         <div className="flex-1 overflow-auto p-4 custom-scrollbar">
                             <div className="grid gap-3">
                                 {edges.map((edge, i) => {
-                                    const sNode = nodes.find(n => n.id === edge.source.id || n.id === edge.source);
-                                    const tNode = nodes.find(n => n.id === edge.target.id || n.id === edge.target);
+                                    const sNode = nodes.find(n => n.id === (edge.source?.id || edge.source));
+                                    const tNode = nodes.find(n => n.id === (edge.target?.id || edge.target));
                                     return (
                                         <div key={i} className="flex items-center gap-6 p-4 bg-white/[0.02] border border-white/5 rounded-2xl group hover:border-white/10 transition-colors">
                                             <div className="flex flex-col gap-1 w-[40%] text-right overflow-hidden">

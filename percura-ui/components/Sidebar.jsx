@@ -80,13 +80,15 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
     const pathname = usePathname();
 
     // Track completed steps persistently per session
-    const [completedSteps, setCompletedSteps] = useState(() => {
-        if (typeof window !== "undefined") {
-            const stored = sessionStorage.getItem("percura_completed_steps");
-            return stored ? JSON.parse(stored) : [];
+    const [completedSteps, setCompletedSteps] = useState([]);
+
+    // Load from sessionStorage after mount to avoid hydration mismatch
+    useEffect(() => {
+        const stored = sessionStorage.getItem("percura_completed_steps");
+        if (stored) {
+            setCompletedSteps(JSON.parse(stored));
         }
-        return [];
-    });
+    }, []);
 
     // Mark current step as completed whenever it changes
     useEffect(() => {
@@ -144,14 +146,24 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
     }, [isOpen, setIsOpen]);
 
     const handleSelectSimulation = (sim) => {
+        // Fetch all relevant data from the simulation document
         setCurrentSimulationId(sim.id || sim.docId);
-        setIdea(sim.ideaData);
+        setIdea(sim.ideaData || null);
         setSimulationResults(sim.results?.segmentsWithResults || []);
+        setMarketContext(sim.results?.marketContext || null);
         setValidation({
             segments: sim.results?.segments || [],
             personas: sim.results?.personas || [],
             totalMatched: sim.results?.totalMatched || 0,
         });
+
+        // Mark all steps as accessible for past simulations before navigating
+        const allSteps = [1, 2, 3, 4];
+        setCompletedSteps(allSteps);
+        if (typeof window !== "undefined") {
+            sessionStorage.setItem("percura_completed_steps", JSON.stringify(allSteps));
+        }
+
         router.push("/simulation-results");
         if (window.innerWidth < 1024) setIsOpen(false);
     };
@@ -175,6 +187,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
         // Reset all idea/simulation state in context
         reset();
         // Clear completed steps so the flow starts fresh
+        setCompletedSteps([]);
         if (typeof window !== "undefined") {
             sessionStorage.removeItem("percura_completed_steps");
         }
@@ -257,9 +270,12 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                 <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
                     <nav className={`py-4 space-y-1 ${isExpanded ? 'px-3' : 'px-2'}`}>
                         {STEPS.map((step, idx) => {
+                            const stepNum = step.number;
+                            const currentStepNum = PATH_TO_STEP[pathname] || 1;
                             const isActive = pathname === step.path;
-                            const isDone = completedSteps.includes(step.number) && !isActive;
-                            const isAccessible = isDone || isActive || completedSteps.includes(step.number - 1) || step.number === 1;
+                            const isDone = completedSteps.includes(stepNum) && !isActive;
+                            // A step is accessible if it's the current one, any previous one, or already completed
+                            const isAccessible = stepNum <= currentStepNum || completedSteps.includes(stepNum);
 
                             return (
                                 <button
