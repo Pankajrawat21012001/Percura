@@ -3,9 +3,9 @@ import { IdeaProvider } from "../context/IdeaContext";
 import { AuthProvider } from "../context/AuthContext";
 
 export const metadata = {
-  title: "Percura — Persona Testing Engine",
+  title: "Percura — AI Startup Validation Platform",
   description:
-    "Test your idea against 1M+ real personas across India. AI-powered demographic matching and smart segmentation for startup validation.",
+    "Validate your startup idea against 1M+ real personas across India. AI-powered demographic matching and smart segmentation for market validation.",
   manifest: "/site.webmanifest",
 };
 
@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#F5F0EB] text-[#1A1A1A] min-h-screen antialiased">
+      <body className="bg-white text-[#1A1A1A] min-h-screen antialiased">
         <AuthProvider>
           <IdeaProvider>
             <ToastProvider>

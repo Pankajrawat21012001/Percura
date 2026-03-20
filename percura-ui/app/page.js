@@ -1,759 +1,402 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
-import { getSimulationHistory } from "../lib/simulationHistory";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
 
-/* ─── Persona cards for phone mockup ─── */
-const PERSONA_CARDS = [
-  { name: "Priya Sharma", age: 28, city: "Mumbai", occupation: "UX Designer", verdict: "Adopted", image: "/personas/priya.png" },
-  { name: "Rajesh Kumar", age: 42, city: "Jaipur", occupation: "Small Business Owner", verdict: "Rejected", image: "/personas/rajesh.png" },
-  { name: "Ananya Iyer", age: 24, city: "Bangalore", occupation: "Graduate Student", verdict: "Adopted", image: "/personas/ananya.png" },
-  { name: "Vikram Patel", age: 35, city: "Ahmedabad", occupation: "Chartered Accountant", verdict: "Considering", image: "/personas/vikram.png" },
-  { name: "Meera Nair", age: 31, city: "Kochi", occupation: "Freelance Writer", verdict: "Adopted", image: "/personas/meera.png" },
-];
+/** ─── 3D HERO COMPONENT ─── **/
+function HeadHeroObject() {
+  const meshRef = useRef();
+  const { nodes } = useGLTF("/models/head.glb");
 
-const SERVICES = [
-  {
-    title: "Persona Simulation",
-    description: "50+ AI personas with unique psychology, economics, and biases encounter your product week by week.",
-    emoji: "🧬",
-  },
-  {
-    title: "Market Intelligence",
-    description: "12-week simulated market with evolving social dynamics, pricing friction, and trust barriers.",
-    emoji: "📊",
-  },
-  {
-    title: "Interrogation Lab",
-    description: "Interview the personas who rejected you. Run panel discussions. Understand the real reasons.",
-    emoji: "💬",
-  },
-];
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.2;
+    }
+  });
 
-const HOW_IT_WORKS = [
-  {
-    step: "01",
-    title: "Define Your Market",
-    description: "Describe your target users, industry, and region. The engine builds a realistic economic environment around your idea.",
-  },
-  {
-    step: "02",
-    title: "Watch Personas Decide",
-    description: "50+ AI personas — each with unique psychology — encounter your product week by week. Social influence, pricing friction, trust barriers — all simulated.",
-  },
-  {
-    step: "03",
-    title: "Interrogate the Market",
-    description: "Interview the personas who rejected you. Run panel discussions. Understand the real reasons your idea fails or succeeds.",
-  },
-];
-
-const COMPARISON = [
-  { feature: "Real demographic simulation", percura: true, traditional: false },
-  { feature: "Results in under 10 minutes", percura: true, traditional: false },
-  { feature: "1:1 persona interviews", percura: true, traditional: false },
-  { feature: "No recruitment needed", percura: true, traditional: false },
-  { feature: "Indian market specificity", percura: true, traditional: false },
-  { feature: "Costs under ₹500", percura: true, traditional: false },
-];
-
-const FAQS = [
-  {
-    q: "How realistic are the AI personas?",
-    a: "Each persona has a unique psychological profile, income level, spending habits, and social influence patterns — calibrated from real Indian demographic data.",
-  },
-  {
-    q: "How long does a simulation take?",
-    a: "A full 12-week simulation with 50+ personas typically completes in under 10 minutes. You get results immediately.",
-  },
-  {
-    q: "Can I interview specific personas after the simulation?",
-    a: "Yes! The Interrogation Lab lets you have 1:1 conversations with any persona. They remember every decision they made during the simulation.",
-  },
-  {
-    q: "What kind of products can I test?",
-    a: "Anything from D2C consumer products to SaaS tools to local services. The engine adapts its persona pool and market dynamics to your specific industry.",
-  },
-  {
-    q: "Is this better than traditional surveys or focus groups?",
-    a: "Surveys measure what people say. Focus groups measure performance. Percura measures what people would actually do — with no social desirability bias.",
-  },
-];
-
-function getTimeAgo(timestamp) {
-  const diff = Date.now() - new Date(timestamp).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "Yesterday";
-  return `${days}d ago`;
-}
-
-export default function LandingPage() {
-  const [history, setHistory] = useState([]);
-  const [openFaq, setOpenFaq] = useState(null);
-  const [activePersona, setActivePersona] = useState(0);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    setHistory(getSimulationHistory());
+  const tex = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "black";
+      ctx.fillRect(0,0,512,512);
+      ctx.fillStyle = "#E85D3A";
+      ctx.font = "bold 20px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (let x = 16; x <= 512; x += 32) {
+        for (let y = 16; y <= 512; y += 32) {
+          ctx.fillText("+", x, y);
+        }
+      }
+    }
+    const t = new THREE.CanvasTexture(canvas);
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(12, 12);
+    return t;
   }, []);
 
-  /* Auto-cycle through persona portraits */
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActivePersona((prev) => (prev + 1) % PERSONA_CARDS.length);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, []);
+  // The glb has a Mesh named "mesh_0" or we just find the first geometry
+  const geometry = Object.values(nodes).find(n => n.geometry)?.geometry;
 
-  /* Sticky navbar scroll detection */
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  if (!geometry) return null;
 
   return (
-    <div className="w-full min-h-screen overflow-x-hidden" style={{ background: "#F5F0EB", color: "#1A1A1A" }}>
+    <mesh ref={meshRef} position={[0, -0.3, 0]} geometry={geometry} scale={0.4}>
+      <meshPhysicalMaterial 
+        color="#080808" 
+        roughness={0.3} 
+        metalness={0.9} 
+        clearcoat={1}
+      />
+      {tex && (
+        <mesh geometry={geometry}>
+          <meshBasicMaterial map={tex} transparent opacity={0.65} blending={THREE.AdditiveBlending} depthWrite={false} color="#FF2200" />
+        </mesh>
+      )}
+    </mesh>
+  );
+}
 
-      {/* ══════════════════════════════════════════════════════
-          STICKY NAVBAR
-      ══════════════════════════════════════════════════════ */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        style={{
-          background: scrolled ? "rgba(245,240,235,0.92)" : "transparent",
-          backdropFilter: scrolled ? "blur(16px)" : "none",
-          borderBottom: scrolled ? "1px solid rgba(0,0,0,0.06)" : "1px solid transparent",
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span style={{ fontFamily: "var(--font-serif)", fontSize: "1.5rem", fontWeight: 400 }}>
-            Percura
-          </span>
-          <div className="hidden md:flex items-center gap-8 text-sm" style={{ color: "#6B6B6B" }}>
-            <a href="#how-it-works" className="hover:text-[#1A1A1A] transition-colors">How It Works</a>
-            <a href="#case-study" className="hover:text-[#1A1A1A] transition-colors">Case Study</a>
-            <a href="#faq" className="hover:text-[#1A1A1A] transition-colors">FAQ</a>
-          </div>
-          <Link
-            href="/validate"
-            className="px-5 py-2.5 rounded-full text-sm font-medium transition-all hover:scale-105 active:scale-95"
-            style={{ background: "#1A1A1A", color: "#fff" }}
-          >
-            Start Simulation
+const NavBar = () => {
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[rgba(0,0,0,0.06)]">
+      <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="3" fill="#E85D3A" />
+            {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
+              const rad = (angle * Math.PI) / 180;
+              return (
+                <line
+                  key={i}
+                  x1={16 + Math.cos(rad) * 5}
+                  y1={16 + Math.sin(rad) * 5}
+                  x2={16 + Math.cos(rad) * 11}
+                  y2={16 + Math.sin(rad) * 11}
+                  stroke="#E85D3A"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              );
+            })}
+          </svg>
+          <span className="font-semibold text-lg tracking-tight">Percura</span>
+        </div>
+        
+        <div className="hidden md:flex items-center gap-8 text-[13px] font-semibold text-black/60">
+          <a href="#solutions" className="hover:text-black transition-colors">Solutions</a>
+          <a href="#features" className="hover:text-black transition-colors">Features</a>
+          <a href="#trust" className="hover:text-black transition-colors">Trust</a>
+          <a href="#customers" className="hover:text-black transition-colors">Customers</a>
+          <a href="#pricing" className="hover:text-black transition-colors">Pricing</a>
+        </div>
+
+        <div>
+          <Link href="/validate" className="bg-[#1A1A1A] text-white px-6 py-2.5 rounded-full text-[13px] font-bold tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-transform inline-block">
+            BOOK A DEMO
           </Link>
         </div>
-      </nav>
+      </div>
+    </nav>
+  );
+};
 
-      {/* ══════════════════════════════════════════════════════
-          HERO SECTION — split layout with phone mockup
-      ══════════════════════════════════════════════════════ */}
-      <section className="pt-32 pb-20 px-6 md:px-10 lg:px-20">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center min-h-[70vh]">
-          {/* Left: Headline */}
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] mb-6 font-semibold" style={{ color: "#9A9A9A" }}>
-              Persona Simulation Lab
-            </p>
-            <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(2.5rem, 5vw, 4rem)", lineHeight: 1.1, fontWeight: 400 }}>
-              Idea validation{" "}
-              <br />
-              done <em style={{ fontStyle: "italic" }}>right.</em>
-            </h1>
-            <p className="mt-6 text-lg leading-relaxed max-w-lg" style={{ color: "#6B6B6B" }}>
-              50+ autonomous AI personas encounter your idea in a simulated market.
-              Watch them adopt, reject, or hesitate — then interrogate the ones who said no.
-            </p>
-            <div className="mt-10 flex flex-wrap gap-4">
-              <Link
-                href="/validate"
-                className="px-8 py-4 rounded-full text-base font-semibold transition-all hover:scale-[1.03] active:scale-95"
-                style={{ background: "#1A1A1A", color: "#fff" }}
-              >
-                Start Simulation →
-              </Link>
-              <a
-                href="#how-it-works"
-                className="px-8 py-4 rounded-full text-base font-medium transition-all hover:bg-black/5"
-                style={{ border: "1px solid rgba(0,0,0,0.15)", color: "#1A1A1A" }}
-              >
-                See How It Works
-              </a>
-            </div>
-          </div>
+export default function LandingPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-          {/* Right: Phone Mockup with Portrait Carousel */}
-          <div className="flex justify-center lg:justify-end">
-            <div
-              className="relative"
-              style={{
-                width: 300,
-                height: 600,
-                borderRadius: 40,
-                background: "#1A1A1A",
-                padding: "12px",
-                boxShadow: "0 40px 80px rgba(0,0,0,0.18), 0 10px 30px rgba(0,0,0,0.1)",
-              }}
-            >
-              {/* Phone notch */}
-              <div style={{
-                position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
-                width: 100, height: 24, borderRadius: 12, background: "#1A1A1A", zIndex: 10,
-              }} />
-              {/* Phone screen */}
-              <div
-                style={{
-                  width: "100%", height: "100%", borderRadius: 30,
-                  overflow: "hidden", position: "relative", background: "#E8E0D8",
-                }}
-              >
-                {/* Portrait images carousel */}
-                {PERSONA_CARDS.map((p, i) => (
-                  <div
-                    key={p.name}
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      opacity: i === activePersona ? 1 : 0,
-                      transition: "opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
-                    }}
-                  >
-                    {/* Portrait image */}
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        objectPosition: "center top",
-                      }}
-                    />
-                    {/* Gradient overlay for text readability */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: "50%",
-                        background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)",
-                        pointerEvents: "none",
-                      }}
-                    />
-                    {/* Intro card at bottom */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        padding: "20px",
-                      }}
-                    >
-                      <p style={{
-                        fontFamily: "var(--font-serif)",
-                        fontSize: 22,
-                        fontWeight: 400,
-                        color: "#fff",
-                        marginBottom: 4,
-                      }}>
-                        {p.name}
-                      </p>
-                      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 10 }}>
-                        {p.age} · {p.city} · {p.occupation}
-                      </p>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: "4px 12px",
-                          borderRadius: 20,
-                          background:
-                            p.verdict === "Adopted" ? "rgba(34,197,94,0.25)" :
-                            p.verdict === "Rejected" ? "rgba(239,68,68,0.25)" :
-                            "rgba(245,158,11,0.25)",
-                          color:
-                            p.verdict === "Adopted" ? "#4ade80" :
-                            p.verdict === "Rejected" ? "#f87171" :
-                            "#fbbf24",
-                          backdropFilter: "blur(8px)",
-                        }}
-                      >
-                        {p.verdict}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Dot indicators */}
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: 8,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    display: "flex",
-                    gap: 6,
-                    zIndex: 5,
-                  }}
-                >
-                  {PERSONA_CARDS.map((_, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        width: i === activePersona ? 16 : 6,
-                        height: 6,
-                        borderRadius: 3,
-                        background: i === activePersona ? "#fff" : "rgba(255,255,255,0.4)",
-                        transition: "all 0.3s ease",
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
-          SOCIAL PROOF BAR
-      ══════════════════════════════════════════════════════ */}
-      <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-center gap-8 text-xs uppercase tracking-[0.25em] font-semibold" style={{ color: "#9A9A9A" }}>
-          <span>Not Surveys</span>
-          <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#ccc", display: "inline-block" }} />
-          <span>Not Focus Groups</span>
-          <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#ccc", display: "inline-block" }} />
-          <span>Simulated Humans</span>
+  return (
+    <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#E85D3A]/20 relative overflow-x-hidden">
+      {/* GLOBAL GRID LINES BACKGROUND */}
+      <div className="fixed inset-0 pointer-events-none z-[0] flex justify-center opacity-[0.03]">
+        <div className="w-full max-w-[1400px] h-full border-x border-black grid grid-cols-4">
+          <div className="border-r border-black" />
+          <div className="border-r border-black" />
+          <div className="border-r border-black" />
+          <div className="" />
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════
-          SERVICES — 3 card grid
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6 md:px-10 lg:px-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.8rem, 3vw, 2.8rem)", fontWeight: 400 }}>
-              Everything you need to{" "}
-              <em style={{ fontStyle: "italic" }}>validate</em>
-            </h2>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {SERVICES.map((s) => (
-              <div
-                key={s.title}
-                className="p-8 rounded-3xl transition-all duration-300 hover:scale-[1.02]"
-                style={{
-                  background: "rgba(255,255,255,0.55)",
-                  border: "1px solid rgba(0,0,0,0.06)",
-                }}
-              >
-                <span className="text-4xl block mb-6">{s.emoji}</span>
-                <h3 className="text-xl font-semibold mb-3">{s.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#6B6B6B" }}>
-                  {s.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <NavBar />
 
-      {/* ══════════════════════════════════════════════════════
-          MISSION CARD
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-20 px-6 md:px-10 lg:px-20">
-        <div className="max-w-4xl mx-auto text-center">
-          <div
-            className="p-12 md:p-16 rounded-3xl"
-            style={{
-              background: "rgba(255,255,255,0.6)",
-              border: "1px solid rgba(0,0,0,0.06)",
-            }}
-          >
-            <p className="text-xs uppercase tracking-[0.3em] font-semibold mb-6" style={{ color: "#9A9A9A" }}>
-              Our Mission
-            </p>
-            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.6rem, 3vw, 2.5rem)", fontWeight: 400, lineHeight: 1.3 }}>
-              Turning market uncertainty
-              <br />
-              into <em style={{ fontStyle: "italic" }}>validated insight.</em>
-            </h2>
-            <p className="mt-6 text-base max-w-2xl mx-auto leading-relaxed" style={{ color: "#6B6B6B" }}>
-              Percura builds a society of AI personas — each with their own psychology, budget, and biases —
-              and lets your idea loose inside it. No surveys. No guessing. Just simulated truth.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
-          CASE STUDY
-      ══════════════════════════════════════════════════════ */}
-      <section id="case-study" className="py-24 px-6 md:px-10 lg:px-20">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-xs uppercase tracking-[0.3em] font-semibold mb-4" style={{ color: "#9A9A9A" }}>
-            Case Study
-          </p>
-          <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.6rem, 3vw, 2.5rem)", fontWeight: 400, marginBottom: "2rem" }}>
-            Testing a D2C Health Snack in Tier-2 India
-          </h2>
-          <div className="grid gap-6 md:grid-cols-3 mb-8">
-            {[
-              { label: "Adoption Rate", value: "34%", color: "#22c55e" },
-              { label: "Survival Probability", value: "62%", color: "#3b82f6" },
-              { label: "Avg. Decision Time", value: "Week 4", color: "#f59e0b" },
-            ].map((m) => (
-              <div
-                key={m.label}
-                className="p-6 rounded-2xl text-center"
-                style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(0,0,0,0.06)" }}
-              >
-                <p className="text-3xl font-bold mb-1" style={{ color: m.color }}>{m.value}</p>
-                <p className="text-xs uppercase tracking-widest font-semibold" style={{ color: "#9A9A9A" }}>
-                  {m.label}
-                </p>
+      <main className="relative z-10 pt-20">
+        {/* ─── 1. HERO SECTION ─── */}
+        <section className="relative w-full max-w-[1400px] mx-auto min-h-[85vh] flex items-center px-6 py-20">
+          <div className="w-full grid lg:grid-cols-3 auto-rows-min gap-10 lg:gap-0 items-center justify-items-center">
+            
+            {/* Left Column Text */}
+            <div className="flex flex-col items-start w-full lg:col-span-1 justify-self-start relative z-10 pt-10">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.06)] bg-white mb-6 shadow-sm">
+                <span className="text-[9px] uppercase font-black text-[#E85D3A] bg-[#E85D3A]/10 px-2 py-0.5 rounded-full tracking-widest">
+                  DUO
+                </span>
+                <span className="text-[11px] font-semibold text-black/60 tracking-wider">Your Future AI </span>
+                <svg className="w-3 h-3 text-black/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </div>
-            ))}
+              <h1 className="text-[clamp(3.2rem,6vw,5rem)] leading-[0.95] tracking-tighter font-[900]">
+                Automate complex<br />
+                operations
+              </h1>
+              <p className="mt-6 text-black/50 text-[15px] max-w-[360px] leading-relaxed font-medium">
+                Casely pairs powerful AI with governance, security, and workflow integrations so your team can automate support without losing your voice.
+              </p>
+            </div>
+
+            {/* Center 3D Component */}
+            <div className="w-full lg:col-span-1 h-[400px] lg:h-[600px] relative flex justify-center items-center -mx-10 mix-blend-multiply z-0">
+              <div className="absolute inset-x-[-100px] bottom-[-20%] h-[50%] bg-gradient-to-t from-white via-white/80 to-transparent z-[20] pointer-events-none" />
+              {mounted && (
+                <div className="absolute inset-[-100px] md:inset-[-200px] z-[5]">
+                  <Canvas camera={{ position: [0, 0, 7.5], fov: 40 }}>
+                    <ambientLight intensity={0.4} color="#FFF" />
+                    <directionalLight position={[10, 10, 10]} intensity={1.5} color="#FFFFFF" />
+                    <pointLight position={[-10, 0, -10]} intensity={1.5} color="#E85D3A" />
+                    <pointLight position={[0, -10, 10]} intensity={0.5} color="#FFF" />
+                    <HeadHeroObject />
+                  </Canvas>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column Text */}
+            <div className="flex flex-col items-start lg:items-end w-full lg:col-span-1 justify-self-end text-left lg:text-right relative z-10 lg:pt-32">
+              <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] leading-[0.95] tracking-tighter font-[900] mb-8">
+                with trusted<br />
+                AI Personas.
+              </h2>
+              <div className="flex flex-wrap gap-4 justify-start lg:justify-end">
+                <Link href="/validate" className="bg-[#1A1A1A] text-white px-8 py-3.5 rounded-full text-sm font-bold tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                  BOOK A DEMO
+                </Link>
+                <a href="#solutions" className="bg-white border text-black px-8 py-3.5 rounded-full text-sm font-bold tracking-wide hover:bg-black/[0.02] transition-colors border-[rgba(0,0,0,0.15)] flex items-center">
+                  LEARN MORE
+                </a>
+              </div>
+            </div>
+
           </div>
-          <div
-            className="p-8 rounded-2xl"
-            style={{ background: "rgba(255,255,255,0.5)", border: "1px solid rgba(0,0,0,0.06)" }}
-          >
-            <p className="text-sm font-semibold mb-3">Top Rejection Reasons</p>
-            <div className="grid gap-3 md:grid-cols-2">
-              {[
-                "Price too high for perceived value (₹299/box)",
-                "Unfamiliar brand — no social proof yet",
-                "Preference for local alternatives",
-                "Packaging didn't communicate health benefits clearly",
-              ].map((r, i) => (
-                <div key={i} className="flex items-start gap-3 text-sm" style={{ color: "#6B6B6B" }}>
-                  <span style={{ color: "#ef4444", fontWeight: 700, flexShrink: 0 }}>✕</span>
-                  <span>{r}</span>
+        </section>
+
+        {/* ─── 2. TRUSTED BY BAR ─── */}
+        <section id="trust" className="w-full border-y border-[rgba(0,0,0,0.06)] bg-[#FAFAFA]">
+          <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row items-stretch divide-y md:divide-y-0 md:divide-x divide-[rgba(0,0,0,0.06)]">
+            <div className="px-8 py-8 md:w-1/4 shrink-0 flex items-center justify-center md:justify-start">
+              <span className="text-sm font-bold text-black/80 tracking-tight">
+                Trusted by <span className="text-[#E85D3A]">Validation</span> Teams
+              </span>
+            </div>
+            {/* Logos */}
+            <div className="flex-1 flex flex-wrap justify-between items-stretch">
+              {["Sequoia", "Databricks", "Intercom", "DocuSign", "Google"].map((company, i) => (
+                <div key={i} className={`flex-1 min-w-[120px] px-8 py-8 flex items-center justify-center opacity-40 grayscale font-black tracking-tighter text-lg border-b md:border-b-0 ${i !== 4 ? 'md:border-r border-[rgba(0,0,0,0.06)]' : ''}`}>
+                  {company}
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ══════════════════════════════════════════════════════
-          HOW IT WORKS
-      ══════════════════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-24 px-6 md:px-10 lg:px-20" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.8rem, 3vw, 2.8rem)", fontWeight: 400 }}>
-              How it <em style={{ fontStyle: "italic" }}>works</em>
-            </h2>
-            <p className="mt-4 max-w-xl mx-auto" style={{ color: "#6B6B6B" }}>
-              From idea to market intelligence in three steps.
-            </p>
-          </div>
-          <div className="grid gap-8 lg:grid-cols-3">
-            {HOW_IT_WORKS.map((item) => (
-              <div
-                key={item.step}
-                className="p-8 rounded-3xl transition-all duration-300 hover:scale-[1.02]"
-                style={{
-                  background: "rgba(255,255,255,0.55)",
-                  border: "1px solid rgba(0,0,0,0.06)",
-                }}
-              >
-                <span className="text-xs uppercase tracking-[0.3em] font-bold block mb-4" style={{ color: "#9A9A9A" }}>
-                  Step {item.step}
-                </span>
-                <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#6B6B6B" }}>
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        {/* ─── 3. SOLUTIONS SECTION ─── */}
+        <section id="solutions" className="w-full max-w-[1400px] mx-auto pt-32 pb-0 relative">
+          
+          {/* Subtle Halftone Pattern Top Left */}
+          <div className="absolute top-0 left-0 w-80 h-80 opacity-20 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle, #000 1px, transparent 1.5px)", backgroundSize: "16px 16px" }} />
 
-      {/* ══════════════════════════════════════════════════════
-          TESTIMONIAL
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6 md:px-10 lg:px-20">
-        <div className="max-w-4xl mx-auto text-center">
-          <div
-            className="p-12 md:p-16 rounded-3xl"
-            style={{ background: "#1A1A1A", color: "#fff" }}
-          >
-            <p className="text-xs uppercase tracking-[0.3em] font-semibold mb-8" style={{ color: "rgba(255,255,255,0.4)" }}>
-              What Founders Say
-            </p>
-            <blockquote style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.3rem, 2.5vw, 1.8rem)", lineHeight: 1.5, fontWeight: 400 }}>
-              &ldquo;We spent ₹2L on focus groups and got polite answers. Percura gave us the{" "}
-              <em style={{ fontStyle: "italic", color: "rgba(255,255,255,0.6)" }}>brutal truth</em>{" "}
-              in 10 minutes — and it turned out to be exactly right.&rdquo;
-            </blockquote>
-            <p className="mt-8 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
-              — Hypothetical D2C Founder, Bangalore
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
-          COMPARISON TABLE
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6 md:px-10 lg:px-20" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.6rem, 3vw, 2.5rem)", fontWeight: 400 }}>
-              Why Percura over{" "}
-              <em style={{ fontStyle: "italic" }}>traditional research?</em>
-            </h2>
-          </div>
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(0,0,0,0.06)" }}
-          >
-            {/* Header */}
-            <div className="grid grid-cols-3 p-4 text-xs uppercase tracking-widest font-semibold" style={{ borderBottom: "1px solid rgba(0,0,0,0.06)", color: "#9A9A9A" }}>
-              <span>Feature</span>
-              <span className="text-center">Percura</span>
-              <span className="text-center">Traditional</span>
+          {/* Section Divider & Header */}
+          <div className="flex items-center justify-center mb-24 relative">
+            <div className="absolute w-full h-[1px] bg-[rgba(0,0,0,0.06)]" />
+            <div className="bg-white px-6 py-2 relative text-xs font-black tracking-[0.2em] text-black/30">
+              [ <span className="text-[#E85D3A]">01</span> / 05 ] &nbsp;&nbsp;.&nbsp;&nbsp; SOLUTIONS
             </div>
-            {/* Rows */}
-            {COMPARISON.map((row, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-3 p-4 text-sm items-center"
-                style={{ borderBottom: i < COMPARISON.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}
-              >
-                <span>{row.feature}</span>
-                <span className="text-center text-lg">{row.percura ? "✓" : "✕"}</span>
-                <span className="text-center text-lg" style={{ color: "#ccc" }}>{row.traditional ? "✓" : "✕"}</span>
-              </div>
-            ))}
           </div>
-        </div>
-      </section>
 
-      {/* ══════════════════════════════════════════════════════
-          PAST SIMULATIONS (conditional)
-      ══════════════════════════════════════════════════════ */}
-      {history.length > 0 && (
-        <section className="py-20 px-6 md:px-10 lg:px-20" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-10">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] font-semibold mb-2" style={{ color: "#9A9A9A" }}>
-                  Your Lab
-                </p>
-                <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.5rem", fontWeight: 400 }}>
-                  Past Simulations
-                </h2>
-              </div>
-              <Link
-                href="/validate"
-                className="text-xs uppercase tracking-widest font-bold hover:opacity-70 transition-opacity"
-                style={{ color: "#1A1A1A" }}
-              >
-                + New Run
-              </Link>
+          <div className="flex flex-col items-center text-center mb-20 relative z-10 px-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(0,0,0,0.06)] bg-white mb-6">
+              <span className="text-[10px] uppercase font-bold text-[#E85D3A] px-2 tracking-widest border-r border-[rgba(0,0,0,0.06)]">OUR</span>
+              <span className="text-[11px] font-semibold text-black/60 tracking-wide px-2 uppercase">Validation Studio</span>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {history.slice(0, 6).map((entry) => {
-                const adoptionRate =
-                  entry.metrics.totalAgents > 0
-                    ? Math.round((entry.metrics.adopted / entry.metrics.totalAgents) * 100)
-                    : 0;
-                const timeAgo = getTimeAgo(entry.timestamp);
-                return (
-                  <div
-                    key={entry.id}
-                    className="p-5 rounded-2xl transition-all duration-300 hover:scale-[1.02]"
-                    style={{
-                      background: "rgba(255,255,255,0.55)",
-                      border: "1px solid rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: "#9A9A9A" }}>
-                        {timeAgo}
-                      </span>
-                      <span
-                        className="text-xs font-bold px-2 py-0.5 rounded-full"
-                        style={{
-                          background:
-                            adoptionRate >= 50
-                              ? "rgba(34,197,94,0.12)"
-                              : adoptionRate >= 25
-                              ? "rgba(245,158,11,0.12)"
-                              : "rgba(239,68,68,0.12)",
-                          color:
-                            adoptionRate >= 50
-                              ? "#16a34a"
-                              : adoptionRate >= 25
-                              ? "#d97706"
-                              : "#dc2626",
-                        }}
-                      >
-                        {adoptionRate}% adopted
-                      </span>
-                    </div>
-                    <h3 className="text-sm font-semibold mb-1">
-                      {entry.config.industry} · {entry.config.stage}
-                    </h3>
-                    <p className="text-xs mb-3 line-clamp-1" style={{ color: "#9A9A9A" }}>
-                      {entry.config.targetUser}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs" style={{ color: "#9A9A9A" }}>
-                      <span>{entry.config.agentCount} personas</span>
-                      <span>·</span>
-                      <span>{entry.config.simulationLength}wk</span>
-                      <span>·</span>
-                      <span style={{ fontWeight: 600 }}>{entry.metrics.survivalProbability}% survival</span>
-                    </div>
-                  </div>
-                );
-              })}
+            <h2 className="text-[clamp(2.2rem,4vw,3.5rem)] leading-[1.05] tracking-tighter font-black mb-6">
+              A complete AI validation platform
+            </h2>
+            <p className="text-black/50 text-sm max-w-[500px] leading-relaxed font-semibold">
+              Simulate entire market segments, test positioning in real time, and ensure every product decision is data-backed and deeply understood.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-0 border-t border-[rgba(0,0,0,0.06)] divide-y md:divide-y-0 md:divide-x divide-[rgba(0,0,0,0.06)]">
+            {/* Card 1: Active/Elevated */}
+            <div className="p-10 md:p-14 lg:p-20 flex flex-col items-center text-center bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] relative z-10 md:scale-[1.02] border md:border-x border-[rgba(0,0,0,0.04)] sm:rounded-[2.5rem] md:rounded-[2rem] mx-4 md:mx-0 mb-4 md:mb-0">
+              <div className="w-[72px] h-[72px] rounded-[1.25rem] border border-[#E85D3A]/10 bg-[#E85D3A]/5 flex items-center justify-center mb-8">
+                <svg className="w-8 h-8 text-[#E85D3A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-black mb-4 tracking-tight">Market Simulation</h3>
+              <p className="text-sm text-black/50 leading-relaxed font-semibold">
+                Test products securely with AI personas that act as real human segments.
+              </p>
+            </div>
+
+            {/* Card 2: Flat */}
+            <div className="p-10 md:p-14 lg:p-20 flex flex-col items-center text-center bg-transparent group hover:bg-[#FAFAFA] transition-colors">
+              <div className="w-[72px] h-[72px] flex items-center justify-center mb-8 opacity-40 group-hover:opacity-60 transition-opacity">
+                <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-4 tracking-tight">Interrogation Lab</h3>
+              <p className="text-[13px] text-black/50 leading-relaxed font-medium">
+                Interview personas exactly where they drop off in the conversion funnel.
+              </p>
+            </div>
+
+            {/* Card 3: Flat */}
+            <div className="p-10 md:p-14 lg:p-20 flex flex-col items-center text-center bg-transparent group hover:bg-[#FAFAFA] transition-colors relative">
+              <div className="w-[72px] h-[72px] flex items-center justify-center mb-8 opacity-40 group-hover:opacity-60 transition-opacity">
+                <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-4 tracking-tight flex-col sm:flex-row flex items-center gap-2">
+                Knowledge Core
+                <span className="text-[9px] uppercase font-black text-[#E85D3A] bg-[#E85D3A]/10 border border-[#E85D3A]/20 px-2 py-0.5 rounded-full tracking-widest">NEW</span>
+              </h3>
+              <p className="text-[13px] text-black/50 leading-relaxed font-medium">
+                Guardrails, custom context, and analytics so your simulations remain grounded.
+              </p>
             </div>
           </div>
         </section>
-      )}
 
-      {/* ══════════════════════════════════════════════════════
-          FAQ ACCORDION
-      ══════════════════════════════════════════════════════ */}
-      <section id="faq" className="py-24 px-6 md:px-10 lg:px-20" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.6rem, 3vw, 2.5rem)", fontWeight: 400 }}>
-              Frequently asked{" "}
-              <em style={{ fontStyle: "italic" }}>questions</em>
-            </h2>
-          </div>
-          <div className="flex flex-col gap-3">
-            {FAQS.map((faq, i) => (
-              <div
-                key={i}
-                className="rounded-2xl overflow-hidden transition-all duration-300"
-                style={{
-                  background: "rgba(255,255,255,0.55)",
-                  border: "1px solid rgba(0,0,0,0.06)",
-                }}
-              >
-                <button
-                  className="w-full text-left p-5 flex items-center justify-between text-sm font-semibold cursor-pointer"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                >
-                  <span>{faq.q}</span>
-                  <span
-                    className="text-lg transition-transform duration-300 flex-shrink-0 ml-4"
-                    style={{ transform: openFaq === i ? "rotate(45deg)" : "rotate(0)" }}
-                  >
-                    +
-                  </span>
-                </button>
-                <div
-                  style={{
-                    maxHeight: openFaq === i ? 200 : 0,
-                    overflow: "hidden",
-                    transition: "max-height 0.3s ease",
-                  }}
-                >
-                  <p className="px-5 pb-5 text-sm leading-relaxed" style={{ color: "#6B6B6B" }}>
-                    {faq.a}
-                  </p>
+        {/* ─── 4. FEATURES VISUAL SECTION ─── */}
+        <section className="w-full bg-[#FAFAFA] border-y border-[rgba(0,0,0,0.06)] py-20 lg:py-32 relative">
+          <div className="max-w-[1400px] mx-auto px-6 grid xl:grid-cols-2 gap-16 xl:gap-24 items-start">
+            
+            {/* Visual Diagram Left Side (Card) */}
+            <div className="w-full bg-white border border-[rgba(0,0,0,0.08)] rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] flex flex-col p-8 sm:p-12 h-full min-h-[500px] justify-between relative">
+              <div className="flex items-center gap-2 mb-12">
+                <svg className="w-4 h-4 text-[#E85D3A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <span className="text-[11px] font-black tracking-widest text-[#E85D3A] uppercase">Deep Interaction</span>
+              </div>
+
+              {/* Central Node Graph Mockup */}
+              <div className="relative w-full flex-1 flex items-center justify-center my-10">
+                {/* Lines */}
+                <svg className="absolute inset-0 w-full h-full text-black/10 overflow-visible" preserveAspectRatio="xMidYMid meet">
+                  <line x1="20%" y1="20%" x2="50%" y2="50%" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" />
+                  <line x1="80%" y1="20%" x2="50%" y2="50%" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" />
+                  <line x1="20%" y1="80%" x2="50%" y2="50%" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" />
+                  <line x1="80%" y1="80%" x2="50%" y2="50%" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" />
+                  <circle cx="50%" cy="50%" r="35%" stroke="currentColor" strokeWidth="1" fill="none" />
+                </svg>
+
+                {/* Nodes */}
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-[#E85D3A] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-[0_10px_30px_rgba(232,93,58,0.3)] z-10">
+                  You
+                </div>
+                <div className="absolute top-[10%] left-[10%] w-14 h-14 bg-[#FAFAFA] border border-[rgba(0,0,0,0.06)] rounded-full flex items-center justify-center text-xs font-bold shadow-sm">
+                  P1
+                </div>
+                <div className="absolute top-[10%] right-[10%] w-14 h-14 bg-[#FAFAFA] border border-[rgba(0,0,0,0.06)] rounded-full flex items-center justify-center text-xs font-bold shadow-sm">
+                  P2
+                </div>
+                <div className="absolute bottom-[10%] left-[10%] w-14 h-14 bg-[#FAFAFA] border border-[rgba(0,0,0,0.06)] rounded-full flex items-center justify-center text-xs font-bold shadow-sm">
+                  P3
+                </div>
+                <div className="absolute bottom-[10%] right-[10%] w-14 h-14 bg-[#FAFAFA] border border-[rgba(0,0,0,0.06)] rounded-full flex items-center justify-center text-xs font-bold shadow-sm">
+                  P4
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* ══════════════════════════════════════════════════════
-          FINAL CTA
-      ══════════════════════════════════════════════════════ */}
-      <section className="py-32 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.8rem, 3vw, 2.8rem)", fontWeight: 400, lineHeight: 1.2 }}>
-            Your validation journey
-            <br />
-            starts <em style={{ fontStyle: "italic" }}>right here.</em>
+              <div>
+                <h3 className="text-2xl font-black mb-3 tracking-tight">Automated Personas</h3>
+                <p className="text-[15px] text-black/50 font-medium mb-6 max-w-[300px]">
+                  Trigger actions across synthetic markets to fully close the loop.
+                </p>
+                <div className="text-[13px] font-black flex items-center gap-2 hover:text-[#E85D3A] cursor-pointer w-fit group">
+                  View Personas <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side Text / Code Preview */}
+            <div className="flex flex-col gap-12 w-full pt-4">
+              {/* Code Snippet Card */}
+              <div className="bg-white border border-[rgba(0,0,0,0.08)] rounded-xl shadow-sm relative overflow-hidden flex flex-col">
+                <div className="absolute top-6 right-6 border border-[#E85D3A]/20 text-[#E85D3A] text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-[0.2em] bg-white">
+                  Preview
+                </div>
+                <div className="p-8 sm:p-12 overflow-x-auto">
+                  <pre className="text-[13px] font-mono text-black/60 leading-[2.2]">
+{`import { ValidationEngine } from "@percura/core";
+
+const engine = new ValidationEngine({
+  personas: "high_income_india",
+  strictMode: true,
+  guardrails: {
+    budget: "< 5000 INR",
+    bias: "brand_loyalty"
+  }
+});
+
+const result = await engine.simulate(idea);`}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Lower Text Block */}
+              <div className="px-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <svg className="w-4 h-4 text-[#E85D3A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="text-[11px] font-black tracking-widest text-[#E85D3A] uppercase">Style Guides</span>
+                </div>
+                <h3 className="text-3xl font-black mb-4 tracking-tight">On-brand Environments</h3>
+                <p className="text-[15px] text-black/50 font-medium mb-8 leading-relaxed max-w-[450px]">
+                  Consistent tone and policy enforcement with customizable simulation variables ensuring realistic and focused insights.
+                </p>
+                <div className="text-[14px] font-black flex items-center gap-2 hover:text-[#E85D3A] cursor-pointer w-fit group">
+                  View Docs <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <footer className="w-full bg-white pt-24 pb-12 px-6 border-t border-[rgba(0,0,0,0.06)] relative z-10">
+        <div className="max-w-[1400px] mx-auto flex flex-col items-center text-center">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="mb-8">
+            <circle cx="16" cy="16" r="4" fill="#E85D3A" />
+            <circle cx="16" cy="16" r="10" stroke="#E85D3A" strokeWidth="1" strokeDasharray="4 4" />
+          </svg>
+          <h2 className="text-[clamp(1.8rem,3vw,3rem)] font-black tracking-tight mb-8">
+            Stop Guessing. Start Validating.
           </h2>
-          <p className="mt-6 text-base" style={{ color: "#6B6B6B" }}>
-            No sign-up required. Free to run. Results in under 10 minutes.
-          </p>
-          <Link
-            href="/validate"
-            className="mt-10 inline-flex items-center gap-3 px-10 py-5 rounded-full text-base font-semibold transition-all hover:scale-[1.03] active:scale-95"
-            style={{ background: "#1A1A1A", color: "#fff" }}
-          >
-            Start Simulation
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
+          <Link href="/validate" className="bg-[#1A1A1A] text-white px-8 py-4 rounded-full text-[13px] font-bold tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-transform">
+            START FOR FREE
           </Link>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════
-          FOOTER
-      ══════════════════════════════════════════════════════ */}
-      <footer style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }} className="py-16 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid gap-12 md:grid-cols-4 mb-12">
-            <div>
-              <span style={{ fontFamily: "var(--font-serif)", fontSize: "1.3rem", fontWeight: 400 }}>
-                Percura
-              </span>
-              <p className="mt-3 text-sm leading-relaxed" style={{ color: "#6B6B6B" }}>
-                AI-powered persona simulation for startup idea validation.
-              </p>
+          
+          <div className="w-full flex flex-col md:flex-row justify-between items-center mt-32 pt-8 border-t border-[rgba(0,0,0,0.06)] text-xs font-bold text-black/40">
+            <span>© 2026 Percura Inc.</span>
+            <div className="flex flex-wrap justify-center gap-8 mt-6 md:mt-0">
+              <a href="#" className="hover:text-black transition-colors">Twitter</a>
+              <a href="#" className="hover:text-black transition-colors">LinkedIn</a>
+              <a href="#" className="hover:text-black transition-colors">Terms</a>
+              <a href="#" className="hover:text-black transition-colors">Privacy</a>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-widest font-semibold mb-4" style={{ color: "#9A9A9A" }}>
-                Product
-              </p>
-              <div className="flex flex-col gap-2 text-sm" style={{ color: "#6B6B6B" }}>
-                <Link href="/validate" className="hover:text-[#1A1A1A] transition-colors">Start Simulation</Link>
-                <a href="#how-it-works" className="hover:text-[#1A1A1A] transition-colors">How It Works</a>
-                <a href="#case-study" className="hover:text-[#1A1A1A] transition-colors">Case Study</a>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-widest font-semibold mb-4" style={{ color: "#9A9A9A" }}>
-                Resources
-              </p>
-              <div className="flex flex-col gap-2 text-sm" style={{ color: "#6B6B6B" }}>
-                <a href="#faq" className="hover:text-[#1A1A1A] transition-colors">FAQ</a>
-                <span>Documentation</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-widest font-semibold mb-4" style={{ color: "#9A9A9A" }}>
-                Legal
-              </p>
-              <div className="flex flex-col gap-2 text-sm" style={{ color: "#6B6B6B" }}>
-                <span>Privacy Policy</span>
-                <span>Terms of Service</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: "1.5rem" }} className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="text-xs" style={{ color: "#9A9A9A" }}>
-              © 2026 Percura · Persona Simulation Lab
-            </span>
-            <span className="text-xs" style={{ color: "#9A9A9A" }}>
-              Built for founders who want the truth.
-            </span>
           </div>
         </div>
       </footer>

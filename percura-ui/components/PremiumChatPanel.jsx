@@ -340,49 +340,49 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                     : [];
 
     return (
-        <div className="fixed inset-0 z-[100] bg-[#0A0A0C]/95 backdrop-blur-2xl flex items-center justify-center p-4 lg:p-10 animate-in fade-in duration-500">
+        <div className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-2xl flex items-center justify-center p-4 lg:p-10 animate-in fade-in duration-500">
             {/* Close Button */}
             <button
                 onClick={onClose}
-                className="absolute top-6 right-6 p-3 rounded-full bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all z-[110]"
+                className="absolute top-6 right-6 p-3 rounded-full bg-white/5 border border-black/[0.08] text-black/50 hover:text-[#1a1a1a] hover:bg-white/10 transition-all z-[110]"
             >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
 
             {/* Main Container */}
-            <div className="w-full h-full max-w-7xl bg-[#0F0F12] border border-white/10 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] flex overflow-hidden relative">
+            <div className="w-full h-full max-w-7xl bg-[#FAFAFA] border border-black/[0.08] rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] flex overflow-hidden relative">
 
                 {/* ── LEFT: Sidebar ── */}
-                <div className="w-[320px] shrink-0 border-r border-white/5 flex flex-col bg-black/40">
+                <div className="w-[320px] shrink-0 border-r border-black/[0.04] flex flex-col bg-white/80">
                     <div className="p-6 pb-4">
-                        <div className="flex flex-wrap gap-1.5 bg-white/[0.03] rounded-2xl p-1.5 border border-white/5">
+                        <div className="flex flex-wrap gap-1.5 bg-black/[0.02] rounded-2xl p-1.5 border border-black/[0.04]">
                             <button
                                 onClick={() => setMode("single")}
-                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "single" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "single" ? "bg-purple-600 text-[#1a1a1a] shadow-lg shadow-purple-600/20" : "text-black/40 hover:text-black/60"}`}
                             >
                                 1:1
                             </button>
                             <button
                                 onClick={() => setMode("panel")}
-                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "panel" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "panel" ? "bg-purple-600 text-[#1a1a1a] shadow-lg shadow-purple-600/20" : "text-black/40 hover:text-black/60"}`}
                             >
                                 Panel
                             </button>
                             <button
                                 onClick={() => setMode("analyst")}
-                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "analyst" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "analyst" ? "bg-indigo-600 text-[#1a1a1a] shadow-lg shadow-indigo-600/20" : "text-black/40 hover:text-black/60"}`}
                             >
                                 Analyst
                             </button>
                             <button
                                 onClick={() => setMode("debate")}
-                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "debate" ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "debate" ? "bg-rose-600 text-[#1a1a1a] shadow-lg shadow-rose-600/20" : "text-black/40 hover:text-black/60"}`}
                             >
                                 Debate
                             </button>
                             <button
                                 onClick={() => setMode("survey")}
-                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "survey" ? "bg-cyan-600 text-white shadow-lg shadow-cyan-600/20" : "text-white/30 hover:text-white/60"}`}
+                                className={`flex-1 text-[11px] uppercase tracking-[0.2em] font-black py-2.5 px-2 rounded-xl transition-all ${mode === "survey" ? "bg-cyan-600 text-[#1a1a1a] shadow-lg shadow-cyan-600/20" : "text-black/40 hover:text-black/60"}`}
                             >
                                 Survey
                             </button>
@@ -392,33 +392,33 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                     {/* Filter & Search */}
                     <div className="px-6 pb-4 space-y-3">
                         <div className="relative group">
-                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-purple-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30 group-focus-within:text-purple-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                             <input
                                 type="text"
                                 placeholder="Search personas..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-white/[0.03] border border-white/5 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/50 transition-all"
+                                className="w-full bg-black/[0.02] border border-black/[0.04] rounded-xl pl-10 pr-4 py-2.5 text-xs text-[#1a1a1a] placeholder:text-black/30 focus:outline-none focus:border-purple-500/50 transition-all"
                             />
                         </div>
                         <div className="relative">
                             <button
                                 onClick={() => setIsSegmentDropdownOpen(!isSegmentDropdownOpen)}
-                                className="w-full bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 text-[11px] text-white/70 font-bold uppercase tracking-widest focus:outline-none focus:border-purple-500/50 transition-all flex items-center justify-between group hover:bg-white/[0.06]"
+                                className="w-full bg-black/[0.02] border border-black/[0.04] rounded-xl px-4 py-3 text-[11px] text-black/70 font-bold uppercase tracking-widest focus:outline-none focus:border-purple-500/50 transition-all flex items-center justify-between group hover:bg-white/[0.06]"
                             >
                                 <span>
                                     {selectedSegmentFilter === "all"
                                         ? "Any Segment"
                                         : (simulationResults || []).find(s => s.segment_id === selectedSegmentFilter)?.segment_name}
                                 </span>
-                                <svg className={`w-3 h-3 text-white/20 group-hover:text-white/40 transition-transform duration-300 ${isSegmentDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                <svg className={`w-3 h-3 text-black/30 group-hover:text-black/50 transition-transform duration-300 ${isSegmentDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                             </button>
 
                             {isSegmentDropdownOpen && (
-                                <div className="absolute top-full left-0 w-full mt-2 bg-[#1A1A1F] border border-white/10 rounded-xl py-2 shadow-2xl z-50 animate-in slide-in-from-top-2 fade-in duration-200 backdrop-blur-xl">
+                                <div className="absolute top-full left-0 w-full mt-2 bg-white border border-black/[0.08] rounded-xl py-2 shadow-2xl z-50 animate-in slide-in-from-top-2 fade-in duration-200 backdrop-blur-xl">
                                     <button
                                         onClick={() => { setSelectedSegmentFilter("all"); setIsSegmentDropdownOpen(false); }}
-                                        className={`w-full text-left px-4 py-2.5 text-[11px] uppercase tracking-widest font-bold transition-colors ${selectedSegmentFilter === "all" ? "text-purple-400 bg-purple-500/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+                                        className={`w-full text-left px-4 py-2.5 text-[11px] uppercase tracking-widest font-bold transition-colors ${selectedSegmentFilter === "all" ? "text-purple-400 bg-purple-500/10" : "text-black/50 hover:text-[#1a1a1a] hover:bg-white/5"}`}
                                     >
                                         Any Segment
                                     </button>
@@ -426,7 +426,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                         <button
                                             key={seg.segment_id}
                                             onClick={() => { setSelectedSegmentFilter(seg.segment_id); setIsSegmentDropdownOpen(false); }}
-                                            className={`w-full text-left px-4 py-2.5 text-[11px] uppercase tracking-widest font-bold transition-colors ${selectedSegmentFilter === seg.segment_id ? "text-purple-400 bg-purple-500/10" : "text-white/40 hover:text-white hover:bg-white/5"}`}
+                                            className={`w-full text-left px-4 py-2.5 text-[11px] uppercase tracking-widest font-bold transition-colors ${selectedSegmentFilter === seg.segment_id ? "text-purple-400 bg-purple-500/10" : "text-black/50 hover:text-[#1a1a1a] hover:bg-white/5"}`}
                                         >
                                             {seg.segment_name}
                                         </button>
@@ -438,7 +438,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
 
                     {/* Agent List */}
                     <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2 custom-scrollbar">
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-white/20 font-black mb-4 px-2">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-black/30 font-black mb-4 px-2">
                             Available Agents ({filteredAgents.length})
                         </p>
                         {filteredAgents.map((agent) => {
@@ -454,7 +454,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                     onClick={() => handleAgentClick(agent)}
                                     className={`group p-4 rounded-2xl border transition-all duration-300 cursor-pointer relative overflow-hidden ${isSelected
                                         ? "bg-purple-600/10 border-purple-500/50 ring-1 ring-purple-500/20"
-                                        : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10"
+                                        : "bg-[#FAFAFA] border-black/[0.04] hover:bg-black/[0.04] hover:border-black/[0.08]"
                                         }`}
                                 >
                                     {isSelected && <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />}
@@ -472,25 +472,25 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                                 />
                                             )}
                                             <div>
-                                                <p className={`text-sm font-bold transition-colors ${isSelected ? "text-white" : "text-white/80 group-hover:text-white"}`}>{agent.displayName}</p>
-                                                <p className="text-[11px] text-white/30 font-medium group-hover:text-white/40">{agent.archetype}</p>
+                                                <p className={`text-sm font-bold transition-colors ${isSelected ? "text-[#1a1a1a]" : "text-black/80 group-hover:text-[#1a1a1a]"}`}>{agent.displayName}</p>
+                                                <p className="text-[11px] text-black/40 font-medium group-hover:text-black/50">{agent.archetype}</p>
                                             </div>
                                         </div>
                                         <div className={`w-2 h-2 rounded-full mt-1.5 shadow-[0_0_8px_rgba(0,0,0,0.5)] ${agent.state === "ADOPTED" ? "bg-emerald-500 shadow-emerald-500/20" : agent.state === "REJECTED" ? "bg-rose-500 shadow-rose-500/20" : "bg-white/20"}`} />
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <span className={`text-[11px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md ${agent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400" : agent.state === "REJECTED" ? "bg-rose-500/10 text-rose-400" : "bg-white/5 text-white/30"}`}>
+                                        <span className={`text-[11px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md ${agent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400" : agent.state === "REJECTED" ? "bg-rose-500/10 text-rose-400" : "bg-white/5 text-black/40"}`}>
                                             {agent.state}
                                         </span>
                                         {agent.simState && (
                                             <div className="flex items-center gap-1">
                                                 <div className={`w-2 h-2 rounded-full ${agent.simState.converted ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : agent.simState.churned ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' : 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.3)]'}`} />
-                                                <span className="text-[11px] font-mono text-white/30">{(agent.simState.sentimentScore * 100).toFixed(0)}%</span>
+                                                <span className="text-[11px] font-mono text-black/40">{(agent.simState.sentimentScore * 100).toFixed(0)}%</span>
                                             </div>
                                         )}
                                         {!agent.simState && (
-                                            <span className="text-[11px] text-white/20 font-mono">Inf: <span className="text-white/40">{agent.influence}/10</span></span>
+                                            <span className="text-[11px] text-black/30 font-mono">Inf: <span className="text-black/50">{agent.influence}/10</span></span>
                                         )}
                                     </div>
                                 </div>
@@ -500,7 +500,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
 
                     {/* Selection Summary (for Panel) */}
                     {mode === "panel" && panelAgents.length > 0 && (
-                        <div className="p-6 border-t border-white/5 bg-purple-600/5">
+                        <div className="p-6 border-t border-black/[0.04] bg-purple-600/5">
                             <p className="text-[11px] uppercase tracking-widest text-purple-400/60 font-black mb-3">
                                 Panel: {panelAgents.length} Personas
                             </p>
@@ -516,7 +516,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
 
                     {/* Selection Summary (for Debate) */}
                     {mode === "debate" && (
-                        <div className="p-6 border-t border-white/5 bg-rose-600/5">
+                        <div className="p-6 border-t border-black/[0.04] bg-rose-600/5">
                             <p className="text-[11px] uppercase tracking-widest text-rose-400/60 font-black mb-3">
                                 Debate Participants ({debateAgents.length}/2)
                             </p>
@@ -538,7 +538,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
 
                     {/* Survey Selection Summary */}
                     {mode === "survey" && surveySelectedIds.size > 0 && (
-                        <div className="p-6 border-t border-white/5 bg-cyan-600/5">
+                        <div className="p-6 border-t border-black/[0.04] bg-cyan-600/5">
                             <div className="flex items-center justify-between mb-3">
                                 <p className="text-[11px] uppercase tracking-widest text-cyan-400/60 font-black">
                                     Survey: {surveySelectedIds.size}/{allAgents.length} selected
@@ -552,7 +552,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                     </button>
                                     <button
                                         onClick={() => setSurveySelectedIds(new Set())}
-                                        className="text-[11px] text-white/30 hover:text-white/60 transition-colors font-bold"
+                                        className="text-[11px] text-black/40 hover:text-black/60 transition-colors font-bold"
                                     >
                                         Clear
                                     </button>
@@ -564,62 +564,62 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
 
                 {/* ── CENTER: Chat Area (single/panel mode only) ── */}
                 {mode !== "survey" && (
-                <div className="flex-1 flex flex-col min-w-0 bg-[#0C0C0E]">
+                <div className="flex-1 flex flex-col min-w-0 bg-white">
                     {/* Header */}
-                    <div className="px-8 py-6 border-b border-white/5 bg-black/40 flex items-center justify-between">
+                    <div className="px-8 py-6 border-b border-black/[0.04] bg-white/80 flex items-center justify-between">
                         {mode === "analyst" ? (
                             <div className="flex items-center gap-4 animate-in slide-in-from-left-4 duration-500">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xl shadow-inner">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-black/[0.08] flex items-center justify-center text-xl shadow-inner">
                                     🧠
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-white tracking-tight">AI Analyst</h2>
-                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">Data-driven insights &middot; Zep Knowledge Graph</p>
+                                    <h2 className="text-lg font-bold text-[#1a1a1a] tracking-tight">AI Analyst</h2>
+                                    <p className="text-[11px] text-black/50 font-bold uppercase tracking-[0.2em]">Data-driven insights &middot; Zep Knowledge Graph</p>
                                 </div>
                             </div>
                         ) : mode === "single" && selectedAgent ? (
                             <div className="flex items-center gap-4 animate-in slide-in-from-left-4 duration-500">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xl shadow-inner">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-black/[0.08] flex items-center justify-center text-xl shadow-inner">
                                     {selectedAgent.name[0]}
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-white tracking-tight">{selectedAgent.displayName}</h2>
-                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">{selectedAgent.archetype} &middot; <span className={selectedAgent.state === "ADOPTED" ? "text-emerald-400/60" : "text-rose-400/60"}>{selectedAgent.segmentName}</span></p>
+                                    <h2 className="text-lg font-bold text-[#1a1a1a] tracking-tight">{selectedAgent.displayName}</h2>
+                                    <p className="text-[11px] text-black/50 font-bold uppercase tracking-[0.2em]">{selectedAgent.archetype} &middot; <span className={selectedAgent.state === "ADOPTED" ? "text-emerald-400/60" : "text-rose-400/60"}>{selectedAgent.segmentName}</span></p>
                                 </div>
                             </div>
                         ) : mode === "panel" ? (
                             <div className="flex items-center gap-4 animate-in slide-in-from-left-4 duration-500">
                                 <div className="flex -space-x-3">
                                     {panelAgents.slice(0, 3).map((a, i) => (
-                                        <div key={i} className="w-10 h-10 rounded-xl bg-purple-600 border-2 border-[#0F0F12] flex items-center justify-center text-[11px] font-black text-white shadow-xl">
+                                        <div key={i} className="w-10 h-10 rounded-xl bg-purple-600 border-2 border-[#0F0F12] flex items-center justify-center text-[11px] font-black text-[#1a1a1a] shadow-xl">
                                             {a.name[0]}
                                         </div>
                                     ))}
                                     {panelAgents.length > 3 && (
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 border-2 border-[#0F0F12] flex items-center justify-center text-[11px] font-black text-white/40 backdrop-blur-md">
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 border-2 border-[#0F0F12] flex items-center justify-center text-[11px] font-black text-black/50 backdrop-blur-md">
                                             +{panelAgents.length - 3}
                                         </div>
                                     )}
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-white tracking-tight">Panel Discussion</h2>
-                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">{panelAgents.length} personas listening &middot; Collective intelligence</p>
+                                    <h2 className="text-lg font-bold text-[#1a1a1a] tracking-tight">Panel Discussion</h2>
+                                    <p className="text-[11px] text-black/50 font-bold uppercase tracking-[0.2em]">{panelAgents.length} personas listening &middot; Collective intelligence</p>
                                 </div>
                             </div>
                         ) : mode === "debate" ? (
                             <div className="flex items-center gap-4 animate-in slide-in-from-left-4 duration-500">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500/20 to-orange-500/20 border border-white/10 flex items-center justify-center text-xl shadow-inner">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500/20 to-orange-500/20 border border-black/[0.08] flex items-center justify-center text-xl shadow-inner">
                                     ⚔️
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-white tracking-tight">Debate Mode</h2>
-                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">Observe contrasting perspectives</p>
+                                    <h2 className="text-lg font-bold text-[#1a1a1a] tracking-tight">Debate Mode</h2>
+                                    <p className="text-[11px] text-black/50 font-bold uppercase tracking-[0.2em]">Observe contrasting perspectives</p>
                                 </div>
                             </div>
                         ) : (
                             <div>
-                                <h2 className="text-lg font-bold text-white/20 tracking-tight">Interrogation Lab</h2>
-                                <p className="text-[11px] text-white/10 font-bold uppercase tracking-[0.2em]">Select an agent to begin the interview</p>
+                                <h2 className="text-lg font-bold text-black/30 tracking-tight">Interrogation Lab</h2>
+                                <p className="text-[11px] text-[#1a1a1a]/10 font-bold uppercase tracking-[0.2em]">Select an agent to begin the interview</p>
                             </div>
                         )}
                     </div>
@@ -628,9 +628,9 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                     <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8 custom-scrollbar">
                         {currentHistory.length === 0 && !isLoading && (
                             <div className="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto">
-                                <div className="w-20 h-20 rounded-[2rem] bg-white/[0.02] border border-white/5 flex items-center justify-center text-4xl mb-8 animate-pulse text-white/10">💬</div>
-                                <h3 className="text-xl font-bold text-white/80 mb-4 tracking-tight">Start the Conversation</h3>
-                                <p className="text-white/30 text-sm leading-relaxed mb-10 font-medium italic">
+                                <div className="w-20 h-20 rounded-[2rem] bg-[#FAFAFA] border border-black/[0.04] flex items-center justify-center text-4xl mb-8 animate-pulse text-[#1a1a1a]/10">💬</div>
+                                <h3 className="text-xl font-bold text-black/80 mb-4 tracking-tight">Start the Conversation</h3>
+                                <p className="text-black/40 text-sm leading-relaxed mb-10 font-medium italic">
                                     {mode === "single"
                                         ? "Direct 1:1 interaction with a persona to understand their deep psychological barriers and motivations."
                                         : mode === "debate"
@@ -643,7 +643,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                         <button
                                             key={i}
                                             onClick={() => setInputValue(q)}
-                                            className="text-[11px] text-left px-5 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white/40 hover:text-white hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 font-medium leading-normal"
+                                            className="text-[11px] text-left px-5 py-4 bg-black/[0.02] border border-black/[0.08] rounded-2xl text-black/50 hover:text-[#1a1a1a] hover:bg-white/10 hover:border-purple-500/30 transition-all duration-300 font-medium leading-normal"
                                         >
                                             {q}
                                         </button>
@@ -659,7 +659,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                         <div className={`max-w-[70%] border rounded-3xl rounded-br-none px-6 py-4 shadow-2xl ${
                                             mode === "debate"
                                                 ? "bg-rose-600/20 border-rose-500/30 shadow-rose-500/5 text-rose-100"
-                                                : "bg-purple-600/20 border-purple-500/30 shadow-purple-500/5 text-white/90"
+                                                : "bg-purple-600/20 border-purple-500/30 shadow-purple-500/5 text-[#1a1a1a]"
                                             }`}>
                                             <p className="text-sm leading-relaxed font-bold">{msg.text}</p>
                                         </div>
@@ -672,10 +672,10 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                         <div className="max-w-[85%] space-y-2">
                                             <div className="flex items-center gap-2 px-1">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60" />
-                                                <p className="text-[11px] text-white/30 font-black uppercase tracking-[0.2em]">{msg.senderName}</p>
+                                                <p className="text-[11px] text-black/40 font-black uppercase tracking-[0.2em]">{msg.senderName}</p>
                                             </div>
-                                            <div className="bg-white/[0.05] border border-white/10 rounded-3xl rounded-bl-none px-6 py-4 backdrop-blur-md">
-                                                <p className="text-sm text-white/80 leading-relaxed">{msg.text}</p>
+                                            <div className="bg-black/[0.04] border border-black/[0.08] rounded-3xl rounded-bl-none px-6 py-4 backdrop-blur-md">
+                                                <p className="text-sm text-black/80 leading-relaxed">{msg.text}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -689,10 +689,10 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                                 <div className="max-w-[85%] space-y-2">
                                                     <div className="flex items-center gap-2 px-1">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-purple-400/60" />
-                                                        <p className="text-[11px] text-white/30 font-black uppercase tracking-[0.2em]">{r.name}</p>
+                                                        <p className="text-[11px] text-black/40 font-black uppercase tracking-[0.2em]">{r.name}</p>
                                                     </div>
-                                                    <div className="bg-white/[0.04] border border-white/10 rounded-3xl rounded-bl-none px-6 py-4 backdrop-blur-md">
-                                                        <p className="text-sm text-white/80 leading-relaxed">{r.reply}</p>
+                                                    <div className="bg-black/[0.03] border border-black/[0.08] rounded-3xl rounded-bl-none px-6 py-4 backdrop-blur-md">
+                                                        <p className="text-sm text-black/80 leading-relaxed">{r.reply}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -708,9 +708,9 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 px-1">
                                         <div className={`w-2 h-2 rounded-full animate-pulse ${mode === "debate" ? "bg-rose-500" : "bg-purple-500"}`} />
-                                        <p className="text-[11px] text-white/30 font-black uppercase tracking-[0.2em]">{isDebating ? "Synthesizing Counter-Argument..." : "Synthesizing Response..."}</p>
+                                        <p className="text-[11px] text-black/40 font-black uppercase tracking-[0.2em]">{isDebating ? "Synthesizing Counter-Argument..." : "Synthesizing Response..."}</p>
                                     </div>
-                                    <div className="bg-white/[0.03] border border-white/10 rounded-3xl px-6 py-5 flex gap-1.5 items-center justify-center w-24">
+                                    <div className="bg-black/[0.02] border border-black/[0.08] rounded-3xl px-6 py-5 flex gap-1.5 items-center justify-center w-24">
                                         <div className={`w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.3s] ${mode === "debate" ? "bg-rose-500/50" : "bg-purple-500/50"}`} />
                                         <div className={`w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.15s] ${mode === "debate" ? "bg-rose-500/50" : "bg-purple-500/50"}`} />
                                         <div className={`w-1.5 h-1.5 rounded-full animate-bounce ${mode === "debate" ? "bg-rose-500/50" : "bg-purple-500/50"}`} />
@@ -723,7 +723,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                     </div>
 
                     {/* Chat Input */}
-                    <div className="p-8 border-t border-white/5 bg-black/40">
+                    <div className="p-8 border-t border-black/[0.04] bg-white/80">
                         <div className="max-w-4xl mx-auto flex gap-4">
                             <div className="flex-1 relative group">
                                 <textarea
@@ -737,20 +737,20 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                     onKeyDown={handleKeyDown}
                                     placeholder={mode === "single" ? (selectedAgent ? `Ask ${selectedAgent.name} anything...` : "Select an agent...") : mode === "debate" ? "Enter a topic for the debate..." : "Ask the panel a question..."}
                                     disabled={isLoading || (mode === "single" && !selectedAgent) || (mode === "panel" && panelAgents.length === 0) || (mode === "debate" && debateAgents.length !== 2)}
-                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-6 py-4 pr-12 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500/50 focus:bg-white/[0.08] transition-all disabled:opacity-30 custom-scrollbar resize-none max-h-32"
+                                    className="w-full bg-black/[0.04] border border-black/[0.08] rounded-2xl px-6 py-4 pr-12 text-sm text-[#1a1a1a] placeholder:text-black/30 focus:outline-none focus:border-purple-500/50 focus:bg-white/[0.08] transition-all disabled:opacity-30 custom-scrollbar resize-none max-h-32"
                                 />
                             </div>
                             <button
                                 onClick={handleSend}
                                 disabled={isLoading || !inputValue.trim()}
-                                className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-20 disabled:scale-100 disabled:shadow-none shrink-0 ${mode === "debate" ? "bg-rose-600 shadow-rose-600/20" : "bg-purple-600 shadow-purple-600/20"}`}
+                                className={`w-14 h-14 rounded-2xl flex items-center justify-center text-[#1a1a1a] shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-20 disabled:scale-100 disabled:shadow-none shrink-0 ${mode === "debate" ? "bg-rose-600 shadow-rose-600/20" : "bg-purple-600 shadow-purple-600/20"}`}
                             >
                                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                                 </svg>
                             </button>
                         </div>
-                        <p className="text-center text-[11px] text-white/10 uppercase tracking-[0.3em] mt-6 font-black">
+                        <p className="text-center text-[11px] text-[#1a1a1a]/10 uppercase tracking-[0.3em] mt-6 font-black">
                             Neural Simulation Engine &middot; Real-time Synthesis
                         </p>
                     </div>
@@ -759,14 +759,14 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
 
                 {/* ── CENTER: Survey Mode ── */}
                 {mode === "survey" && (
-                    <div className="flex-1 flex flex-col min-w-0 bg-[#0C0C0E]">
+                    <div className="flex-1 flex flex-col min-w-0 bg-white">
                         {/* Survey Header */}
-                        <div className="px-8 py-6 border-b border-white/5 bg-black/40 flex items-center justify-between">
+                        <div className="px-8 py-6 border-b border-black/[0.04] bg-white/80 flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xl shadow-inner">📋</div>
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-black/[0.08] flex items-center justify-center text-xl shadow-inner">📋</div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-white tracking-tight">Mass Survey</h2>
-                                    <p className="text-[11px] text-white/40 font-bold uppercase tracking-[0.2em]">
+                                    <h2 className="text-lg font-bold text-[#1a1a1a] tracking-tight">Mass Survey</h2>
+                                    <p className="text-[11px] text-black/50 font-bold uppercase tracking-[0.2em]">
                                         Send one question to {surveySelectedIds.size} personas simultaneously
                                     </p>
                                 </div>
@@ -777,7 +777,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                         <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6 custom-scrollbar">
                             {/* Persona Selection Grid */}
                             <div>
-                                <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-black mb-4">Select Personas to Survey</p>
+                                <p className="text-[11px] uppercase tracking-[0.2em] text-black/40 font-black mb-4">Select Personas to Survey</p>
                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                                     {allAgents.map(agent => {
                                         const isChecked = surveySelectedIds.has(agent.id);
@@ -787,7 +787,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                                 className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                                                     isChecked
                                                         ? "bg-cyan-600/10 border-cyan-500/30"
-                                                        : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05]"
+                                                        : "bg-[#FAFAFA] border-black/[0.04] hover:bg-black/[0.04]"
                                                 }`}
                                             >
                                                 <input
@@ -807,14 +807,14 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                                     isChecked ? "bg-cyan-600 border-cyan-500" : "border-white/20"
                                                 }`}>
                                                     {isChecked && (
-                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                        <svg className="w-3 h-3 text-[#1a1a1a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                                         </svg>
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs font-bold text-white/80 truncate">{agent.displayName}</p>
-                                                    <p className="text-[10px] text-white/30 truncate">{agent.segmentName}</p>
+                                                    <p className="text-xs font-bold text-black/80 truncate">{agent.displayName}</p>
+                                                    <p className="text-[10px] text-black/40 truncate">{agent.segmentName}</p>
                                                 </div>
                                                 {agent.simState && (
                                                     <div
@@ -832,13 +832,13 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
 
                             {/* Question Input */}
                             <div>
-                                <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-black mb-3">Your Question</p>
+                                <p className="text-[11px] uppercase tracking-[0.2em] text-black/40 font-black mb-3">Your Question</p>
                                 <textarea
                                     value={surveyQuestion}
                                     onChange={(e) => setSurveyQuestion(e.target.value)}
                                     placeholder="Ask all selected personas a question... e.g. 'What would make you pay for this product?'"
                                     rows={3}
-                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl px-6 py-4 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-cyan-500/50 transition-all resize-none"
+                                    className="w-full bg-black/[0.04] border border-black/[0.08] rounded-2xl px-6 py-4 text-sm text-[#1a1a1a] placeholder:text-black/30 focus:outline-none focus:border-cyan-500/50 transition-all resize-none"
                                 />
                                 <button
                                     onClick={async () => {
@@ -877,7 +877,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                         }
                                     }}
                                     disabled={surveyLoading || !surveyQuestion.trim() || surveySelectedIds.size === 0}
-                                    className="mt-3 w-full py-3 bg-cyan-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-cyan-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="mt-3 w-full py-3 bg-cyan-600 text-[#1a1a1a] text-xs font-black uppercase tracking-widest rounded-xl hover:bg-cyan-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {surveyLoading ? (
                                         <><div className="w-4 h-4 rounded-full border-2 border-t-white border-white/20 animate-spin" /> Surveying {surveySelectedIds.size} personas...</>
@@ -890,23 +890,23 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                             {/* Survey Results */}
                             {surveyResults.length > 0 && (
                                 <div>
-                                    <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-black mb-4">
+                                    <p className="text-[11px] uppercase tracking-[0.2em] text-black/40 font-black mb-4">
                                         Responses ({surveyResults.length})
                                     </p>
                                     <div className="space-y-3">
                                         {surveyResults.map((result, i) => (
-                                            <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl p-5">
+                                            <div key={i} className="bg-black/[0.02] border border-black/[0.04] rounded-2xl p-5">
                                                 <div className="flex items-center gap-3 mb-3">
-                                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-xs font-bold text-white/60">
+                                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-black/[0.08] flex items-center justify-center text-xs font-bold text-black/60">
                                                         {(result.personaName || 'A')[0]}
                                                     </div>
                                                     <div>
-                                                        <p className="text-xs font-bold text-white/80">{result.personaName}</p>
-                                                        <p className="text-[10px] text-white/30">{result.segmentName}</p>
+                                                        <p className="text-xs font-bold text-black/80">{result.personaName}</p>
+                                                        <p className="text-[10px] text-black/40">{result.segmentName}</p>
                                                     </div>
                                                 </div>
-                                                <p className="text-sm text-white/70 leading-relaxed">{result.answer}</p>
-                                                <p className="text-[10px] text-white/20 mt-2 italic">Q: {result.question}</p>
+                                                <p className="text-sm text-black/70 leading-relaxed">{result.answer}</p>
+                                                <p className="text-[10px] text-black/30 mt-2 italic">Q: {result.question}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -918,16 +918,16 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
 
                 {/* ── RIGHT: Profile Sidebar (Single Mode) ── */}
                 {mode === "single" && selectedAgent && (
-                    <div className="w-[300px] shrink-0 border-l border-white/5 bg-black/40 overflow-y-auto p-6 hidden xl:flex flex-col custom-scrollbar animate-in slide-in-from-right-4 duration-500">
+                    <div className="w-[300px] shrink-0 border-l border-black/[0.04] bg-white/80 overflow-y-auto p-6 hidden xl:flex flex-col custom-scrollbar animate-in slide-in-from-right-4 duration-500">
                         <div className="mb-8">
-                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/20 font-black mb-6">Neural Signature</p>
-                            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-white/10 flex items-center justify-center text-3xl mb-4 group hover:scale-105 transition-transform duration-500">
+                            <p className="text-[11px] uppercase tracking-[0.2em] text-black/30 font-black mb-6">Neural Signature</p>
+                            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-black/[0.08] flex items-center justify-center text-3xl mb-4 group hover:scale-105 transition-transform duration-500">
                                 {selectedAgent.name[0]}
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">{selectedAgent.displayName}</h3>
+                            <h3 className="text-xl font-bold text-[#1a1a1a] mb-2">{selectedAgent.displayName}</h3>
                             <div className="flex flex-wrap gap-2">
-                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-[11px] text-white/50 uppercase tracking-widest font-black border border-white/5">{selectedAgent.archetype}</span>
-                                <span className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-widest uppercase border ${selectedAgent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : selectedAgent.state === "REJECTED" ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-white/5 text-white/30 border-white/10"}`}>
+                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-[11px] text-black/60 uppercase tracking-widest font-black border border-black/[0.04]">{selectedAgent.archetype}</span>
+                                <span className={`px-2 py-0.5 rounded-lg text-[11px] font-black tracking-widest uppercase border ${selectedAgent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : selectedAgent.state === "REJECTED" ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-white/5 text-black/40 border-black/[0.08]"}`}>
                                     {selectedAgent.state}
                                 </span>
                             </div>
@@ -937,7 +937,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                         <div className="space-y-6 mb-10">
                             <div>
                                 <div className="flex justify-between text-[10px] mb-2">
-                                    <span className="text-white/30 uppercase tracking-[0.1em] font-bold text-[10px]">Influence</span>
+                                    <span className="text-black/40 uppercase tracking-[0.1em] font-bold text-[10px]">Influence</span>
                                     <span className="text-purple-400 font-bold">{selectedAgent.influence}/10</span>
                                 </div>
                                 <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
@@ -946,7 +946,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                             </div>
                             <div>
                                 <div className="flex justify-between text-[10px] mb-2">
-                                    <span className="text-white/30 uppercase tracking-[0.1em] font-bold text-[10px]">Decision Confidence</span>
+                                    <span className="text-black/40 uppercase tracking-[0.1em] font-bold text-[10px]">Decision Confidence</span>
                                     <span className="text-blue-400 font-bold">8/10</span>
                                 </div>
                                 <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
@@ -956,24 +956,24 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                         </div>
 
                         {/* Capital */}
-                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 mb-8">
-                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/20 font-black mb-2">Disposable Capital</p>
-                            <p className="text-2xl font-black italic text-white/90 font-mono tracking-tighter">${selectedAgent.metadata?.capital || "4,200"}</p>
+                        <div className="p-4 rounded-2xl bg-[#FAFAFA] border border-black/[0.04] mb-8">
+                            <p className="text-[11px] uppercase tracking-[0.2em] text-black/30 font-black mb-2">Disposable Capital</p>
+                            <p className="text-2xl font-black italic text-[#1a1a1a] font-mono tracking-tighter">${selectedAgent.metadata?.capital || "4,200"}</p>
                         </div>
 
                         {/* Metadata Bits */}
                         <div className="space-y-4">
-                            <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                <span className="text-[10px] text-white/30 font-bold uppercase tracking-widest">Region</span>
-                                <span className="text-[11px] text-white/80 font-medium">{selectedAgent.metadata?.state || "Unknown"}</span>
+                            <div className="flex justify-between items-center py-2 border-b border-black/[0.04]">
+                                <span className="text-[10px] text-black/40 font-bold uppercase tracking-widest">Region</span>
+                                <span className="text-[11px] text-black/80 font-medium">{selectedAgent.metadata?.state || "Unknown"}</span>
                             </div>
-                            <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                <span className="text-[10px] text-white/30 font-bold uppercase tracking-widest">Occupation</span>
-                                <span className="text-[11px] text-white/80 font-medium">{selectedAgent.metadata?.occupation || "Professional"}</span>
+                            <div className="flex justify-between items-center py-2 border-b border-black/[0.04]">
+                                <span className="text-[10px] text-black/40 font-bold uppercase tracking-widest">Occupation</span>
+                                <span className="text-[11px] text-black/80 font-medium">{selectedAgent.metadata?.occupation || "Professional"}</span>
                             </div>
-                            <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                <span className="text-[10px] text-white/30 font-bold uppercase tracking-widest">Age</span>
-                                <span className="text-[11px] text-white/80 font-medium">{selectedAgent.age || "N/A"}</span>
+                            <div className="flex justify-between items-center py-2 border-b border-black/[0.04]">
+                                <span className="text-[10px] text-black/40 font-bold uppercase tracking-widest">Age</span>
+                                <span className="text-[11px] text-black/80 font-medium">{selectedAgent.age || "N/A"}</span>
                             </div>
                         </div>
                     </div>

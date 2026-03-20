@@ -12,10 +12,6 @@ import { doc, addDoc, updateDoc, collection, serverTimestamp } from "firebase/fi
 import API_BASE_URL from "../../lib/apiConfig";
 import LoadingScreen from "../../components/ui/LoadingScreen";
 
-const ShaderPageBackground = dynamic(
-    () => import("../../components/ui/shader-background"),
-    { ssr: false }
-);
 
 export default function SegmentPage() {
     const router = useRouter();
@@ -54,15 +50,15 @@ export default function SegmentPage() {
 
     if (!validation) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
+            <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="text-center max-w-md px-6">
-                    <div className="w-16 h-16 rounded-2xl bg-white/80 border border-black/10 flex items-center justify-center text-2xl mx-auto mb-6">
-                        <svg className="w-8 h-8 text-black/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-16 h-16 rounded-2xl bg-[#FAFAFA] border border-black/[0.08] flex items-center justify-center text-2xl mx-auto mb-6">
+                        <svg className="w-8 h-8 text-black/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-light text-[#1a1a1a] mb-2">No Results Found</h2>
-                    <p className="text-sm text-black/50 mb-6 font-normal leading-relaxed">You haven't run a test yet, or your session has expired.</p>
+                    <h2 className="text-xl text-[#1a1a1a] mb-2" style={{ fontFamily: "var(--font-serif)" }}>No Results Found</h2>
+                    <p className="text-sm text-black/40 mb-6 leading-relaxed">You haven't run a test yet, or your session has expired.</p>
                     <Button
                         onClick={() => router.push("/validate")}
                         variant="secondary"
@@ -261,22 +257,23 @@ export default function SegmentPage() {
 
     return (
         <DashboardLayout currentStep={3}>
-            <ShaderPageBackground overlayOpacity={0.8} blur={true} />
+            {/* Background */}
+            <div className="absolute inset-0 bg-grid opacity-15 pointer-events-none" />
 
             <div className="relative z-10 max-w-6xl mx-auto px-6 pt-6 pb-48">
                 {/* Header Section */}
                 <div className="text-center mb-20">
-                    <p className="text-[11px] uppercase tracking-[0.4em] text-amber-600 font-black mb-4 flex items-center justify-center gap-3">
-                        <span className="w-10 h-[1px] bg-amber-500/30" />
+                    <p className="text-[11px] uppercase tracking-[0.4em] text-[#E85D3A] font-bold mb-4 flex items-center justify-center gap-3">
+                        <span className="w-10 h-[1px] bg-[#E85D3A]/30" />
                         {segments.length} Look-alike Segments Identified
-                        <span className="w-10 h-[1px] bg-amber-500/30" />
+                        <span className="w-10 h-[1px] bg-[#E85D3A]/30" />
                     </p>
-                    <h1 className="text-4xl md:text-6xl font-light tracking-tighter mb-6">
-                        Target <span className="text-gradient italic font-normal">Audience</span> Selection
+                    <h1 className="text-4xl md:text-6xl tracking-tighter mb-6" style={{ fontFamily: "var(--font-serif)", fontWeight: 400 }}>
+                        Target <em style={{ fontStyle: "italic" }}>Audience</em> Selection
                     </h1>
-                    <p className="text-black/40 text-sm font-light max-w-2xl mx-auto leading-relaxed">
-                        Our engine synthesized the <span className="text-black/80 font-medium">50 best-fit personas</span> from 1M+ profiles. 
-                        We've clustered them into tactical segments for a <span className="text-black/80 font-medium">{idea?.duration || 12}-week</span> simulation horizon.
+                    <p className="text-black/40 text-sm max-w-2xl mx-auto leading-relaxed">
+                        Our engine synthesized the <span className="text-black/80 font-semibold">50 best-fit personas</span> from 1M+ profiles. 
+                        We've clustered them into tactical segments for a <span className="text-black/80 font-semibold">{idea?.duration || 12}-week</span> simulation horizon.
                     </p>
                 </div>
 
@@ -297,24 +294,21 @@ export default function SegmentPage() {
                     <div 
                         onClick={() => toggleSegment("custom")}
                         className={`
-                        relative rounded-[1.5rem] border overflow-hidden transition-all duration-700 h-full flex flex-col group cursor-pointer
+                        relative rounded-2xl border overflow-hidden transition-all duration-500 h-full flex flex-col group cursor-pointer
                         ${selectedSegments.has("custom") 
-                            ? "border-amber-500/50 bg-white/90 shadow-[0_0_60px_-15px_rgba(168,85,247,0.25)]" 
-                            : "border-black/10 bg-[#FDFBF7]/80 hover:border-black/10"}
+                            ? "border-[#E85D3A]/40 bg-white shadow-lg shadow-[#E85D3A]/5" 
+                            : "border-black/[0.08] bg-white hover:border-black/15 hover:shadow-lg hover:shadow-black/[0.03]"}
                     `}>
-                        {/* Glow Effect */}
-                        <div className="absolute top-0 left-0 w-32 h-32 bg-amber-600/10 blur-[60px] rounded-full pointer-events-none group-hover:bg-amber-600/20 transition-all duration-700" />
-                        
                         <div className="p-8 pb-4 flex flex-col h-full">
                             <div className="flex justify-between items-start mb-6">
                                 <div>
-                                    <span className="text-[11px] uppercase tracking-[0.2em] text-amber-600 font-bold block mb-2">Custom Segment</span>
-                                    <h3 className="text-xl font-normal text-[#1a1a1a]">Manual Audience</h3>
+                                    <span className="text-[11px] uppercase tracking-[0.2em] text-[#E85D3A] font-bold block mb-2">Custom Segment</span>
+                                    <h3 className="text-xl text-[#1a1a1a]" style={{ fontFamily: "var(--font-serif)" }}>Manual Audience</h3>
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <span className="text-3xl font-light text-black/80 tabular-nums">{customSegment.personas.length}</span>
-                                    <div className={`w-6 h-6 shrink-0 rounded-full border flex items-center justify-center transition-all ${selectedSegments.has("custom") ? "bg-amber-500 border-amber-500" : "border-black/10"}`}>
-                                        {selectedSegments.has("custom") && <svg className="w-3.5 h-3.5 text-[#1a1a1a]" fill="none" viewBox="0 0 24 24" stroke="currentColor font-bold"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                    <div className={`w-6 h-6 shrink-0 rounded-full border flex items-center justify-center transition-all ${selectedSegments.has("custom") ? "bg-[#E85D3A] border-[#E85D3A]" : "border-black/15"}`}>
+                                        {selectedSegments.has("custom") && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                     </div>
                                 </div>
                             </div>
@@ -322,10 +316,10 @@ export default function SegmentPage() {
                             <div className="space-y-4 mb-8">
                                 <div className="flex justify-between items-center text-[11px] uppercase tracking-widest text-black/40">
                                     <span>Control</span>
-                                    <span className="text-amber-600 font-bold">User Defined</span>
+                                    <span className="text-[#E85D3A] font-bold">User Defined</span>
                                 </div>
-                                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                    <div className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 w-full opacity-30" />
+                                <div className="w-full h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-[#E85D3A] to-emerald-500 w-full opacity-30" />
                                 </div>
                             </div>
 
@@ -333,10 +327,10 @@ export default function SegmentPage() {
                             <div className="flex-1 space-y-3 mb-8">
                                 {customSegment.personas.length > 0 ? (
                                     customSegment.personas.slice(0, 3).map((p, idx) => (
-                                        <div key={idx} className="p-3 rounded-xl bg-[#FAF9F6]/[0.03] border border-[#1a1a1a]/5 flex gap-3 text-[11px] items-center">
-                                             <div className="w-6 h-6 shrink-0 rounded-lg bg-white/5 flex items-center justify-center text-black/40">👤</div>
+                                        <div key={idx} className="p-3 rounded-xl bg-[#FAFAFA] border border-black/[0.06] flex gap-3 text-[11px] items-center">
+                                             <div className="w-6 h-6 shrink-0 rounded-lg bg-black/[0.04] flex items-center justify-center text-black/30">👤</div>
                                              <div className="flex-1 truncate">
-                                                 <p className="text-black/80 font-bold truncate">{p.metadata.name || p.metadata.occupation}</p>
+                                                 <p className="text-black/80 font-semibold truncate">{p.metadata.name || p.metadata.occupation}</p>
                                                  <p className="text-black/30 truncate">{p.metadata.age}Y · {p.metadata.state}</p>
                                              </div>
                                              <button 
@@ -344,7 +338,7 @@ export default function SegmentPage() {
                                                      e.stopPropagation();
                                                      handleRemoveCustomPersona(p.persona_id);
                                                  }}
-                                                 className="w-6 h-6 shrink-0 flex items-center justify-center text-black/20 hover:bg-red-500/10 hover:text-red-400 rounded-md transition-all"
+                                                 className="w-6 h-6 shrink-0 flex items-center justify-center text-black/20 hover:bg-red-50 hover:text-red-500 rounded-md transition-all"
                                                  title="Remove Persona"
                                              >
                                                  ✕
@@ -352,19 +346,19 @@ export default function SegmentPage() {
                                          </div>
                                     ))
                                 ) : (
-                                    <div className="flex-1 flex flex-col items-center justify-center text-center opacity-20 border-2 border-dashed border-[#1a1a1a]/5 rounded-2xl p-6">
+                                    <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30 border-2 border-dashed border-black/[0.08] rounded-2xl p-6">
                                         <p className="text-[11px] tracking-widest uppercase mb-2">Empty Bucket</p>
                                     </div>
                                 )}
                             </div>
 
-                            <div className="mt-auto pt-6 border-t border-black/[0.03] space-y-4">
+                            <div className="mt-auto pt-6 border-t border-black/[0.06] space-y-4">
                                 <Button 
                                     onClick={(e) => {
                                          e.stopPropagation();
                                          setIsCreatingCustom(true);
                                      }}
-                                     className="w-full shadow-xl"
+                                     className="w-full"
                                      size="sm"
                                  >
                                      + Add New Persona
@@ -376,11 +370,11 @@ export default function SegmentPage() {
             </div>
 
             <div className="fixed bottom-12 left-0 w-full flex justify-center px-8 z-40 pointer-events-none">
-                <div className="max-w-2xl w-full bg-white/90 backdrop-blur-md 2xl border border-black/[0.1] rounded-3xl p-4 flex gap-4 pointer-events-auto shadow-2xl">
+                <div className="max-w-2xl w-full bg-white/95 backdrop-blur-md border border-black/[0.08] rounded-2xl p-4 flex gap-4 pointer-events-auto shadow-xl shadow-black/[0.08]">
                     <Button 
                         onClick={() => router.push("/validate")}
                         variant="ghost"
-                        className="px-8 text-[11px] uppercase tracking-[0.2em] font-bold"
+                        className="px-8 text-[11px] uppercase tracking-[0.2em] font-semibold"
                     >
                         Modify Idea
                     </Button>
@@ -407,26 +401,26 @@ export default function SegmentPage() {
 
             {/* Custom Creator Dialog */}
             {isCreatingCustom && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center px-6 bg-[#FAF9F6]/80 backdrop-blur-md md">
-                    <div className="w-full max-w-xl bg-[#FDFBF7] border border-black/10 rounded-[2.5rem] p-10 shadow-2xl animate-in fade-in zoom-in duration-300 relative">
-                        <button onClick={() => setIsCreatingCustom(false)} className="absolute top-8 right-8 text-black/30 hover:text-[#1a1a1a]">✕</button>
-                        <h2 className="text-2xl font-light text-[#1a1a1a] mb-2">Create Target Persona</h2>
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-6 bg-black/20 backdrop-blur-sm">
+                    <div className="w-full max-w-xl bg-white border border-black/[0.08] rounded-3xl p-10 shadow-2xl animate-in fade-in zoom-in duration-300 relative">
+                        <button onClick={() => setIsCreatingCustom(false)} className="absolute top-8 right-8 text-black/30 hover:text-[#1a1a1a] transition-colors">✕</button>
+                        <h2 className="text-2xl text-[#1a1a1a] mb-2" style={{ fontFamily: "var(--font-serif)" }}>Create Target Persona</h2>
                         <div className="grid grid-cols-2 gap-6 mb-8 mt-8">
                             <div className="col-span-2">
-                                <label className="text-[11px] uppercase tracking-widest text-black/30 font-bold mb-2 block">Full Name</label>
-                                <input type="text" placeholder="e.g. Ramesh Singh" value={newPersona.name} onChange={e => setNewPersona({...newPersona, name: e.target.value})} className="w-full bg-white/5 border border-black/10 rounded-xl px-4 py-3 text-sm text-[#1a1a1a] placeholder-white/20" />
+                                <label className="text-[11px] uppercase tracking-widest text-black/40 font-semibold mb-2 block">Full Name</label>
+                                <input type="text" placeholder="e.g. Ramesh Singh" value={newPersona.name} onChange={e => setNewPersona({...newPersona, name: e.target.value})} className="w-full bg-[#FAFAFA] border border-black/[0.08] rounded-xl px-4 py-3 text-sm text-[#1a1a1a] placeholder-black/25 focus:outline-none focus:border-[#E85D3A]/30 focus:ring-1 focus:ring-[#E85D3A]/10" />
                             </div>
                             <div>
-                                <label className="text-[11px] uppercase tracking-widest text-black/30 font-bold mb-2 block">Occupation</label>
-                                <input type="text" placeholder="e.g. Software Engineer" value={newPersona.occupation} onChange={e => setNewPersona({...newPersona, occupation: e.target.value})} className="w-full bg-white/5 border border-black/10 rounded-xl px-4 py-3 text-sm text-[#1a1a1a] placeholder-white/20" />
+                                <label className="text-[11px] uppercase tracking-widest text-black/40 font-semibold mb-2 block">Occupation</label>
+                                <input type="text" placeholder="e.g. Software Engineer" value={newPersona.occupation} onChange={e => setNewPersona({...newPersona, occupation: e.target.value})} className="w-full bg-[#FAFAFA] border border-black/[0.08] rounded-xl px-4 py-3 text-sm text-[#1a1a1a] placeholder-black/25 focus:outline-none focus:border-[#E85D3A]/30 focus:ring-1 focus:ring-[#E85D3A]/10" />
                             </div>
                             <div>
-                                <label className="text-[11px] uppercase tracking-widest text-black/30 font-bold mb-2 block">Age</label>
-                                <input type="number" placeholder="e.g. 25" value={newPersona.age} onChange={e => setNewPersona({...newPersona, age: parseInt(e.target.value) || ""})} className="w-full bg-white/5 border border-black/10 rounded-xl px-4 py-3 text-sm text-[#1a1a1a] placeholder-white/20" />
+                                <label className="text-[11px] uppercase tracking-widest text-black/40 font-semibold mb-2 block">Age</label>
+                                <input type="number" placeholder="e.g. 25" value={newPersona.age} onChange={e => setNewPersona({...newPersona, age: parseInt(e.target.value) || ""})} className="w-full bg-[#FAFAFA] border border-black/[0.08] rounded-xl px-4 py-3 text-sm text-[#1a1a1a] placeholder-black/25 focus:outline-none focus:border-[#E85D3A]/30 focus:ring-1 focus:ring-[#E85D3A]/10" />
                             </div>
                             <div className="col-span-2">
-                                <label className="text-[11px] uppercase tracking-widest text-black/30 font-bold mb-2 block">Summary</label>
-                                <textarea placeholder="A brief description of this target user..." value={newPersona.summary} onChange={e => setNewPersona({...newPersona, summary: e.target.value})} className="w-full bg-white/5 border border-black/10 rounded-xl px-4 py-3 text-sm text-[#1a1a1a] h-24 placeholder-white/20" />
+                                <label className="text-[11px] uppercase tracking-widest text-black/40 font-semibold mb-2 block">Summary</label>
+                                <textarea placeholder="A brief description of this target user..." value={newPersona.summary} onChange={e => setNewPersona({...newPersona, summary: e.target.value})} className="w-full bg-[#FAFAFA] border border-black/[0.08] rounded-xl px-4 py-3 text-sm text-[#1a1a1a] h-24 placeholder-black/25 focus:outline-none focus:border-[#E85D3A]/30 focus:ring-1 focus:ring-[#E85D3A]/10" />
                             </div>
                         </div>
                         <Button 
@@ -454,8 +448,8 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
     const getVerdictStyles = () => {
         if (!verdict) {
             return isSelected 
-                ? "border-amber-500/50 bg-white shadow-xl shadow-amber-500/10" 
-                : "border-black/10 bg-[#FDFBF7] hover:border-black/20";
+                ? "border-[#E85D3A]/40 bg-white shadow-lg shadow-[#E85D3A]/5" 
+                : "border-black/[0.08] bg-white hover:border-black/15 hover:shadow-lg hover:shadow-black/[0.03]";
         }
 
         const isPositive = ['ENTHUSIASTIC', 'CURIOUS'].includes(verdict);
@@ -463,74 +457,74 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
         const isNegative = ['SKEPTICAL', 'CRITICAL'].includes(verdict);
         if (isPositive) {
             return isSelected
-                ? "border-amber-500/50 bg-white shadow-xl shadow-amber-500/10"
-                : "border-black/10 bg-[#FDFBF7] hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]";
+                ? "border-[#E85D3A]/40 bg-white shadow-lg shadow-[#E85D3A]/5"
+                : "border-black/[0.08] bg-white hover:border-emerald-400/40 hover:shadow-lg hover:shadow-emerald-500/5";
         }
         if (isNeutral) {
             return isSelected
-                ? "border-amber-500/50 bg-white shadow-xl shadow-amber-500/10"
-                : "border-black/10 bg-[#FDFBF7] hover:border-amber-500/30 hover:shadow-[0_0_15px_rgba(245,158,11,0.05)]";
+                ? "border-[#E85D3A]/40 bg-white shadow-lg shadow-[#E85D3A]/5"
+                : "border-black/[0.08] bg-white hover:border-amber-400/30 hover:shadow-lg hover:shadow-amber-500/5";
         }
         if (isNegative) {
             return isSelected
-                ? "border-amber-500/50 bg-white shadow-xl shadow-amber-500/10"
-                : "border-black/10 bg-[#FDFBF7] hover:border-red-500/20 hover:shadow-[0_0_10px_rgba(239,68,68,0.05)]";
+                ? "border-[#E85D3A]/40 bg-white shadow-lg shadow-[#E85D3A]/5"
+                : "border-black/[0.08] bg-white hover:border-red-300/30 hover:shadow-lg hover:shadow-red-500/5";
         }
         
-        return "border-black/10 bg-[#FDFBF7]";
+        return "border-black/[0.08] bg-white";
     };
 
     return (
         <div 
             onClick={onToggle}
             className={`
-            relative rounded-[2rem] border transition-all duration-700 p-8 flex flex-col h-full group cursor-pointer
+            relative rounded-2xl border transition-all duration-500 p-8 flex flex-col h-full group cursor-pointer
             ${getVerdictStyles()}
         `}>
             {/* Index & Selection Status */}
             <div className="flex justify-between items-start mb-6">
                 <div>
-                    <span className="text-[11px] uppercase tracking-[0.3em] text-amber-600 font-black block mb-2">Segment Cluster {index}</span>
-                    <h3 className="text-2xl font-normal text-[#1a1a1a] leading-tight">{segment.segment_name}</h3>
+                    <span className="text-[11px] uppercase tracking-[0.3em] text-[#E85D3A] font-bold block mb-2">Segment Cluster {index}</span>
+                    <h3 className="text-2xl text-[#1a1a1a] leading-tight" style={{ fontFamily: "var(--font-serif)" }}>{segment.segment_name}</h3>
                 </div>
-                <div className={`w-6 h-6 shrink-0 rounded-full border flex items-center justify-center transition-all ${isSelected ? "bg-amber-500 border-amber-500" : "border-black/10"}`}>
-                    {isSelected && <svg className="w-3.5 h-3.5 text-[#1a1a1a]" fill="none" viewBox="0 0 24 24" stroke="currentColor font-bold"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                <div className={`w-6 h-6 shrink-0 rounded-full border flex items-center justify-center transition-all ${isSelected ? "bg-[#E85D3A] border-[#E85D3A]" : "border-black/15"}`}>
+                    {isSelected && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </div>
             </div>
 
             {/* Strategic Resonance Bar, fallback to cosine match if no pulse available */}
-            <div className="mb-8 p-4 rounded-2xl bg-[#FAF9F6]/[0.02] border border-[#1a1a1a]/5 relative overflow-hidden">
+            <div className="mb-8 p-4 rounded-2xl bg-[#FAFAFA] border border-black/[0.06] relative overflow-hidden">
                 {pulseResult && (
-                    <div className="absolute top-0 right-0 px-2 py-1 bg-white/10 rounded-bl-lg text-[11px] uppercase tracking-widest font-bold">
+                    <div className="absolute top-0 right-0 px-2 py-1 bg-[#FAFAFA] rounded-bl-lg text-[11px] uppercase tracking-widest font-bold text-[#E85D3A]">
                         Pulse Verified
                     </div>
                 )}
                 <div className="flex justify-between items-center mb-2.5">
-                    <span className="text-[11px] uppercase tracking-widest text-black/30 font-bold">Total Resonance</span>
-                    <span className="text-xs font-black italic text-amber-600">
+                    <span className="text-[11px] uppercase tracking-widest text-black/30 font-semibold">Total Resonance</span>
+                    <span className="text-xs font-bold italic text-[#E85D3A]">
                         {pulseResult ? Math.round(pulseResult.resonanceScore || 0) : (segment.resonance_score || 0)}%
                     </span>
                 </div>
-                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-4">
+                <div className="w-full h-1.5 bg-black/[0.06] rounded-full overflow-hidden mb-4">
                     <div 
-                        className="h-full bg-gradient-to-r from-amber-500 via-amber-600 to-rose-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+                        className="h-full bg-gradient-to-r from-[#E85D3A] via-[#D14E2E] to-rose-500 transition-all duration-1000 ease-out"
                         style={{ width: `${pulseResult ? Math.round(pulseResult.resonanceScore || 0) : (segment.resonance_score || 0)}%` }}
                     />
                 </div>
 
                 {/* New Pulse Result Multi-dimensional Scores */}
                 {pulseResult && (
-                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-black/10">
+                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-black/[0.06]">
                         <div>
-                            <span className="block text-[11px] uppercase tracking-widest text-black/30 font-bold">Utility</span>
+                            <span className="block text-[11px] uppercase tracking-widest text-black/30 font-semibold">Utility</span>
                             <span className="block text-sm font-bold text-[#1a1a1a]">{Math.round(pulseResult.utilityScore || 0)}%</span>
                         </div>
                         <div>
-                            <span className="block text-[11px] uppercase tracking-widest text-black/30 font-bold">Culture</span>
+                            <span className="block text-[11px] uppercase tracking-widest text-black/30 font-semibold">Culture</span>
                             <span className="block text-sm font-bold text-[#1a1a1a]">{Math.round(pulseResult.culturalFitScore || 0)}%</span>
                         </div>
                         <div>
-                            <span className="block text-[11px] uppercase tracking-widest text-black/30 font-bold">Afford</span>
+                            <span className="block text-[11px] uppercase tracking-widest text-black/30 font-semibold">Afford</span>
                             <span className="block text-sm font-bold text-[#1a1a1a]">{Math.round(pulseResult.affordabilityScore || 0)}%</span>
                         </div>
                     </div>
@@ -541,18 +535,18 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
             <div className="mb-8">
                 {pulseResult ? (
                     <div>
-                        <div className="inline-block px-2 py-1 rounded bg-white/10 border border-black/10 mb-3 text-[11px] uppercase tracking-widest font-bold">
-                            Verdict: <span className={pulseResult.verdict === 'CRITICAL' || pulseResult.verdict === 'SKEPTICAL' ? 'text-red-400' : 'text-emerald-400'}>{pulseResult.verdict}</span>
+                        <div className="inline-block px-2 py-1 rounded bg-[#FAFAFA] border border-black/[0.06] mb-3 text-[11px] uppercase tracking-widest font-bold">
+                            Verdict: <span className={pulseResult.verdict === 'CRITICAL' || pulseResult.verdict === 'SKEPTICAL' ? 'text-red-500' : 'text-emerald-500'}>{pulseResult.verdict}</span>
                         </div>
-                        <p className="text-sm font-light text-black/70 leading-relaxed italic border-l-2 border-amber-500/50 pl-3">
+                        <p className="text-sm text-black/60 leading-relaxed italic border-l-2 border-[#E85D3A]/40 pl-3">
                             "{pulseResult.verbatimQuote}"
                         </p>
-                        <p className="text-[11px] text-black/40 mt-3 font-normal uppercase tracking-wide">
-                            Predicted Adoption: <strong className="text-black/80">{pulseResult.predictedAdoptionPattern}</strong>
+                        <p className="text-[11px] text-black/35 mt-3 uppercase tracking-wide">
+                            Predicted Adoption: <strong className="text-black/70">{pulseResult.predictedAdoptionPattern}</strong>
                         </p>
                     </div>
                 ) : (
-                    <p className="text-sm font-light text-black/50 leading-relaxed italic">
+                    <p className="text-sm text-black/40 leading-relaxed italic">
                         "This group typically resides in {profile.dominant_state} and is primarily composed of {profile.dominant_occupation} professionals looking for innovation in this sector."
                     </p>
                 )}
@@ -578,9 +572,9 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
                 {isExpanded && (
                     <div className="space-y-3 mt-4 animate-in slide-in-from-top-2 duration-300 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                         {segment.personas?.map((p, pIdx) => (
-                            <div key={p.persona_id || pIdx} className="p-4 rounded-xl bg-[#FAF9F6]/[0.02] border border-[#1a1a1a]/5 hover:border-black/10 transition-colors">
+                            <div key={p.persona_id || pIdx} className="p-4 rounded-xl bg-[#FAFAFA] border border-black/[0.06] hover:border-black/12 transition-colors">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="text-[11px] font-bold text-black/80">
+                                    <h4 className="text-[11px] font-semibold text-black/80">
                                         {(() => {
                                             const rawName = p.metadata?.name || (p.metadata?.occupation ? `Persona of ${p.metadata.occupation}` : `Persona ${p.persona_id}`);
                                             const cleanName = (rawName || "").trim().toLowerCase();
@@ -593,9 +587,9 @@ function PersonaBox({ segment, index, isSelected, onToggle, pulseResult }) {
                                             return rawName;
                                         })()}
                                     </h4>
-                                    <span className="text-[10px] text-amber-600 font-bold">{Math.round((p.similarity_score || 0) * 100)}% Match</span>
+                                    <span className="text-[10px] text-[#E85D3A] font-bold">{Math.round((p.similarity_score || 0) * 100)}% Match</span>
                                 </div>
-                                 <p className="text-[11px] text-black/40 leading-relaxed font-normal">
+                                 <p className="text-[11px] text-black/35 leading-relaxed">
                                      {p.metadata?.age}Y · {p.metadata?.occupation} · {p.metadata?.state}
                                  </p>
                             </div>

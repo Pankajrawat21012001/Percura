@@ -205,7 +205,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
             {/* Backdrop for Mobile */}
             {isOpen && (
                 <div 
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[65] lg:hidden animate-in fade-in duration-300" 
+                    className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[65] lg:hidden animate-in fade-in duration-300" 
                     onClick={() => setIsOpen(false)}
                 />
             )}
@@ -215,16 +215,16 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => { setIsHovered(false); setShowChats(false); }}
                 className={`
-                    fixed top-0 left-0 h-full bg-[#FDFBF7] border-r border-black/[0.06] z-[70] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
+                    fixed top-0 left-0 h-full bg-white border-r border-black/[0.06] z-[70] transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
                     ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
                     ${isExpanded ? "w-72" : "w-72 lg:w-[72px]"}
                     flex flex-col
                 `}
             >
                 {/* Brand Header */}
-                <div className={`p-5 flex items-center justify-between border-b border-black/[0.04] ${isExpanded ? 'px-6' : 'px-4 justify-center'}`}>
+                <div className={`p-5 flex items-center justify-between border-b border-black/[0.06] ${isExpanded ? 'px-6' : 'px-4 justify-center'}`}>
                     <Link href="/validate" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-rose-500 to-amber-600 flex items-center justify-center shadow-[0_4px_20px_rgba(245,158,11,0.3)] group-hover:shadow-[0_4px_30px_rgba(245,158,11,0.5)] group-hover:scale-105 group-active:scale-95 transition-all duration-300 shrink-0 overflow-hidden">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-black/[0.08] flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 group-active:scale-95 transition-all duration-300 shrink-0 overflow-hidden">
                             <Image
                                 src="/percura-icon.png"
                                 alt="Percura"
@@ -233,8 +233,8 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                 className="object-contain"
                             />
                         </div>
-                        <span className={`text-lg font-bold tracking-tight text-[#1a1a1a] transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
-                            PERCURA
+                        <span className={`text-lg font-bold tracking-tight text-[#1a1a1a] transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`} style={{ fontFamily: "var(--font-serif)" }}>
+                            Percura
                         </span>
                     </Link>
                     <button onClick={() => setIsOpen(false)} className="lg:hidden p-1.5 text-black/30 hover:text-[#1a1a1a] rounded-lg hover:bg-black/5">
@@ -243,24 +243,23 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                 </div>
 
                 {/* New Simulation Button */}
-                <div className={`px-3 pt-3 pb-1`}>
+                <div className={`px-3 pt-4 pb-1`}>
                     <button
                         onClick={handleNewSimulation}
                         title={!isExpanded ? "New Simulation" : undefined}
                         className={`
                             w-full flex items-center gap-3 transition-all duration-300 group
-                            bg-gradient-to-r from-amber-600/10 to-rose-600/5 hover:from-amber-600/15 hover:to-rose-600/10
-                            border border-amber-500/20 hover:border-amber-500/40
-                            rounded-xl shadow-[0_0_15px_-5px_rgba(245,158,11,0.2)] hover:shadow-[0_0_20px_-5px_rgba(245,158,11,0.35)]
+                            bg-[#1A1A1A] hover:bg-[#333] text-white
+                            rounded-xl shadow-sm hover:shadow-md
                             ${isExpanded ? 'p-3 justify-start' : 'p-3 justify-center'}
                         `}
                     >
-                        <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-purple-500/20 border border-amber-500/20 text-purple-300 shrink-0 group-hover:scale-110 transition-transform">
+                        <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/15 shrink-0 group-hover:scale-110 transition-transform">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                         </div>
-                        <span className={`text-[13px] font-semibold text-amber-700/90 whitespace-nowrap transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden lg:hidden'}`}>
+                        <span className={`text-[13px] font-semibold whitespace-nowrap transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden lg:hidden'}`}>
                             New Simulation
                         </span>
                     </button>
@@ -287,9 +286,9 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                         w-full flex items-center gap-3 transition-all duration-300 group relative
                                         ${isExpanded ? 'p-3 rounded-xl' : 'p-3 rounded-xl justify-center'}
                                         ${isActive 
-                                            ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-lg shadow-amber-500/20" 
+                                            ? "bg-[#1A1A1A] text-white shadow-sm" 
                                             : isDone 
-                                                ? "text-black/70 hover:bg-black/[0.05] hover:text-[#1a1a1a] cursor-pointer" 
+                                                ? "text-[#1a1a1a] hover:bg-black/[0.04] cursor-pointer" 
                                                 : isAccessible
                                                     ? "text-black/40 hover:bg-black/[0.03] hover:text-black/60 cursor-pointer"
                                                     : "text-black/15 cursor-not-allowed"}
@@ -298,10 +297,10 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                     {/* Step Icon with status indicator */}
                                     <div className={`
                                         relative w-9 h-9 flex items-center justify-center rounded-lg shrink-0 transition-all duration-300
-                                        ${isActive ? "bg-black/10 text-black text-white" : 
-                                          isDone ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : 
-                                          isAccessible ? "bg-black/[0.05] text-black/40 border border-black/[0.06]" :
-                                          "bg-black/[0.02] text-black/15 border border-black/[0.03]"}
+                                        ${isActive ? "bg-white/15 text-white" : 
+                                          isDone ? "bg-[#E85D3A]/10 text-[#E85D3A] border border-[#E85D3A]/15" : 
+                                          isAccessible ? "bg-black/[0.04] text-black/40 border border-black/[0.06]" :
+                                          "bg-black/[0.02] text-black/12 border border-black/[0.03]"}
                                     `}>
                                         {isDone ? (
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -314,16 +313,16 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
 
                                     {/* Label & Description */}
                                     <div className={`flex-1 text-left min-w-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
-                                        <p className={`text-[13px] font-semibold leading-tight truncate ${isActive ? 'text-white' : isDone ? 'text-black/80' : 'text-inherit'}`}>
+                                        <p className={`text-[13px] font-semibold leading-tight truncate ${isActive ? 'text-white' : isDone ? 'text-[#1a1a1a]' : 'text-inherit'}`}>
                                             {step.label}
                                         </p>
-                                        <p className={`text-[10px] mt-0.5 truncate ${isActive ? 'text-black/60' : 'text-black/25'}`}>
+                                        <p className={`text-[10px] mt-0.5 truncate ${isActive ? 'text-white/50' : 'text-black/30'}`}>
                                             {step.description}
                                         </p>
                                     </div>
 
                                     {/* Step number indicator */}
-                                    <span className={`text-[10px] font-mono shrink-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"} ${isActive ? 'text-black/50' : 'text-black/15'}`}>
+                                    <span className={`text-[10px] font-mono shrink-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"} ${isActive ? 'text-white/40' : 'text-black/15'}`}>
                                         {String(step.number).padStart(2, '0')}
                                     </span>
                                 </button>
@@ -332,7 +331,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                     </nav>
 
                     {/* Divider */}
-                    <div className={`mx-4 my-2 border-t border-black/[0.04]`} />
+                    <div className={`mx-4 my-2 border-t border-black/[0.06]`} />
 
                     {/* Interrogation Lab */}
                     <div className={`py-2 ${isExpanded ? 'px-3' : 'px-2'}`}>
@@ -349,7 +348,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                             className={`
                                 w-full flex items-center gap-3 transition-all duration-300 group
                                 ${isExpanded ? 'p-3 rounded-xl' : 'p-3 rounded-xl justify-center'}
-                                ${!currentSimulationId ? "opacity-25 cursor-not-allowed" : "text-black/50 hover:text-[#1a1a1a] hover:bg-black/[0.05]"}
+                                ${!currentSimulationId ? "opacity-25 cursor-not-allowed" : "text-black/50 hover:text-[#1a1a1a] hover:bg-black/[0.04]"}
                             `}
                         >
                             <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-black/[0.03] border border-black/[0.06] shrink-0 group-hover:scale-105 transition-all">
@@ -364,7 +363,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                     </div>
 
                     {/* Divider */}
-                    <div className={`mx-4 my-2 border-t border-black/[0.04]`} />
+                    <div className={`mx-4 my-2 border-t border-black/[0.06]`} />
 
                     {/* Chat History Toggle */}
                     <div className={`py-2 ${isExpanded ? 'px-3' : 'px-2'}`}>
@@ -387,7 +386,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                             </span>
                             {isExpanded && history.length > 0 && (
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] bg-black/[0.06] text-black/30 px-1.5 py-0.5 rounded-md font-mono">
+                                    <span className="text-[10px] bg-black/[0.05] text-black/40 px-1.5 py-0.5 rounded-md font-mono">
                                         {history.length}
                                     </span>
                                     <svg className={`w-3.5 h-3.5 transition-transform duration-300 text-black/20 ${showChats ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -401,7 +400,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                         {showChats && isExpanded && (
                             <div className="mt-1 space-y-0.5 animate-in slide-in-from-top-2 fade-in duration-300">
                                 {recentHistory.length === 0 && (
-                                    <p className="text-[11px] text-black/20 px-4 py-3 text-center italic">No simulations yet</p>
+                                    <p className="text-[11px] text-black/25 px-4 py-3 text-center italic">No simulations yet</p>
                                 )}
                                 {recentHistory.map(item => (
                                     <div
@@ -410,14 +409,14 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                         className={`
                                             group flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all cursor-pointer
                                             ${currentSimulationId === item.id
-                                                ? "bg-purple-500/10 border border-amber-500/20 text-white"
-                                                : "hover:bg-black/[0.03] text-black/40 hover:text-black/70 border border-transparent"}
+                                                ? "bg-[#E85D3A]/8 border border-[#E85D3A]/15 text-[#1a1a1a]"
+                                                : "hover:bg-black/[0.03] text-black/50 hover:text-[#1a1a1a] border border-transparent"}
                                         `}
                                     >
                                         {/* Status dot */}
                                         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                                             item.status === "completed" ? "bg-emerald-500" : 
-                                            item.status === "in progress" ? "bg-amber-500 animate-pulse" : "bg-black/15"
+                                            item.status === "in progress" ? "bg-[#E85D3A] animate-pulse" : "bg-black/15"
                                         }`} />
                                         
                                         {/* Text */}
@@ -426,7 +425,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                                 {item.ideaData?.idea?.substring(0, 40) || "Untitled Simulation"}
                                                 {(item.ideaData?.idea?.length || 0) > 40 ? "..." : ""}
                                             </p>
-                                            <p className="text-[10px] text-black/20 mt-0.5">
+                                            <p className="text-[10px] text-black/25 mt-0.5">
                                                 {item.ideaData?.industry || "General"} · {item.status === "completed" ? "Done" : "In Progress"}
                                             </p>
                                         </div>
@@ -434,7 +433,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                         {/* Delete button */}
                                         <button
                                             onClick={(e) => handleDeleteSimulation(e, item.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-500/10 hover:text-red-400 text-black/15 transition-all shrink-0"
+                                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-red-500/10 hover:text-red-500 text-black/15 transition-all shrink-0"
                                             title="Delete simulation"
                                         >
                                             {deletingId === item.id ? (
@@ -449,7 +448,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                 ))}
 
                                 {history.length > 5 && (
-                                    <p className="text-[10px] text-black/20 text-center py-2">
+                                    <p className="text-[10px] text-black/25 text-center py-2">
                                         +{history.length - 5} more simulations
                                     </p>
                                 )}
@@ -459,23 +458,23 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                 </div>
 
                 {/* User Profile Footer */}
-                <div className={`p-3 mt-auto border-t border-black/[0.04] ${isExpanded ? 'px-4' : ''}`}>
+                <div className={`p-3 mt-auto border-t border-black/[0.06] ${isExpanded ? 'px-4' : ''}`}>
                     <div className={`flex items-center transition-all duration-300 rounded-xl p-2 hover:bg-black/[0.03] ${isExpanded ? 'gap-3' : 'justify-center'}`}>
                         <div className="relative shrink-0">
                             {user?.photoURL ? (
-                                <img src={user.photoURL} alt={user.displayName} className="w-9 h-9 rounded-lg border border-black/10 object-cover" />
+                                <img src={user.photoURL} alt={user.displayName} className="w-9 h-9 rounded-lg border border-black/[0.08] object-cover" />
                             ) : (
-                                <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-amber-500 to-rose-600 border border-black/15 flex items-center justify-center text-[#1a1a1a] text-sm font-bold uppercase">
+                                <div className="w-9 h-9 rounded-lg bg-[#1A1A1A] border border-black/[0.08] flex items-center justify-center text-white text-sm font-bold uppercase">
                                     {user?.displayName?.[0] || "U"}
                                 </div>
                             )}
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#0A0A0A] rounded-full" />
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
                         </div>
                         <div className={`flex-1 min-w-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden pointer-events-none lg:hidden"}`}>
-                            <p className="text-[12px] font-semibold text-black/80 truncate leading-tight">{user?.displayName || "User"}</p>
+                            <p className="text-[12px] font-semibold text-[#1a1a1a] truncate leading-tight">{user?.displayName || "User"}</p>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); logOut(); }}
-                                className="text-[10px] text-red-400/70 font-semibold uppercase tracking-wider transition-all hover:text-red-400"
+                                className="text-[10px] text-black/30 font-semibold uppercase tracking-wider transition-all hover:text-red-500"
                             >
                                 Sign Out
                             </button>

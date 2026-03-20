@@ -31,103 +31,69 @@ export default function LoadingScreen({ message = "Finding matching personas..."
     }, [stepsToUse.length]);
 
     return (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#FAF9F6]">
-            {/* Neural background mesh */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-amber-600/[0.12] blur-[180px]" />
-                <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-rose-600/[0.08] blur-[150px]" />
-            </div>
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white">
+            {/* Subtle background pattern */}
+            <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
 
-            {/* Science Beaker Laboratory Visual */}
-            <div className="relative mb-16 z-10 w-48 h-48 flex items-center justify-center">
-                {/* Concentric Decorative Rings */}
-                <div className="absolute inset-0 border border-black/[0.04] rounded-full" />
+            {/* Percura Logo Mark — animated */}
+            <div className="relative mb-16 z-10 w-40 h-40 flex items-center justify-center">
+                {/* Concentric rings */}
+                <div className="absolute inset-0 border border-black/[0.06] rounded-full" />
                 <div className="absolute inset-4 border border-black/[0.08] rounded-full animate-[spin_20s_linear_infinite]" />
                 <div className="absolute inset-8 border border-black/[0.04] rounded-full animate-[spin_15s_linear_infinite_reverse]" />
 
-                {/* Glowing Ping */}
-                <div className="w-32 h-32 rounded-full bg-amber-500/10 animate-pulse absolute" />
+                {/* Inner glow */}
+                <div className="w-28 h-28 rounded-full bg-[#E85D3A]/5 animate-pulse absolute" />
 
-                {/* The Beaker SVG */}
-                <div className="relative w-24 h-24">
-                    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-                        <defs>
-                            <linearGradient id="beakerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor="#f59e0b" />
-                                <stop offset="100%" stopColor="#f43f5e" />
-                            </linearGradient>
-
-                            <clipPath id="beakerClip">
-                                <path d="M35 15 H65 V25 H62 V50 L85 85 V92 H15 V85 L38 50 V25 H35 V15 Z" />
-                            </clipPath>
-                        </defs>
-
-                        {/* Beaker Outline */}
-                        <path
-                            d="M35 15 H65 V25 H62 V50 L85 85 V92 H15 V85 L38 50 V25 H35 V15 Z"
-                            fill="none"
-                            stroke="#1a1a1a"
-                            strokeWidth="1.5"
-                            strokeOpacity="0.8"
-                            strokeLinejoin="round"
-                        />
-
-                        {/* Filling Liquid Content */}
-                        <g clipPath="url(#beakerClip)">
-                            <rect x="0" y="0" width="100" height="100" fill="url(#beakerGradient)">
-                                <animate
-                                    attributeName="y"
-                                    values="90; 25; 90"
-                                    dur="4s"
-                                    repeatCount="indefinite"
-                                    calcMode="spline"
-                                    keySplines="0.4 0 0.2 1; 0.4 0 0.2 1"
-                                />
-                            </rect>
-
-                            {/* Mini Rising Bubbles */}
-                            <circle cx="45" cy="90" r="1" fill="white" fillOpacity="0.6">
-                                <animate attributeName="cy" values="90; 30" dur="2s" repeatCount="indefinite" />
-                                <animate attributeName="opacity" values="0; 0.6; 0" dur="2s" repeatCount="indefinite" />
-                            </circle>
-                            <circle cx="55" cy="85" r="1.5" fill="white" fillOpacity="0.4">
-                                <animate attributeName="cy" values="90; 40" dur="3s" repeatCount="indefinite" />
-                                <animate attributeName="opacity" values="0; 0.4; 0" dur="3s" repeatCount="indefinite" />
-                            </circle>
-                            <circle cx="50" cy="80" r="0.8" fill="white" fillOpacity="0.5">
-                                <animate attributeName="cy" values="90; 35" dur="2.5s" repeatCount="indefinite" />
-                                <animate attributeName="opacity" values="0; 0.5; 0" dur="2.5s" repeatCount="indefinite" />
-                            </circle>
-                        </g>
-
-                        {/* Beaker Shine Effect */}
-                        <path d="M42 30 Q45 28 50 30" fill="none" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
+                {/* Asterisk/flower icon — Casely-style */}
+                <div className="relative z-10">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="drop-shadow-sm">
+                        {/* Center dot */}
+                        <circle cx="24" cy="24" r="4" fill="#E85D3A" />
+                        {/* Petals */}
+                        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
+                            const rad = (angle * Math.PI) / 180;
+                            const x1 = 24 + Math.cos(rad) * 8;
+                            const y1 = 24 + Math.sin(rad) * 8;
+                            const x2 = 24 + Math.cos(rad) * 18;
+                            const y2 = 24 + Math.sin(rad) * 18;
+                            return (
+                                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#E85D3A" strokeWidth="2.5" strokeLinecap="round" opacity={0.7 + (i % 2) * 0.3}>
+                                    <animate attributeName="opacity" values={`${0.4 + (i % 3) * 0.2};1;${0.4 + (i % 3) * 0.2}`} dur={`${1.5 + i * 0.2}s`} repeatCount="indefinite" />
+                                </line>
+                            );
+                        })}
+                        {/* Outer dots */}
+                        {[0, 90, 180, 270].map((angle, i) => {
+                            const rad = (angle * Math.PI) / 180;
+                            const cx = 24 + Math.cos(rad) * 20;
+                            const cy = 24 + Math.sin(rad) * 20;
+                            return <circle key={`dot-${i}`} cx={cx} cy={cy} r="2" fill="#E85D3A" opacity="0.5" />;
+                        })}
                     </svg>
                 </div>
             </div>
 
             {/* Main Progress Message */}
             <div className="text-center z-10 max-w-md px-6">
-                <h2 className="text-3xl font-normal text-[#1a1a1a] mb-4 tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <h2 className="text-3xl font-normal text-[#1a1a1a] mb-4 tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000" style={{ fontFamily: "var(--font-serif)" }}>
                     {message}
                 </h2>
 
                 <div className="h-6 overflow-hidden relative mb-12">
-                    <p key={stepIndex} className="text-sm text-amber-600 font-bold tracking-[0.2em] uppercase transition-all duration-500 transform translate-y-0 opacity-100">
+                    <p key={stepIndex} className="text-sm text-[#E85D3A] font-bold tracking-[0.15em] uppercase transition-all duration-500 transform translate-y-0 opacity-100">
                         {stepsToUse[stepIndex]}
                     </p>
                 </div>
             </div>
 
-
-
-            {/* Diagnostic Data Stream */}
-            <div className="flex gap-1.5 z-10 opacity-60">
+            {/* Minimal progress dots */}
+            <div className="flex gap-2 z-10">
                 {[...Array(5)].map((_, i) => (
                     <div
                         key={i}
-                        className="w-1 h-4 bg-amber-500/70 rounded-full animate-bounce"
-                        style={{ animationDelay: `${i * 0.1}s`, animationDuration: '0.8s' }}
+                        className="w-1.5 h-1.5 bg-[#E85D3A]/50 rounded-full animate-bounce"
+                        style={{ animationDelay: `${i * 0.12}s`, animationDuration: '0.8s' }}
                     />
                 ))}
             </div>

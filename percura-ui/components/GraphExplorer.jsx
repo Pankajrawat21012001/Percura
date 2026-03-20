@@ -174,7 +174,7 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
             .selectAll('line')
             .data(simEdges)
             .enter().append('line')
-            .attr('stroke', 'rgba(255,255,255,0.1)')
+            .attr('stroke', 'rgba(0,0,0,0.1)')
             .attr('stroke-width', 1.5);
 
         const nodeLayer = g.append('g')
@@ -196,7 +196,7 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
 
         nodeLayer.append('text')
             .text(d => d.name)
-            .attr('fill', 'rgba(255,255,255,0.7)')
+            .attr('fill', 'rgba(0,0,0,0.7)')
             .attr('font-size', '11px')
             .attr('font-weight', 'bold')
             .attr('dy', 25)
@@ -254,15 +254,15 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
 
     if (loading) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-white/40">
-                <div className="w-10 h-10 rounded-full border-2 border-t-purple-500 border-white/5 animate-spin mb-4" />
+            <div className="flex-1 flex flex-col items-center justify-center p-12 text-black/50">
+                <div className="w-10 h-10 rounded-full border-2 border-t-purple-500 border-black/[0.04] animate-spin mb-4" />
                 <span className="text-[11px] uppercase tracking-widest font-black">Synthesizing Neural Graph...</span>
             </div>
         );
     }
 
     const renderTabs = () => (
-        <div className="flex items-center gap-1 p-1 bg-white/[0.03] border-b border-white/[0.08]">
+        <div className="flex items-center gap-1 p-1 bg-black/[0.02] border-b border-white/[0.08]">
             {['force', 'entities', 'relations'].map((tab) => (
                 <button
                     key={tab}
@@ -270,8 +270,8 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                     className={`
                         px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all
                         ${activeTab === tab 
-                            ? "bg-white/[0.07] text-white shadow-inner" 
-                            : "text-white/30 hover:text-white/60 hover:bg-white/[0.02]"}
+                            ? "bg-black/[0.06] text-[#1a1a1a] shadow-inner" 
+                            : "text-black/40 hover:text-black/60 hover:bg-[#FAFAFA]"}
                     `}
                 >
                     {tab === 'force' ? 'Neural Graph' : tab === 'entities' ? 'Entity List' : 'Relations Scan'}
@@ -283,20 +283,20 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
     return (
         <div 
             className={`
-                flex flex-col h-full w-full bg-[#080808] transition-all duration-500 overflow-hidden
+                flex flex-col h-full w-full bg-white transition-all duration-500 overflow-hidden
                 ${isFullscreen ? "fixed inset-0 z-[1000]" : "relative"}
             `}
         >
             {/* Header / Tabs */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 shrink-0 bg-black/40 backdrop-blur-md">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-black/[0.08] shrink-0 bg-white/80 backdrop-blur-md">
                 <div className="flex items-center gap-4">
-                    <div className="text-[12px] font-black italic tracking-tighter text-white/90">MARKET EXPLORER</div>
+                    <div className="text-[12px] font-black italic tracking-tighter text-[#1a1a1a]">MARKET EXPLORER</div>
                     {renderTabs()}
                 </div>
                 <div className="flex items-center gap-3">
                     <button 
                         onClick={() => setIsFullscreen(!isFullscreen)}
-                        className="p-2 text-white/40 hover:text-white transition-colors"
+                        className="p-2 text-black/50 hover:text-[#1a1a1a] transition-colors"
                         title="Toggle Fullscreen"
                     >
                         {isFullscreen ? (
@@ -306,13 +306,13 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                         )}
                     </button>
                     {!isFullscreen && onClose && (
-                        <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">✕</button>
+                        <button onClick={onClose} className="text-black/50 hover:text-[#1a1a1a] transition-colors">✕</button>
                     )}
                 </div>
             </div>
 
             <div className="flex-1 relative flex overflow-hidden h-full w-full">
-                <div className="flex-1 relative flex overflow-hidden bg-[#050505] h-full w-full">
+                <div className="flex-1 relative flex overflow-hidden bg-[#FAFAFA] h-full w-full">
                     {activeTab === 'force' && (
                         <>
                             <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing overflow-hidden">
@@ -321,13 +321,13 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                             
                             {/* Force Controls */}
                             <div className="absolute bottom-6 right-6 flex flex-col gap-2 scale-90">
-                                <button onClick={handleZoomIn} className="p-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-white/60 hover:text-white transition-all backdrop-blur-md">
+                                <button onClick={handleZoomIn} className="p-3 bg-black/[0.04] hover:bg-white/[0.1] border border-black/[0.08] rounded-xl text-black/60 hover:text-[#1a1a1a] transition-all backdrop-blur-md">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                                 </button>
-                                <button onClick={handleZoomOut} className="p-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-white/60 hover:text-white transition-all backdrop-blur-md">
+                                <button onClick={handleZoomOut} className="p-3 bg-black/[0.04] hover:bg-white/[0.1] border border-black/[0.08] rounded-xl text-black/60 hover:text-[#1a1a1a] transition-all backdrop-blur-md">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
                                 </button>
-                                <button onClick={handleReset} className="p-3 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded-xl text-white/60 hover:text-white transition-all backdrop-blur-md">
+                                <button onClick={handleReset} className="p-3 bg-black/[0.04] hover:bg-white/[0.1] border border-black/[0.08] rounded-xl text-black/60 hover:text-[#1a1a1a] transition-all backdrop-blur-md">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                                 </button>
                             </div>
@@ -338,15 +338,15 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                         <div className="flex-1 overflow-auto p-4 custom-scrollbar">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-white/10">
-                                        <th className="py-3 px-4 text-[11px] uppercase font-black text-white/40 tracking-widest">Type</th>
-                                        <th className="py-3 px-4 text-[11px] uppercase font-black text-white/40 tracking-widest">Entity Name</th>
-                                        <th className="py-3 px-4 text-[11px] uppercase font-black text-white/40 tracking-widest">Properties</th>
+                                    <tr className="border-b border-black/[0.08]">
+                                        <th className="py-3 px-4 text-[11px] uppercase font-black text-black/50 tracking-widest">Type</th>
+                                        <th className="py-3 px-4 text-[11px] uppercase font-black text-black/50 tracking-widest">Entity Name</th>
+                                        <th className="py-3 px-4 text-[11px] uppercase font-black text-black/50 tracking-widest">Properties</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {nodes.map((node, i) => (
-                                        <tr key={node.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] group transition-colors font-sans">
+                                        <tr key={node.id} className="border-b border-white/[0.03] hover:bg-[#FAFAFA] group transition-colors font-sans">
                                             <td className="py-4 px-4 whitespace-nowrap">
                                                 <span 
                                                     className="px-2 py-1 rounded text-[11px] font-black uppercase border"
@@ -359,14 +359,14 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                                                     {node.type}
                                                 </span>
                                             </td>
-                                            <td className="py-4 px-4 font-normal text-white/90 text-[14px]">{node.name}</td>
+                                            <td className="py-4 px-4 font-normal text-[#1a1a1a] text-[14px]">{node.name}</td>
                                             <td className="py-4 px-4">
                                                 <div className="flex flex-wrap gap-2">
                                                     {Object.entries(node.rawData || {}).map(([key, val]) => (
                                                         !['uuid', 'labels', 'name', 'id'].includes(key) && val && (
                                                             <div key={key} className="flex gap-2 text-[11px]">
-                                                                <span className="text-white/20 capitalize">{key}:</span>
-                                                                <span className="text-white/50">{String(val)}</span>
+                                                                <span className="text-black/30 capitalize">{key}:</span>
+                                                                <span className="text-black/60">{String(val)}</span>
                                                             </div>
                                                         )
                                                     ))}
@@ -386,21 +386,21 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                                     const sNode = nodes.find(n => n.id === (edge.source?.id || edge.source));
                                     const tNode = nodes.find(n => n.id === (edge.target?.id || edge.target));
                                     return (
-                                        <div key={i} className="flex items-center gap-6 p-4 bg-white/[0.02] border border-white/5 rounded-2xl group hover:border-white/10 transition-colors">
+                                        <div key={i} className="flex items-center gap-6 p-4 bg-[#FAFAFA] border border-black/[0.04] rounded-2xl group hover:border-black/[0.08] transition-colors">
                                             <div className="flex flex-col gap-1 w-[40%] text-right overflow-hidden">
-                                                <span className="text-[11px] text-white/20 uppercase font-black tracking-widest">{sNode?.type}</span>
-                                                <span className="text-[13px] font-normal text-white/90 truncate">{sNode?.name || "Unknown"}</span>
+                                                <span className="text-[11px] text-black/30 uppercase font-black tracking-widest">{sNode?.type}</span>
+                                                <span className="text-[13px] font-normal text-[#1a1a1a] truncate">{sNode?.name || "Unknown"}</span>
                                             </div>
                                             <div className="flex-1 flex flex-col items-center justify-center gap-1">
                                                 <div className="w-full h-[1px] bg-white/10 relative">
-                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-[#111] border border-white/10 rounded-full text-[11px] font-black uppercase tracking-widest text-white/40 shadow-xl">
+                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-[#111] border border-black/[0.08] rounded-full text-[11px] font-black uppercase tracking-widest text-black/50 shadow-xl">
                                                         {edge.type}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col gap-1 w-[40%] text-left overflow-hidden">
-                                                <span className="text-[11px] text-white/20 uppercase font-black tracking-widest">{tNode?.type}</span>
-                                                <span className="text-[13px] font-normal text-white/90 truncate">{tNode?.name || "Unknown"}</span>
+                                                <span className="text-[11px] text-black/30 uppercase font-black tracking-widest">{tNode?.type}</span>
+                                                <span className="text-[13px] font-normal text-[#1a1a1a] truncate">{tNode?.name || "Unknown"}</span>
                                             </div>
                                         </div>
                                     );
@@ -412,7 +412,7 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
 
                 {/* Right Panel for Selection */}
                 {selectedItem && (
-                    <div className="w-80 border-l border-white/10 bg-black/40 backdrop-blur-2xl p-6 overflow-y-auto hidden lg:block custom-scrollbar shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
+                    <div className="w-80 border-l border-black/[0.08] bg-white/80 backdrop-blur-2xl p-6 overflow-y-auto hidden lg:block custom-scrollbar shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
                         <div className="flex justify-between items-start mb-6">
                             <span 
                                 className="px-2 py-1 rounded text-[11px] font-black uppercase border"
@@ -424,15 +424,15 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                             >
                                 {selectedItem.data.type}
                             </span>
-                            <button onClick={() => setSelectedItem(null)} className="text-white/20 hover:text-white transition-colors">✕</button>
+                            <button onClick={() => setSelectedItem(null)} className="text-black/30 hover:text-[#1a1a1a] transition-colors">✕</button>
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-4">{selectedItem.data.name}</h3>
+                        <h3 className="text-xl font-bold text-[#1a1a1a] mb-4">{selectedItem.data.name}</h3>
                         <div className="space-y-4">
                             {Object.entries(selectedItem.data.rawData || {}).map(([key, val]) => (
                                 !['uuid', 'labels', 'name', 'id'].includes(key) && val && (
                                     <div key={key} className="space-y-1">
-                                        <p className="text-[11px] text-white/30 uppercase font-black tracking-widest">{key}</p>
-                                        <p className="text-sm text-white/70 leading-relaxed font-normal">{String(val)}</p>
+                                        <p className="text-[11px] text-black/40 uppercase font-black tracking-widest">{key}</p>
+                                        <p className="text-sm text-black/70 leading-relaxed font-normal">{String(val)}</p>
                                     </div>
                                 )
                             ))}

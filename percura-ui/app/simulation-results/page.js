@@ -400,9 +400,9 @@ export default function SimulationResultsPage() {
 
     if (!currentSimulationId) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
+            <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="text-center">
-                    <h2 className="text-2xl font-light text-[#1a1a1a] mb-4">No Simulation Selected</h2>
+                    <h2 className="text-2xl text-[#1a1a1a] mb-4" style={{ fontFamily: 'var(--font-serif)' }}>No Simulation Selected</h2>
                     <Button onClick={() => router.push("/validate")}>Start New Test</Button>
                 </div>
             </div>
@@ -413,14 +413,15 @@ export default function SimulationResultsPage() {
         <DashboardLayout 
             currentStep={4}
         >
-            <div className="relative min-h-screen text-[#1a1a1a] selection:bg-rose-500/30 overflow-x-hidden pt-6">
-                <ShaderPageBackground overlayOpacity={0.9} blur={true} />
+            <div className="relative min-h-screen text-[#1a1a1a] selection:bg-[#E85D3A]/15 overflow-x-hidden pt-6">
+                {/* Background */}
+                <div className="absolute inset-0 bg-grid opacity-15 pointer-events-none" />
 
                 {/* Progress Bar (Sticky Top) */}
                 {simDoc.status === "in progress" && (
-                    <div className="fixed top-0 left-0 w-full h-1 bg-black/5 z-[100]">
+                    <div className="fixed top-0 left-0 w-full h-1 bg-black/[0.04] z-[100]">
                         <div 
-                            className="h-full bg-gradient-to-r from-rose-500 via-amber-500 to-pink-500 transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]" 
+                            className="h-full bg-gradient-to-r from-[#E85D3A] to-[#D14E2E] transition-all duration-1000" 
                             style={{ width: `${progressPercent}%` }}
                         />
                     </div>
@@ -431,14 +432,14 @@ export default function SimulationResultsPage() {
                     <div className="flex flex-col mb-10">
                         <div className="flex justify-between items-start mb-6">
                             <div className="flex items-center gap-3">
-                                <span className="px-3 py-1.5 bg-white/60 border border-black/10 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] text-black/80">
-                                    Prediction Report
+                                <span className="badge-accent">
+                                    Validation Report
                                 </span>
                                 <span className="text-[10px] text-black/25 font-mono">
                                     ID: PCT-{currentSimulationId ? currentSimulationId.substring(0, 8).toUpperCase() : '0000'}
                                 </span>
                                 <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-widest ${
-                                    simDoc?.status === 'completed' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
+                                    simDoc?.status === 'completed' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500' : 'bg-[#E85D3A]/10 border border-[#E85D3A]/20 text-[#E85D3A]'
                                 }`}>
                                     {simDoc?.status === 'completed' ? 'Completed' : 'In Progress'}
                                 </span>
@@ -446,7 +447,7 @@ export default function SimulationResultsPage() {
                             
                             {/* Top Right Action Group */}
                             <div className="flex items-center gap-2">
-                                <button onClick={handleDownloadPDF} title="Download full PDF report" className="p-2.5 rounded-xl bg-black/5 border border-black/10 text-black/60 hover:text-[#1a1a1a] hover:bg-black/10 transition-all">
+                                <button onClick={handleDownloadPDF} title="Download full PDF report" className="p-2.5 rounded-xl bg-white border border-black/[0.08] text-black/50 hover:text-[#1a1a1a] hover:border-black/15 transition-all">
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                 </button>
                                 {deepSimResult && (
@@ -459,7 +460,7 @@ export default function SimulationResultsPage() {
                                             a.download = `percura_simulation_${deepSimResult.id || Date.now()}.json`;
                                             a.click();
                                             URL.revokeObjectURL(url);
-                                        }} title="Export result as JSON" className="p-2.5 rounded-xl bg-black/5 border border-black/10 text-black/60 hover:text-[#1a1a1a] hover:bg-black/10 transition-all">
+                                        }} title="Export result as JSON" className="p-2.5 rounded-xl bg-white border border-black/[0.08] text-black/50 hover:text-[#1a1a1a] hover:border-black/15 transition-all">
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                                         </button>
                                         <button onClick={() => {
@@ -476,7 +477,7 @@ export default function SimulationResultsPage() {
                                             a.download = `percura_personas_${Date.now()}.csv`;
                                             a.click();
                                             URL.revokeObjectURL(url);
-                                        }} title="Export audience as CSV" className="p-2.5 rounded-xl bg-black/5 border border-black/10 text-black/60 hover:text-[#1a1a1a] hover:bg-black/10 transition-all">
+                                        }} title="Export audience as CSV" className="p-2.5 rounded-xl bg-white border border-black/[0.08] text-black/50 hover:text-[#1a1a1a] hover:border-black/15 transition-all">
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                                         </button>
                                     </>
@@ -485,7 +486,7 @@ export default function SimulationResultsPage() {
                         </div>
 
                         {/* Title Block */}
-                        <h1 className="text-4xl md:text-5xl font-light tracking-tight mb-4 leading-tight">
+                        <h1 className="text-4xl md:text-5xl tracking-tight mb-4 leading-tight" style={{ fontFamily: 'var(--font-serif)', fontWeight: 400 }}>
                             {idea?.idea || "Simulation Complete"}
                         </h1>
                         <p className="text-black/40 text-sm font-normal leading-relaxed max-w-3xl mb-8" style={{ fontStyle: 'italic' }}>
@@ -493,16 +494,16 @@ export default function SimulationResultsPage() {
                         </p>
 
                         {/* Tab Nav & Run Sim Strip */}
-                        <div className="flex justify-between items-center border-b border-white/5 pb-6">
-                            <div className="flex bg-[#FAF9F6]/[0.04] border border-black/10 rounded-xl overflow-hidden">
+                        <div className="flex justify-between items-center border-b border-black/[0.06] pb-6">
+                            <div className="flex bg-[#FAFAFA] border border-black/[0.08] rounded-xl overflow-hidden">
                                 {["Report", "Split", "Timeline"].map(tab => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab.toLowerCase())}
                                         className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer ${
                                             activeTab === tab.toLowerCase()
-                                                ? 'bg-black/10 text-white'
-                                                : 'text-black/30 hover:text-black/60'
+                                                ? 'bg-[#1A1A1A] text-white'
+                                                : 'text-black/30 hover:text-black/60 hover:bg-black/[0.03]'
                                         }`}
                                     >
                                         {tab}
@@ -514,7 +515,7 @@ export default function SimulationResultsPage() {
                                 onClick={() => setIsInterrogationOpen(true)}
                                 variant="primary"
                                 size="sm"
-                                className="flex items-center gap-2 bg-amber-600 hover:bg-purple-700 shadow-xl shadow-amber-600/20"
+                                className="flex items-center gap-2 bg-[#E85D3A] hover:bg-[#D14E2E] border-[#E85D3A] hover:border-[#D14E2E] shadow-lg shadow-[#E85D3A]/15"
                             >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>
                                 Enter Interrogation Lab
@@ -549,7 +550,7 @@ export default function SimulationResultsPage() {
                             <div className="space-y-8 overflow-y-auto max-h-[calc(100vh-300px)] pr-2">
                                 {/* Mini Report */}
                                 <div className="relative z-30">
-                                    <div className="bg-white/80 backdrop-blur-3xl border border-black/10 rounded-[2rem] p-6 shadow-xl shadow-black/5">
+                                    <div className="bg-white border border-black/[0.08] rounded-2xl p-6 shadow-lg shadow-black/[0.04]">
                                         <div className="grid grid-cols-2 gap-6">
                                             <div className="space-y-1">
                                                 <span className="text-[10px] uppercase tracking-[0.2em] text-black/30 font-bold">Total Sample</span>
@@ -600,13 +601,13 @@ export default function SimulationResultsPage() {
                     {/* Summary Card */}
                     <div className="relative z-30 mb-16">
                         <div className="flex items-center gap-3 mb-6">
-                            <span className="shrink-0 w-8 h-8 rounded-lg bg-white/60 border border-black/10 flex items-center justify-center text-[11px] font-mono text-black/50">01</span>
+                            <span className="shrink-0 w-8 h-8 rounded-lg bg-[#E85D3A]/8 border border-[#E85D3A]/15 flex items-center justify-center text-[11px] font-mono text-[#E85D3A]">01</span>
                             <h2 className="text-lg font-medium text-black/80 tracking-tight">Executive Summary</h2>
                         </div>
-                        <div className="bg-white/80 backdrop-blur-3xl border border-black/10 rounded-[3rem] p-10 md:p-12 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.05)]">
+                        <div className="bg-white border border-black/[0.08] rounded-3xl p-10 md:p-12 shadow-lg shadow-black/[0.04]">
                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                                  {/* Primary Stats Grid */}
-                                 <div className="space-y-10 border-r border-white/5 pr-8">
+                                 <div className="space-y-10 border-r border-black/[0.06] pr-8">
                                      <div className="grid grid-cols-2 gap-x-12 gap-y-10">
                                          <div className="space-y-1">
                                              <span className="text-[11px] uppercase tracking-[0.2em] text-black/30 font-bold">Total Sample</span>
@@ -624,9 +625,9 @@ export default function SimulationResultsPage() {
                                              <p className="text-[11px] text-red-500/20 uppercase tracking-widest">Would Reject</p>
                                          </div>
                                          <div className="space-y-1">
-                                             <span className="text-[11px] uppercase tracking-[0.2em] text-rose-500/40 font-bold">Market Fit Score</span>
-                                             <div className="text-4xl font-black italic text-rose-600" title="Weighted score: (avg resonance × 0.8) + (adoption rate × 20)">{results.length > 0 ? `${survivalProb}%` : '--'}</div>
-                                             <p className="text-[11px] text-rose-500/20 uppercase tracking-widest">Predicted Outlook</p>
+                                             <span className="text-[11px] uppercase tracking-[0.2em] text-[#E85D3A]/40 font-bold">Market Fit Score</span>
+                                             <div className="text-4xl font-black italic text-[#E85D3A]" title="Weighted score: (avg resonance × 0.8) + (adoption rate × 20)">{results.length > 0 ? `${survivalProb}%` : '--'}</div>
+                                             <p className="text-[11px] text-[#E85D3A]/20 uppercase tracking-widest">Predicted Outlook</p>
                                          </div>
                                      </div>
 
@@ -641,7 +642,7 @@ export default function SimulationResultsPage() {
                                          const rejectPct = Math.round((rejectedCount / totalPersonasCount) * 100);
 
                                          return (
-                                             <div className="mt-8 pt-8 border-t border-white/5">
+                                             <div className="mt-8 pt-8 border-t border-black/[0.06]">
                                                  <p className="text-[11px] uppercase tracking-[0.2em] text-black/30 font-bold mb-4">
                                                      Response Distribution
                                                  </p>
@@ -714,7 +715,7 @@ export default function SimulationResultsPage() {
                                                                   .reduce((acc, r) => acc + (r.personas?.length || r.personaCount || 0), 0);
                                          if (results.length === 0) return null;
                                          return (
-                                             <div className="pt-8 mt-8 border-t border-white/5">
+                                             <div className="pt-8 mt-8 border-t border-black/[0.06]">
                                                  <span className="text-[11px] uppercase tracking-widest text-black/30 font-bold block mb-3">
                                                      Willingness to Pay
                                                  </span>
@@ -764,12 +765,12 @@ export default function SimulationResultsPage() {
                                         return (
                                             <div
                                                 key={i}
-                                                className="bg-white/60 border border-black/[0.07] rounded-2xl p-5 flex flex-col gap-3"
+                                                className="bg-white border border-black/[0.08] rounded-2xl p-5 flex flex-col gap-3"
                                             >
                                                 <p className="text-sm font-light text-black/75 leading-relaxed italic flex-1">
                                                     "{r.testResult.verbatimQuote}"
                                                 </p>
-                                                <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                                                <div className="flex items-center justify-between border-t border-black/[0.06] pt-3">
                                                     <span className="text-[10px] text-black/40">{r.segment_name}</span>
                                                     <span className={`text-[10px] font-bold ${
                                                         score >= 70
@@ -796,7 +797,7 @@ export default function SimulationResultsPage() {
                     {(insightsLoading || insightData) && (
                         <div className="mb-12">
                             <div className="flex items-center gap-3 mb-6">
-                                <span className="shrink-0 w-8 h-8 rounded-lg bg-white/60 border border-black/10 flex items-center justify-center text-[11px] font-mono text-black/50">02</span>
+                                <span className="shrink-0 w-8 h-8 rounded-lg bg-[#E85D3A]/8 border border-[#E85D3A]/15 flex items-center justify-center text-[11px] font-mono text-[#E85D3A]">02</span>
                                 <h2 className="text-lg font-medium text-black/80 tracking-tight">Key Insights</h2>
                             </div>
 
@@ -812,10 +813,10 @@ export default function SimulationResultsPage() {
                                     {insightData.insights.map((ins, i) => (
                                         <div
                                             key={i}
-                                            className="bg-white/60 border border-amber-500/10 rounded-2xl p-6 hover:border-amber-500/25 transition-all duration-300"
+                                            className="bg-white border border-black/[0.08] rounded-2xl p-6 hover:border-[#E85D3A]/25 transition-all duration-300"
                                         >
                                             <div className="flex items-start gap-4">
-                                                <span className="text-[10px] font-black text-amber-600/60 uppercase tracking-widest mt-0.5 shrink-0">
+                                                <span className="text-[10px] font-black text-[#E85D3A]/60 uppercase tracking-widest mt-0.5 shrink-0">
                                                     #{i + 1}
                                                 </span>
                                                 <div className="flex-1">
@@ -845,8 +846,8 @@ export default function SimulationResultsPage() {
 
                     {/* Simulation Status Overlay */}
                     {simDoc.status === "in progress" && completedCount < totalSegments && (
-                        <div className="mb-12 flex items-center gap-4 bg-rose-500/5 border border-rose-500/10 rounded-2xl p-6 border-dashed animate-in fade-in duration-500">
-                            <div className="w-10 h-10 rounded-full border-2 border-t-rose-500/80 border-white/5 animate-spin" />
+                        <div className="mb-12 flex items-center gap-4 bg-[#E85D3A]/5 border border-[#E85D3A]/10 rounded-2xl p-6 border-dashed animate-in fade-in duration-500">
+                            <div className="w-10 h-10 rounded-full border-2 border-t-[#E85D3A]/80 border-black/[0.04] animate-spin" />
                             <div>
                                 <h3 className="text-sm font-bold text-black/80">Simulating Segment Reactions...</h3>
                                 <p className="text-[11px] text-black/40 font-normal">
@@ -862,7 +863,7 @@ export default function SimulationResultsPage() {
                     {/* Result Cards */}
                     <div className="mb-16">
                         <div className="flex items-center gap-3 mb-8">
-                            <span className="shrink-0 w-8 h-8 rounded-lg bg-white/60 border border-black/10 flex items-center justify-center text-[11px] font-mono text-black/50">03</span>
+                            <span className="shrink-0 w-8 h-8 rounded-lg bg-[#E85D3A]/8 border border-[#E85D3A]/15 flex items-center justify-center text-[11px] font-mono text-[#E85D3A]">03</span>
                             <h2 className="text-lg font-medium text-black/80 tracking-tight">Segment Resonance Analysis</h2>
                         </div>
                         <div className="space-y-8">
@@ -872,8 +873,8 @@ export default function SimulationResultsPage() {
 
                         {/* Skeleton Loaders */}
                         {simDoc.status === "in progress" && Array.from({ length: totalSegments - completedCount }).map((_, i) => (
-                            <div key={`skeleton-${i}`} className="h-48 rounded-[2.5rem] bg-[#FAF9F6]/[0.03] border border-white/5 animate-pulse flex items-center justify-center">
-                                <span className="text-[11px] uppercase tracking-[0.4em] text-white/10 font-black">Synthesizing Feedback Cluster...</span>
+                            <div key={`skeleton-${i}`} className="h-48 rounded-2xl bg-[#FAFAFA] border border-black/[0.06] animate-pulse flex items-center justify-center">
+                                <span className="text-[11px] uppercase tracking-[0.4em] text-black/10 font-black">Synthesizing Feedback Cluster...</span>
                             </div>
                         ))}
                         </div>
@@ -883,15 +884,15 @@ export default function SimulationResultsPage() {
                     {insightData?.nextSteps && insightData.nextSteps.length > 0 && (
                         <div className="mt-16">
                             <div className="flex items-center gap-3 mb-6">
-                                <span className="shrink-0 w-8 h-8 rounded-lg bg-white/60 border border-black/10 flex items-center justify-center text-[11px] font-mono text-black/50">04</span>
+                                <span className="shrink-0 w-8 h-8 rounded-lg bg-[#E85D3A]/8 border border-[#E85D3A]/15 flex items-center justify-center text-[11px] font-mono text-[#E85D3A]">04</span>
                                 <h2 className="text-lg font-medium text-black/80 tracking-tight">What to Do Next</h2>
                             </div>
-                            <div className="bg-white/60 border border-black/10 rounded-[2.5rem] p-8 md:p-10">
+                            <div className="bg-white border border-black/[0.08] rounded-3xl p-8 md:p-10">
                                 <div className="space-y-5">
                                     {insightData.nextSteps.map((step, i) => (
                                         <div key={i} className="flex items-start gap-5">
-                                            <div className="shrink-0 w-7 h-7 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
-                                                <span className="text-[10px] font-black text-rose-600">{i + 1}</span>
+                                            <div className="shrink-0 w-7 h-7 rounded-full bg-[#E85D3A]/10 border border-[#E85D3A]/20 flex items-center justify-center">
+                                                <span className="text-[10px] font-black text-[#E85D3A]">{i + 1}</span>
                                             </div>
                                             <p className="text-[13px] text-black/70 leading-relaxed pt-0.5">{step}</p>
                                         </div>
@@ -911,8 +912,8 @@ export default function SimulationResultsPage() {
 
                     {/* Deep Simulation Loading */}
                     {deepSimLoading && (
-                        <div className="mt-12 flex items-center gap-4 bg-cyan-500/5 border border-cyan-500/10 rounded-2xl p-6 border-dashed animate-pulse">
-                            <div className="w-10 h-10 rounded-full border-2 border-t-cyan-500/80 border-white/5 animate-spin" />
+                        <div className="mt-12 flex items-center gap-4 bg-[#E85D3A]/5 border border-[#E85D3A]/10 rounded-2xl p-6 border-dashed animate-pulse">
+                            <div className="w-10 h-10 rounded-full border-2 border-t-[#E85D3A]/80 border-black/[0.04] animate-spin" />
                             <div>
                                 <h3 className="text-sm font-bold text-black/80">Running 8-week behavioral simulation...</h3>
                                 <p className="text-[11px] text-black/40 font-normal">Each persona is discovering, reacting, and being influenced week by week.</p>
@@ -923,7 +924,7 @@ export default function SimulationResultsPage() {
                     {/* Deep Simulation Report — New Components */}
                     {deepSimResult && (
                         <div className="mt-16 space-y-8">
-                            <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-400/60 font-bold">
+                            <p className="text-[11px] uppercase tracking-[0.3em] text-[#E85D3A]/60 font-bold">
                                 Deep Simulation Report — {deepSimResult.weeks}-Week Behavioral Analysis
                             </p>
 
@@ -946,8 +947,8 @@ export default function SimulationResultsPage() {
                         </div>
                     )}
                     {!deepSimResult && (
-                    <div className="mt-20 border-t border-white/5 pt-20 text-center animate-in slide-in-from-bottom-4 fade-in duration-500 pb-20">
-                        <h3 className="text-2xl font-light text-[#1a1a1a] mb-4">Want a deeper temporal analysis?</h3>
+                    <div className="mt-20 border-t border-black/[0.06] pt-20 text-center animate-in slide-in-from-bottom-4 fade-in duration-500 pb-20">
+                        <h3 className="text-2xl text-[#1a1a1a] mb-4" style={{ fontFamily: 'var(--font-serif)', fontWeight: 400 }}>Want a deeper temporal analysis?</h3>
                         <p className="text-[12px] text-black/40 mb-8 max-w-lg mx-auto leading-relaxed uppercase tracking-widest">
                             Run an 8-week behavioral simulation where personas discover, react, and influence each other over time.
                         </p>
@@ -955,7 +956,7 @@ export default function SimulationResultsPage() {
                             onClick={handleRunDeepSim}
                             disabled={deepSimLoading || results.length === 0}
                             size="lg"
-                            className="bg-gradient-to-r from-cyan-600 to-rose-600 hover:from-cyan-700 hover:to-blue-700 shadow-xl shadow-rose-600/20 group relative overflow-hidden px-12"
+                            className="bg-[#E85D3A] hover:bg-[#D14E2E] border-[#E85D3A] hover:border-[#D14E2E] shadow-lg shadow-[#E85D3A]/15 group relative overflow-hidden px-12"
                         >
                             <span className="relative z-10 flex items-center gap-3">
                                 {deepSimLoading ? (
@@ -1024,7 +1025,7 @@ function PersonaResultCard({ result, index }) {
         'hover:border-black/10';
 
     return (
-        <div className={`group bg-white/60 backdrop-blur-xl border border-black/10 rounded-[2.5rem] overflow-hidden ${hoverClass} transition-all duration-500`}>
+        <div className={`group bg-white border border-black/[0.08] rounded-3xl overflow-hidden ${hoverClass} transition-all duration-500`}>
             <div className="p-8 md:p-10">
                 {/* Header: Score + Name + Badges */}
                 <div className="flex flex-col md:flex-row gap-8">
@@ -1032,7 +1033,7 @@ function PersonaResultCard({ result, index }) {
                     <div className="shrink-0">
                         <div className="relative w-24 h-24 flex items-center justify-center">
                             <svg className="w-full h-full -rotate-90">
-                                <circle cx="48" cy="48" r="44" className="stroke-white/5 fill-none" strokeWidth="8" />
+                                <circle cx="48" cy="48" r="44" className="stroke-black/[0.06] fill-none" strokeWidth="8" />
                                 <circle cx="48" cy="48" r="44" className={`fill-none transition-all duration-1000 ${
                                     (tr.resonanceScore || 0) >= 70 ? 'stroke-emerald-500' :
                                     (tr.resonanceScore || 0) >= 50 ? 'stroke-amber-500' : 'stroke-red-500'
@@ -1084,7 +1085,7 @@ function PersonaResultCard({ result, index }) {
                         </div>
 
                         {/* Demographics Row — Always Visible */}
-                        <div className="flex items-center gap-6 text-[11px] text-black/50 border-t border-white/5 pt-4 mb-6">
+                        <div className="flex items-center gap-6 text-[11px] text-black/50 border-t border-black/[0.06] pt-4 mb-6">
                             <div><span className="text-[11px] text-black/25 uppercase tracking-widest font-bold mr-2">Region</span>{result.profile?.dominant_state || "India"} · {result.profile?.dominant_zone || "Mixed"}</div>
                             <div><span className="text-[11px] text-black/25 uppercase tracking-widest font-bold mr-2">Occupation</span>{result.profile?.dominant_occupation || "Various"}</div>
                             <div><span className="text-[11px] text-black/25 uppercase tracking-widest font-bold mr-2">Age</span>{result.profile?.age_range || "N/A"}</div>
@@ -1105,12 +1106,12 @@ function PersonaResultCard({ result, index }) {
                                         </span>
                                         <span className="text-[11px] text-black/60 font-mono font-bold">{Math.round(score)}%</span>
                                     </div>
-                                    <div className="w-full h-1 bg-black/5 rounded-full overflow-hidden">
+                                    <div className="w-full h-1 bg-black/[0.06] rounded-full overflow-hidden">
                                         <div className={`h-full rounded-full transition-all duration-[1500ms] ${bg}`} style={{ width: `${score}%` }} />
                                     </div>
                                     
                                     {/* Tooltip */}
-                                    <div className="absolute bottom-full left-0 mb-2 w-48 p-3 bg-[#FAF9F6]/90 backdrop-blur-xl border border-black/10 rounded-xl opacity-0 group-hover/score:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl">
+                                    <div className="absolute bottom-full left-0 mb-2 w-48 p-3 bg-white/95 backdrop-blur-xl border border-black/[0.08] rounded-xl opacity-0 group-hover/score:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
                                         <p className="text-[11px] text-black/70 leading-relaxed">{desc}</p>
                                     </div>
                                 </div>
@@ -1121,7 +1122,7 @@ function PersonaResultCard({ result, index }) {
 
                 {/* Top 3 Individual Persona Voices — Always Visible */}
                 {topPersonas.length > 0 && (
-                    <div className="mt-8 pt-6 border-t border-white/5">
+                    <div className="mt-8 pt-6 border-t border-black/[0.06]">
                         <h4 className="text-[11px] uppercase tracking-[0.3em] text-black/30 font-bold mb-4">Individual Persona Voices</h4>
                         <div className="space-y-3">
                             {topPersonas.map((p, pIdx) => {
@@ -1130,8 +1131,8 @@ function PersonaResultCard({ result, index }) {
                                 const name = getPersonaName(p, pIdx);
                                 const score = individualFeedback?.resonanceScore || tr.resonanceScore || 0;
                                 return (
-                                    <div key={pIdx} className="flex items-start gap-4 bg-[#FAF9F6]/[0.02] hover:bg-[#FAF9F6]/[0.04] border border-black/[0.05] rounded-xl p-4 transition-all">
-                                        <div className="shrink-0 w-8 h-8 rounded-full bg-black/5 border border-black/10 flex items-center justify-center text-[11px] font-black text-black/30 uppercase">
+                                    <div key={pIdx} className="flex items-start gap-4 bg-[#FAFAFA] hover:bg-[#F5F5F5] border border-black/[0.06] rounded-xl p-4 transition-all">
+                                        <div className="shrink-0 w-8 h-8 rounded-full bg-black/[0.04] border border-black/[0.08] flex items-center justify-center text-[11px] font-black text-black/30 uppercase">
                                             {(name || 'P')[0]}
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -1157,11 +1158,11 @@ function PersonaResultCard({ result, index }) {
 
                 {/* Expanded Section — Full Details */}
                 {isExpanded && (
-                    <div className="mt-8 pt-8 border-t border-white/5 animate-in slide-in-from-top-4 fade-in duration-500">
+                    <div className="mt-8 pt-8 border-t border-black/[0.06] animate-in slide-in-from-top-4 fade-in duration-500">
                         {/* CoT Rationale */}
                         {tr.segmentAnalysisRationale && (
-                            <div className="mb-8 bg-[#FAF9F6]/[0.02] rounded-2xl p-6 border border-white/5">
-                                <h4 className="text-[11px] uppercase tracking-[0.3em] text-amber-600/60 font-bold mb-3">Chain-of-Thought Reasoning</h4>
+                            <div className="mb-8 bg-[#FAFAFA] rounded-2xl p-6 border border-black/[0.06]">
+                                <h4 className="text-[11px] uppercase tracking-[0.3em] text-[#E85D3A]/60 font-bold mb-3">Chain-of-Thought Reasoning</h4>
                                 <p className="text-[12px] text-black/60 leading-relaxed font-normal">{tr.segmentAnalysisRationale}</p>
                             </div>
                         )}
@@ -1183,7 +1184,7 @@ function PersonaResultCard({ result, index }) {
 
                         {/* All Persona Voices (remaining beyond top 3) */}
                         {(result.personas || []).length > 3 && (
-                            <div className="pt-6 border-t border-white/5">
+                            <div className="pt-6 border-t border-black/[0.06]">
                                 <h4 className="text-[11px] uppercase tracking-[0.3em] text-black/30 font-bold mb-4">All Persona Reactions ({(result.personas || []).length} total)</h4>
                                 <div className="space-y-2">
                                     {(result.personas || []).slice(3).map((p, pIdx) => {
@@ -1193,7 +1194,7 @@ function PersonaResultCard({ result, index }) {
                                         const name = getPersonaName(p, actualIdx);
                                         const score = individualFeedback?.resonanceScore || tr.resonanceScore || 0;
                                         return (
-                                            <div key={actualIdx} className="flex items-center gap-4 bg-[#FAF9F6]/[0.02] border border-white/[0.04] rounded-xl p-3 transition-all">
+                                            <div key={actualIdx} className="flex items-center gap-4 bg-[#FAFAFA] border border-black/[0.06] rounded-xl p-3 transition-all">
                                                 <div className="shrink-0 w-6 h-6 rounded-full bg-black/5 flex items-center justify-center text-[11px] font-bold text-black/20">
                                                     {(name || 'P')[0]}
                                                 </div>
@@ -1222,8 +1223,8 @@ function PersonaResultCard({ result, index }) {
 function SkeletonResults() {
     return (
         <DashboardLayout currentStep={4}>
-            <div className="relative min-h-screen text-[#1a1a1a] pt-6 overflow-hidden">
-                <ShaderPageBackground overlayOpacity={0.9} blur={true} />
+            <div className="relative min-h-screen text-[#1a1a1a] pt-6 overflow-hidden bg-white">
+                <div className="absolute inset-0 bg-grid opacity-10 pointer-events-none" />
                 
                 <div className="relative z-10 max-w-5xl mx-auto px-6 pb-48">
                     {/* Header Skeleton */}
@@ -1240,20 +1241,20 @@ function SkeletonResults() {
                     {/* Stats Skeleton */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="h-32 bg-[#FAF9F6]/[0.03] border border-white/5 rounded-[2rem] animate-pulse" />
+                            <div key={i} className="h-32 bg-[#FAFAFA] border border-black/[0.06] rounded-2xl animate-pulse" />
                         ))}
                     </div>
 
                     {/* Content Strips Skeleton */}
                     <div className="space-y-12">
-                        <div className="h-64 bg-[#FAF9F6]/[0.03] border border-white/5 rounded-[3rem] animate-pulse" />
+                        <div className="h-64 bg-[#FAFAFA] border border-black/[0.06] rounded-3xl animate-pulse" />
                         <div className="grid grid-cols-3 gap-4">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className="h-40 bg-[#FAF9F6]/[0.02] border border-white/5 rounded-2xl animate-pulse" />
+                                <div key={i} className="h-40 bg-[#FAFAFA] border border-black/[0.06] rounded-2xl animate-pulse" />
                             ))}
                         </div>
-                        <div className="h-96 bg-[#FAF9F6]/[0.03] border border-white/5 rounded-[2.5rem] animate-pulse flex items-center justify-center">
-                            <span className="text-[10px] uppercase tracking-[0.4em] text-white/10 font-black">Synthesizing Demographic Resonance...</span>
+                        <div className="h-96 bg-[#FAFAFA] border border-black/[0.06] rounded-3xl animate-pulse flex items-center justify-center">
+                            <span className="text-[10px] uppercase tracking-[0.4em] text-black/10 font-black">Synthesizing Demographic Resonance...</span>
                         </div>
                     </div>
                 </div>
@@ -1282,11 +1283,11 @@ function MarketContextPanel({ marketContext }) {
                     { label: 'Risks & Regulations', items: risks, color: 'amber' },
                     { label: 'Market Trends', items: trends, color: 'blue' },
                 ].map(({ label, items, color }) => items.length > 0 && (
-                    <div key={label} className="bg-white/60 border border-black/[0.07] rounded-2xl p-5">
+                    <div key={label} className="bg-white border border-black/[0.08] rounded-2xl p-5">
                         <p className={`text-[11px] uppercase tracking-widest font-bold mb-4 ${
                             color === 'red' ? 'text-red-400/60' : 
                             color === 'amber' ? 'text-amber-400/60' : 
-                            'text-rose-600/60'
+                            'text-[#E85D3A]/60'
                         }`}>
                             {label}
                         </p>
@@ -1296,7 +1297,7 @@ function MarketContextPanel({ marketContext }) {
                                     <span className={`w-1 h-1 rounded-full mt-1.5 shrink-0 ${
                                         color === 'red' ? 'bg-red-400' : 
                                         color === 'amber' ? 'bg-amber-400' : 
-                                        'bg-rose-600'
+                                        'bg-[#E85D3A]'
                                     }`} />
                                     {item}
                                 </p>
