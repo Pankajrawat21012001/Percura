@@ -120,4 +120,4 @@ async function generateTextResponse(systemPrompt, userPrompt, temperature = 0.5)
     return generateAIResponse(systemPrompt, userPrompt, temperature, false);
 }
 
-module.exports = { generateAIResponse, generateTextResponse };
+module.exports = { generateAIResponse, generateTextResponse, groq };
