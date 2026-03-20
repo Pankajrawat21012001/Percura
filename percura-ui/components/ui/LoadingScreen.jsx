@@ -31,30 +31,30 @@ export default function LoadingScreen({ message = "Finding matching personas..."
     }, [stepsToUse.length]);
 
     return (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#FAF9F6]">
             {/* Neural background mesh */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-purple-600/[0.15] blur-[180px]" />
-                <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-blue-600/[0.1] blur-[150px]" />
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-amber-600/[0.12] blur-[180px]" />
+                <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-rose-600/[0.08] blur-[150px]" />
             </div>
 
             {/* Science Beaker Laboratory Visual */}
             <div className="relative mb-16 z-10 w-48 h-48 flex items-center justify-center">
                 {/* Concentric Decorative Rings */}
-                <div className="absolute inset-0 border border-white/[0.05] rounded-full" />
-                <div className="absolute inset-4 border border-white/[0.10] rounded-full animate-[spin_20s_linear_infinite]" />
-                <div className="absolute inset-8 border border-white/[0.05] rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+                <div className="absolute inset-0 border border-black/[0.04] rounded-full" />
+                <div className="absolute inset-4 border border-black/[0.08] rounded-full animate-[spin_20s_linear_infinite]" />
+                <div className="absolute inset-8 border border-black/[0.04] rounded-full animate-[spin_15s_linear_infinite_reverse]" />
 
                 {/* Glowing Ping */}
-                <div className="w-32 h-32 rounded-full bg-purple-500/5 animate-pulse absolute" />
+                <div className="w-32 h-32 rounded-full bg-amber-500/10 animate-pulse absolute" />
 
                 {/* The Beaker SVG */}
                 <div className="relative w-24 h-24">
-                    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_20px_rgba(245,158,11,0.2)]">
                         <defs>
                             <linearGradient id="beakerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor="#a855f7" />
-                                <stop offset="100%" stopColor="#3b82f6" />
+                                <stop offset="0%" stopColor="#f59e0b" />
+                                <stop offset="100%" stopColor="#f43f5e" />
                             </linearGradient>
 
                             <clipPath id="beakerClip">
@@ -66,9 +66,9 @@ export default function LoadingScreen({ message = "Finding matching personas..."
                         <path
                             d="M35 15 H65 V25 H62 V50 L85 85 V92 H15 V85 L38 50 V25 H35 V15 Z"
                             fill="none"
-                            stroke="#FFFFFF"
+                            stroke="#1a1a1a"
                             strokeWidth="1.5"
-                            strokeOpacity="0.4"
+                            strokeOpacity="0.8"
                             strokeLinejoin="round"
                         />
 
@@ -101,19 +101,19 @@ export default function LoadingScreen({ message = "Finding matching personas..."
                         </g>
 
                         {/* Beaker Shine Effect */}
-                        <path d="M42 30 Q45 28 50 30" fill="none" stroke="white" strokeWidth="0.5" strokeOpacity="0.3" />
+                        <path d="M42 30 Q45 28 50 30" fill="none" stroke="white" strokeWidth="0.5" strokeOpacity="0.6" />
                     </svg>
                 </div>
             </div>
 
             {/* Main Progress Message */}
             <div className="text-center z-10 max-w-md px-6">
-                <h2 className="text-3xl font-normal text-white mb-4 tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <h2 className="text-3xl font-normal text-[#1a1a1a] mb-4 tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000">
                     {message}
                 </h2>
 
                 <div className="h-6 overflow-hidden relative mb-12">
-                    <p key={stepIndex} className="text-sm text-purple-400 font-bold tracking-[0.2em] uppercase transition-all duration-500 transform translate-y-0 opacity-100">
+                    <p key={stepIndex} className="text-sm text-amber-600 font-bold tracking-[0.2em] uppercase transition-all duration-500 transform translate-y-0 opacity-100">
                         {stepsToUse[stepIndex]}
                     </p>
                 </div>
@@ -122,11 +122,11 @@ export default function LoadingScreen({ message = "Finding matching personas..."
 
 
             {/* Diagnostic Data Stream */}
-            <div className="flex gap-1.5 z-10 opacity-40">
+            <div className="flex gap-1.5 z-10 opacity-60">
                 {[...Array(5)].map((_, i) => (
                     <div
                         key={i}
-                        className="w-1 h-4 bg-purple-500/70 rounded-full animate-bounce"
+                        className="w-1 h-4 bg-amber-500/70 rounded-full animate-bounce"
                         style={{ animationDelay: `${i * 0.1}s`, animationDuration: '0.8s' }}
                     />
                 ))}

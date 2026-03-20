@@ -37,23 +37,23 @@ function PremiumSelect({ label, value, options, onChange, placeholder = "Select 
 
     return (
         <div className="relative" ref={dropdownRef}>
-            <label className="block text-[11px] text-white/70 mb-2 uppercase tracking-[0.15em] font-bold ml-1">
-                {label} <span className="text-purple-500/80">*</span>
+            <label className="block text-[11px] text-black/70 mb-2 uppercase tracking-[0.15em] font-bold ml-1">
+                {label} <span className="text-amber-500/80">*</span>
             </label>
             <div
                 onClick={() => setIsOpen(!isOpen)}
                 className={`
-                    group w-full bg-white/[0.07] border border-white/20 rounded-xl px-4 py-3.5 
+                    group w-full bg-white/80 border border-black/10 rounded-xl px-4 py-3.5 
                     text-sm transition-all duration-300 ease-out cursor-pointer flex justify-between items-center
-                    hover:bg-white/[0.10] hover:border-white/30
-                    ${isOpen ? "border-purple-500/40 bg-white/[0.12] ring-1 ring-purple-500/10" : ""}
+                    hover:bg-white/90 hover:border-black/20
+                    ${isOpen ? "border-amber-500/40 bg-white ring-1 ring-amber-500/10" : ""}
                 `}
             >
-                <span className={value ? "text-white/90" : "text-white/35"}>
+                <span className={value ? "text-[#1a1a1a]" : "text-black/40"}>
                     {value || placeholder}
                 </span>
                 <svg
-                    className={`w-4 h-4 text-white/60 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 text-black/60 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -63,7 +63,7 @@ function PremiumSelect({ label, value, options, onChange, placeholder = "Select 
             </div>
 
             {isOpen && (
-                <div className="absolute z-[100] w-full mt-2 py-2 bg-[#0A0A0A] border border-white/25 rounded-xl shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in duration-200 origin-top max-h-60 overflow-y-auto">
+                <div className="absolute z-[100] w-full mt-2 py-2 bg-[#FDFBF7] border border-black/15 rounded-xl shadow-2xl backdrop-blur-md xl animate-in fade-in zoom-in duration-200 origin-top max-h-60 overflow-y-auto">
                     {options.map((opt) => (
                         <div
                             key={opt}
@@ -73,7 +73,7 @@ function PremiumSelect({ label, value, options, onChange, placeholder = "Select 
                             }}
                             className={`
                                 px-4 py-2.5 text-sm cursor-pointer transition-colors
-                                ${value === opt ? "text-purple-400 bg-white/[0.08]" : "text-white/70 hover:text-white hover:bg-white/[0.05]"}
+                                ${value === opt ? "text-amber-600 bg-white/90" : "text-black/70 hover:text-[#1a1a1a] hover:bg-[#FAF9F6]/[0.05]"}
                             `}
                         >
                             {opt}
@@ -261,46 +261,46 @@ export default function ValidatePage() {
 
     return (
         <DashboardLayout currentStep={1}>
-            <div className="relative min-h-screen flex flex-col items-center justify-start bg-black overflow-x-hidden selection:bg-white/20">
+            <div className="relative min-h-screen flex flex-col items-center justify-start bg-[#FAF9F6] overflow-x-hidden selection:bg-amber-500/20">
                 {/* Neural shader background */}
                 <ShaderPageBackground overlayOpacity={0.75} blur={true} />
 
                 <div className="relative z-10 w-full max-w-5xl mx-auto px-6 lg:px-12 pt-6 pb-24">
                     {/* Header */}
                     <div className="text-center mb-12 fade-in-blur">
-                        <h1 className="text-4xl md:text-5xl lg:text-7xl font-light tracking-tight mb-6 text-white">
+                        <h1 className="text-4xl md:text-5xl lg:text-7xl font-light tracking-tight mb-6 text-[#1a1a1a]">
                             Validate Your <span className="text-gradient font-normal">Startup Idea</span>
                         </h1>
-                        <p className="text-white/60 font-normal text-base max-w-xl mx-auto leading-relaxed">
-                            Input your vision. Our engine will synthesize the <span className="text-white/90 font-bold">50 best-fit personas</span> from 1M+ Indian profiles for testing.
+                        <p className="text-black/60 font-normal text-base max-w-xl mx-auto leading-relaxed">
+                            Input your vision. Our engine will synthesize the <span className="text-[#1a1a1a] font-bold">50 best-fit personas</span> from 1M+ Indian profiles for testing.
                         </p>
                     </div>
 
                     {/* Form Card (Step 1) */}
                     {step === 1 && (
-                    <div className="bg-white/[0.06] border border-white/18 rounded-[2.5rem] p-8 md:p-12 backdrop-blur-md fade-in-up shadow-2xl overflow-hidden relative group">
+                    <div className="bg-white/60 border border-black/10 rounded-[2.5rem] p-8 md:p-12 backdrop-blur-md md fade-in-up shadow-2xl overflow-hidden relative group">
                         {/* Subtle inner glow */}
-                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-purple-500/20 transition-all duration-700" />
-                        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-blue-500/20 transition-all duration-700" />
+                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-amber-500/20 transition-all duration-700" />
+                        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-rose-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-rose-500/20 transition-all duration-700" />
 
-                        <h2 className="text-xs uppercase tracking-[0.3em] text-white/55 mb-10 font-bold text-center">Idea Definition Form</h2>
+                        <h2 className="text-xs uppercase tracking-[0.3em] text-black/55 mb-10 font-bold text-center">Idea Definition Form</h2>
 
                         {/* Main idea textarea */}
                         <div className="mb-10">
-                            <label className="block text-[11px] text-white/65 mb-3 uppercase tracking-[0.15em] font-bold ml-1">
-                                Idea Definition <span className="text-purple-500/80">*</span>
+                            <label className="block text-[11px] text-black/65 mb-3 uppercase tracking-[0.15em] font-bold ml-1">
+                                Idea Definition <span className="text-amber-500/80">*</span>
                             </label>
                             <textarea
                                 value={form.idea}
                                 onChange={(e) => setForm({ ...form, idea: e.target.value })}
                                 placeholder="e.g. A hyperlocal delivery platform for fresh farm produce connecting rural farmers directly with urban households..."
                                 rows={5}
-                                className="w-full bg-white/[0.07] border border-white/20 rounded-2xl px-6 py-5 text-white/95 placeholder:text-white/35 focus:outline-none focus:border-purple-500/30 focus:bg-white/[0.10] resize-none transition-all duration-500 ease-out text-base leading-relaxed font-normal shadow-inner"
+                                className="w-full bg-white/80 border border-black/10 rounded-2xl px-6 py-5 text-[#1a1a1a] placeholder:text-black/40 focus:outline-none focus:border-amber-500/30 focus:bg-white/90 resize-none transition-all duration-500 ease-out text-base leading-relaxed font-normal shadow-inner"
                             />
                             <div className="flex justify-between items-center mt-3 px-1">
                                 <p className="text-[11px] font-normal">
                                     {form.idea.length === 0 ? (
-                                        <span className="text-white/30">Describe your idea and its core value proposition</span>
+                                        <span className="text-black/30">Describe your idea and its core value proposition</span>
                                     ) : form.idea.length < 20 ? (
                                         <span className="text-amber-400/80">Minimum 20 characters required</span>
                                     ) : (
@@ -312,70 +312,70 @@ export default function ValidatePage() {
                                         </span>
                                     )}
                                 </p>
-                                <p className="text-[11px] text-white/35 tabular-nums font-normal">{form.idea.length} characters</p>
+                                <p className="text-[11px] text-black/40 tabular-nums font-normal">{form.idea.length} characters</p>
                             </div>
                         </div>
 
                         {/* Secondary fields grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8 mb-12">
                             <div>
-                                <label className="block text-[11px] text-white/70 mb-2 uppercase tracking-[0.15em] font-bold ml-1">
-                                    Industry <span className="text-purple-500/80">*</span>
+                                <label className="block text-[11px] text-black/70 mb-2 uppercase tracking-[0.15em] font-bold ml-1">
+                                    Industry <span className="text-amber-500/80">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={form.industry}
                                     onChange={(e) => setForm({ ...form, industry: e.target.value })}
                                     placeholder="e.g. AgriTech, EdTech, FinTech"
-                                    className="w-full bg-white/[0.07] border border-white/20 rounded-xl px-4 py-3.5 text-white/95 text-sm placeholder:text-white/35 focus:outline-none focus:border-purple-500/30 transition-all duration-300 font-normal"
+                                    className="w-full bg-white/80 border border-black/10 rounded-xl px-4 py-3.5 text-[#1a1a1a] text-sm placeholder:text-black/40 focus:outline-none focus:border-amber-500/30 transition-all duration-300 font-normal"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-[11px] text-white/70 mb-2 uppercase tracking-[0.15em] font-bold ml-1">
-                                    Business Model <span className="text-purple-500/80">*</span>
+                                <label className="block text-[11px] text-black/70 mb-2 uppercase tracking-[0.15em] font-bold ml-1">
+                                    Business Model <span className="text-amber-500/80">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={form.businessModel}
                                     onChange={(e) => setForm({ ...form, businessModel: e.target.value })}
                                     placeholder="e.g. Marketplace, SaaS, D2C"
-                                    className="w-full bg-white/[0.07] border border-white/20 rounded-xl px-4 py-3.5 text-white/95 text-sm placeholder:text-white/35 focus:outline-none focus:border-purple-500/30 transition-all duration-300 font-normal"
+                                    className="w-full bg-white/80 border border-black/10 rounded-xl px-4 py-3.5 text-[#1a1a1a] text-sm placeholder:text-black/40 focus:outline-none focus:border-amber-500/30 transition-all duration-300 font-normal"
                                 />
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-[11px] text-white/70 mb-2 uppercase tracking-[0.15em] font-bold ml-1">
-                                    Target Audience (Detailed) <span className="text-purple-500/80">*</span>
+                                <label className="block text-[11px] text-black/70 mb-2 uppercase tracking-[0.15em] font-bold ml-1">
+                                    Target Audience (Detailed) <span className="text-amber-500/80">*</span>
                                 </label>
                                 <textarea
                                     value={form.targetAudience}
                                     onChange={(e) => setForm({ ...form, targetAudience: e.target.value })}
                                     placeholder="e.g. Urban middle-class working women aged 25-45 who want fresh organic produce delivered at home but can't visit mandis..."
                                     rows={3}
-                                    className="w-full bg-white/[0.07] border border-white/20 rounded-xl px-4 py-3.5 text-white/95 text-sm placeholder:text-white/35 focus:outline-none focus:border-purple-500/30 resize-none transition-all duration-300 font-normal"
+                                    className="w-full bg-white/80 border border-black/10 rounded-xl px-4 py-3.5 text-[#1a1a1a] text-sm placeholder:text-black/40 focus:outline-none focus:border-amber-500/30 resize-none transition-all duration-300 font-normal"
                                 />
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="block text-[11px] text-white/70 mb-3 uppercase tracking-[0.15em] font-bold ml-1">
+                                <label className="block text-[11px] text-black/70 mb-3 uppercase tracking-[0.15em] font-bold ml-1">
                                     What to Test
                                 </label>
-                                <div className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-6 py-4 flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-                                    <span className="text-white/90 text-sm font-medium tracking-wide">Idea Validation</span>
+                                <div className="w-full bg-[#FAF9F6]/[0.05] border border-black/10 rounded-xl px-6 py-4 flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                                    <span className="text-[#1a1a1a] text-sm font-medium tracking-wide">Idea Validation</span>
                                 </div>
                             </div>
 
                             {/* Simulation Duration Slider */}
                             <div className="md:col-span-2 mt-4">
-                                <label className="block text-[11px] text-white/70 mb-6 uppercase tracking-[0.15em] font-bold ml-1">
+                                <label className="block text-[11px] text-black/70 mb-6 uppercase tracking-[0.15em] font-bold ml-1">
                                     Simulation Horizon (Weeks)
                                 </label>
                                 <div className="flex items-center gap-6 px-2">
                                     <div className="relative flex-1 h-1.5 bg-white/10 rounded-full">
                                         <div 
-                                            className="absolute h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.4)]"
+                                            className="absolute h-full bg-gradient-to-r from-amber-500 to-rose-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.4)]"
                                             style={{ width: `${(form.duration / 52) * 100}%` }}
                                         />
                                         <input 
@@ -387,15 +387,15 @@ export default function ValidatePage() {
                                             className="absolute w-full h-full opacity-0 cursor-pointer z-10"
                                         />
                                         <div 
-                                            className="absolute w-4 h-4 bg-white rounded-full border-2 border-purple-500 shadow-[0_0_8px_white] top-1/2 -translate-y-1/2 -ml-2 pointer-events-none transition-transform active:scale-125"
+                                            className="absolute w-4 h-4 bg-white rounded-full border-2 border-amber-500 shadow-[0_0_8px_white] top-1/2 -translate-y-1/2 -ml-2 pointer-events-none transition-transform active:scale-125"
                                             style={{ left: `${(form.duration / 52) * 100}%` }}
                                         />
                                     </div>
                                     <div className="shrink-0 min-w-[48px] text-right">
-                                        <span className="text-xl font-black italic text-purple-400 tabular-nums">
+                                        <span className="text-xl font-black italic text-amber-600 tabular-nums">
                                             {form.duration}
                                         </span>
-                                        <span className="text-[11px] uppercase tracking-widest text-white/40 ml-1 font-bold">W</span>
+                                        <span className="text-[11px] uppercase tracking-widest text-black/40 ml-1 font-bold">W</span>
                                     </div>
                                 </div>
                             </div>
@@ -407,12 +407,12 @@ export default function ValidatePage() {
                             onClick={handleBuildGraph}
                             disabled={!canSubmit}
                             showArrow={canSubmit}
-                            className="w-full relative group shadow-xl hover:shadow-purple-500/10 uppercase tracking-widest"
+                            className="w-full relative group shadow-xl hover:shadow-amber-500/10 uppercase tracking-widest"
                         >
                             {backendStatus === "ready" ? "Build Knowledge Graph" : "Waiting for Engine..."}
                         </Button>
 
-                        <p className="text-center text-[12px] text-white/40 mt-6 font-normal tracking-wide">
+                        <p className="text-center text-[12px] text-black/40 mt-6 font-normal tracking-wide">
                             Deep extraction of Indian market ontology before querying 1M+ personas.
                         </p>
                     </div>
@@ -421,4 +421,4 @@ export default function ValidatePage() {
             </div>
         </DashboardLayout>
     );
-}
+}

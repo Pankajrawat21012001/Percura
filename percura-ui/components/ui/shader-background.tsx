@@ -55,11 +55,11 @@ function ShaderPlane() {
 
 export default function ShaderPageBackground({ overlayOpacity = 0.65 }: any) {
   return (
-    <div className="fixed inset-0 overflow-hidden bg-black" style={{ zIndex: 0 }}>
+    <div className="fixed inset-0 overflow-hidden bg-[#FDFBF7]" style={{ zIndex: 0 }}>
       <Canvas camera={{ position: [0, 0, 1] }} gl={{ antialias: false, alpha: false }} dpr={[1, 1.2]}>
         <ShaderPlane />
       </Canvas>
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: `rgba(0, 0, 0, ${overlayOpacity})` }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: `rgba(253, 251, 247, ${overlayOpacity})` }} />
     </div>
   );
 }

@@ -15,11 +15,11 @@ export default function Button({
 
     const variants = {
         primary:
-            "bg-white text-black hover:bg-white/90 shadow-lg shadow-white/5",
+            "bg-[#1a1a1a] text-[#FAF9F6] hover:bg-black shadow-lg shadow-black/5",
         secondary:
-            "bg-white/8 backdrop-blur-sm text-white/85 border border-white/15 hover:bg-white/15 hover:text-white",
+            "bg-white/50 backdrop-blur-sm text-[#1a1a1a] border border-black/10 hover:bg-white hover:border-black/20",
         ghost:
-            "bg-transparent text-white/65 hover:text-white/90 hover:bg-white/[0.08]",
+            "bg-transparent text-black/60 hover:text-black hover:bg-black/5",
     };
 
     const sizes = {
