@@ -50,24 +50,18 @@ export default function SegmentPage() {
 
     if (!validation) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <div className="text-center max-w-md px-6">
-                    <div className="w-16 h-16 rounded-2xl bg-[#FAFAFA] border border-black/[0.08] flex items-center justify-center text-2xl mx-auto mb-6">
-                        <svg className="w-8 h-8 text-black/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            <DashboardLayout currentStep={3}>
+                <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center text-[#1a1a1a]">
+                    <div className="w-16 h-16 rounded-[2rem] bg-[#FAFAFA] border border-black/[0.06] flex items-center justify-center mb-6 mx-auto">
+                        <svg className="w-6 h-6 text-black/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
-                    <h2 className="text-xl text-[#1a1a1a] mb-2" style={{ fontFamily: "var(--font-serif)" }}>No Results Found</h2>
-                    <p className="text-sm text-black/40 mb-6 leading-relaxed">You haven't run a test yet, or your session has expired.</p>
-                    <Button
-                        onClick={() => router.push("/validate")}
-                        variant="secondary"
-                        size="md"
-                    >
-                        Start Testing
-                    </Button>
+                    <h2 className="text-xl mb-2" style={{ fontFamily: "var(--font-serif)" }}>No Simulation Found</h2>
+                    <p className="text-sm text-black/40 mb-6 leading-relaxed">Please go back to the validation step to run a new test.</p>
+                    <Button onClick={() => router.push("/validate")} variant="secondary" size="md">Start Testing</Button>
                 </div>
-            </div>
+            </DashboardLayout>
         );
     }
 
@@ -328,7 +322,11 @@ export default function SegmentPage() {
                                 {customSegment.personas.length > 0 ? (
                                     customSegment.personas.slice(0, 3).map((p, idx) => (
                                         <div key={idx} className="p-3 rounded-xl bg-[#FAFAFA] border border-black/[0.06] flex gap-3 text-[11px] items-center">
-                                             <div className="w-6 h-6 shrink-0 rounded-lg bg-black/[0.04] flex items-center justify-center text-black/30">👤</div>
+                                             <div className="w-6 h-6 shrink-0 rounded-lg bg-black/[0.04] flex items-center justify-center text-black/30">
+                                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                 </svg>
+                                             </div>
                                              <div className="flex-1 truncate">
                                                  <p className="text-black/80 font-semibold truncate">{p.metadata.name || p.metadata.occupation}</p>
                                                  <p className="text-black/30 truncate">{p.metadata.age}Y · {p.metadata.state}</p>

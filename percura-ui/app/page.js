@@ -4,7 +4,10 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
+import { Suspense } from "react";
 import * as THREE from "three";
+
+useGLTF.preload("/models/head.glb");
 
 /** ─── 3D HERO COMPONENT ─── **/
 function HeadHeroObject() {
@@ -13,7 +16,12 @@ function HeadHeroObject() {
 
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.2;
+      // Mouse interaction: smoothly rotate toward cursor
+      const targetRotationY = (state.mouse.x * 0.8) + Math.sin(state.clock.elapsedTime * 0.1) * 0.05;
+      const targetRotationX = -state.mouse.y * 0.4;
+      
+      meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, targetRotationY, 0.05);
+      meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotationX, 0.05);
     }
   });
 
@@ -49,7 +57,7 @@ function HeadHeroObject() {
   if (!geometry) return null;
 
   return (
-    <mesh ref={meshRef} position={[0, -0.3, 0]} geometry={geometry} scale={0.4}>
+    <mesh ref={meshRef} position={[0, -0.6, 0]} geometry={geometry} scale={0.52}>
       <meshPhysicalMaterial 
         color="#080808" 
         roughness={0.3} 
@@ -68,40 +76,37 @@ function HeadHeroObject() {
 const NavBar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[rgba(0,0,0,0.06)]">
-      <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="3" fill="#E85D3A" />
+      <div className="max-w-[1400px] mx-auto px-6 h-16 md:h-20 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="3.5" fill="#E85D3A" />
             {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
               const rad = (angle * Math.PI) / 180;
               return (
                 <line
                   key={i}
-                  x1={16 + Math.cos(rad) * 5}
-                  y1={16 + Math.sin(rad) * 5}
-                  x2={16 + Math.cos(rad) * 11}
-                  y2={16 + Math.sin(rad) * 11}
+                  x1={16 + Math.cos(rad) * 6}
+                  y1={16 + Math.sin(rad) * 6}
+                  x2={16 + Math.cos(rad) * 12}
+                  y2={16 + Math.sin(rad) * 12}
                   stroke="#E85D3A"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   strokeLinecap="round"
                 />
               );
             })}
           </svg>
-          <span className="font-semibold text-lg tracking-tight">Percura</span>
-        </div>
+          <span className="font-bold text-xl tracking-tight text-[#1A1A1A]">Percura</span>
+        </Link>
         
         <div className="hidden md:flex items-center gap-8 text-[13px] font-semibold text-black/60">
-          <a href="#solutions" className="hover:text-black transition-colors">Solutions</a>
-          <a href="#features" className="hover:text-black transition-colors">Features</a>
-          <a href="#trust" className="hover:text-black transition-colors">Trust</a>
-          <a href="#customers" className="hover:text-black transition-colors">Customers</a>
-          <a href="#pricing" className="hover:text-black transition-colors">Pricing</a>
+          <a href="#solutions" className="hover:text-black transition-colors">Simulation</a>
+          <a href="#how" className="hover:text-black transition-colors">How it works</a>
         </div>
 
         <div>
           <Link href="/validate" className="bg-[#1A1A1A] text-white px-6 py-2.5 rounded-full text-[13px] font-bold tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-transform inline-block">
-            BOOK A DEMO
+            START VALIDATING
           </Link>
         </div>
       </div>
@@ -136,17 +141,17 @@ export default function LandingPage() {
             <div className="flex flex-col items-start w-full lg:col-span-1 justify-self-start relative z-10 pt-10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.06)] bg-white mb-6 shadow-sm">
                 <span className="text-[9px] uppercase font-black text-[#E85D3A] bg-[#E85D3A]/10 px-2 py-0.5 rounded-full tracking-widest">
-                  DUO
+                  BETA
                 </span>
-                <span className="text-[11px] font-semibold text-black/60 tracking-wider">Your Future AI </span>
+                <span className="text-[11px] font-semibold text-black/60 tracking-wider">Validation Engine </span>
                 <svg className="w-3 h-3 text-black/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </div>
               <h1 className="text-[clamp(3.2rem,6vw,5rem)] leading-[0.95] tracking-tighter font-[900]">
-                Automate complex<br />
-                operations
+                Validate startup<br />
+                ideas properly
               </h1>
               <p className="mt-6 text-black/50 text-[15px] max-w-[360px] leading-relaxed font-medium">
-                Casely pairs powerful AI with governance, security, and workflow integrations so your team can automate support without losing your voice.
+                Percura pairs powerful AI with rich demographic data so founders can validate product/market fit securely without losing time or resources.
               </p>
             </div>
 
@@ -160,24 +165,26 @@ export default function LandingPage() {
                     <directionalLight position={[10, 10, 10]} intensity={1.5} color="#FFFFFF" />
                     <pointLight position={[-10, 0, -10]} intensity={1.5} color="#E85D3A" />
                     <pointLight position={[0, -10, 10]} intensity={0.5} color="#FFF" />
-                    <HeadHeroObject />
+                    <Suspense fallback={null}>
+                      <HeadHeroObject />
+                    </Suspense>
                   </Canvas>
                 </div>
               )}
             </div>
 
             {/* Right Column Text */}
-            <div className="flex flex-col items-start lg:items-end w-full lg:col-span-1 justify-self-end text-left lg:text-right relative z-10 lg:pt-32">
+            <div className="flex flex-col items-start lg:items-end w-full lg:col-span-1 justify-self-end text-left lg:text-right relative z-10 lg:pt-10">
               <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] leading-[0.95] tracking-tighter font-[900] mb-8">
                 with trusted<br />
                 AI Personas.
               </h2>
               <div className="flex flex-wrap gap-4 justify-start lg:justify-end">
                 <Link href="/validate" className="bg-[#1A1A1A] text-white px-8 py-3.5 rounded-full text-sm font-bold tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-transform">
-                  BOOK A DEMO
+                  START VALIDATING
                 </Link>
                 <a href="#solutions" className="bg-white border text-black px-8 py-3.5 rounded-full text-sm font-bold tracking-wide hover:bg-black/[0.02] transition-colors border-[rgba(0,0,0,0.15)] flex items-center">
-                  LEARN MORE
+                  TEST YOUR IDEA
                 </a>
               </div>
             </div>
@@ -185,24 +192,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ─── 2. TRUSTED BY BAR ─── */}
-        <section id="trust" className="w-full border-y border-[rgba(0,0,0,0.06)] bg-[#FAFAFA]">
-          <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row items-stretch divide-y md:divide-y-0 md:divide-x divide-[rgba(0,0,0,0.06)]">
-            <div className="px-8 py-8 md:w-1/4 shrink-0 flex items-center justify-center md:justify-start">
-              <span className="text-sm font-bold text-black/80 tracking-tight">
-                Trusted by <span className="text-[#E85D3A]">Validation</span> Teams
-              </span>
-            </div>
-            {/* Logos */}
-            <div className="flex-1 flex flex-wrap justify-between items-stretch">
-              {["Sequoia", "Databricks", "Intercom", "DocuSign", "Google"].map((company, i) => (
-                <div key={i} className={`flex-1 min-w-[120px] px-8 py-8 flex items-center justify-center opacity-40 grayscale font-black tracking-tighter text-lg border-b md:border-b-0 ${i !== 4 ? 'md:border-r border-[rgba(0,0,0,0.06)]' : ''}`}>
-                  {company}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+
 
         {/* ─── 3. SOLUTIONS SECTION ─── */}
         <section id="solutions" className="w-full max-w-[1400px] mx-auto pt-32 pb-0 relative">
@@ -277,7 +267,7 @@ export default function LandingPage() {
         </section>
 
         {/* ─── 4. FEATURES VISUAL SECTION ─── */}
-        <section className="w-full bg-[#FAFAFA] border-y border-[rgba(0,0,0,0.06)] py-20 lg:py-32 relative">
+        <section id="how" className="w-full bg-[#FAFAFA] border-y border-[rgba(0,0,0,0.06)] py-20 lg:py-32 relative">
           <div className="max-w-[1400px] mx-auto px-6 grid xl:grid-cols-2 gap-16 xl:gap-24 items-start">
             
             {/* Visual Diagram Left Side (Card) */}

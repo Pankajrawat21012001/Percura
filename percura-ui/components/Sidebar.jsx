@@ -222,7 +222,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                 `}
             >
                 {/* Brand Header */}
-                <div className={`p-5 flex items-center justify-between border-b border-black/[0.06] ${isExpanded ? 'px-6' : 'px-4 justify-center'}`}>
+                <div className={`h-20 flex items-center border-b border-black/[0.06] ${isExpanded ? 'px-6 justify-between' : 'px-0 justify-center'}`}>
                     <Link href="/validate" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 rounded-xl bg-white border border-black/[0.08] flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 group-active:scale-95 transition-all duration-300 shrink-0 overflow-hidden">
                             <Image
@@ -233,7 +233,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                 className="object-contain"
                             />
                         </div>
-                        <span className={`text-lg font-bold tracking-tight text-[#1a1a1a] transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`} style={{ fontFamily: "var(--font-serif)" }}>
+                        <span className={`text-lg font-bold tracking-tight text-[#1a1a1a] transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`} style={{ fontFamily: "var(--font-serif)" }}>
                             Percura
                         </span>
                     </Link>
@@ -243,23 +243,23 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                 </div>
 
                 {/* New Simulation Button */}
-                <div className={`px-3 pt-4 pb-1`}>
+                <div className={`px-3 py-4 flex justify-center`}>
                     <button
                         onClick={handleNewSimulation}
                         title={!isExpanded ? "New Simulation" : undefined}
                         className={`
-                            w-full flex items-center gap-3 transition-all duration-300 group
+                            flex items-center gap-3 transition-all duration-300 group
                             bg-[#1A1A1A] hover:bg-[#333] text-white
                             rounded-xl shadow-sm hover:shadow-md
-                            ${isExpanded ? 'p-3 justify-start' : 'p-3 justify-center'}
+                            ${isExpanded ? 'w-full p-3 justify-start' : 'w-10 h-10 p-0 justify-center'}
                         `}
                     >
-                        <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/15 shrink-0 group-hover:scale-110 transition-transform">
+                        <div className={`flex items-center justify-center rounded-lg bg-white/15 shrink-0 group-hover:scale-110 transition-transform ${isExpanded ? 'w-7 h-7' : 'w-10 h-10'}`}>
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                         </div>
-                        <span className={`text-[13px] font-semibold whitespace-nowrap transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden lg:hidden'}`}>
+                        <span className={`text-[13px] font-semibold whitespace-nowrap transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
                             New Simulation
                         </span>
                     </button>
@@ -284,7 +284,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                     title={!isExpanded ? step.label : undefined}
                                     className={`
                                         w-full flex items-center gap-3 transition-all duration-300 group relative
-                                        ${isExpanded ? 'p-3 rounded-xl' : 'p-3 rounded-xl justify-center'}
+                                        ${isExpanded ? 'p-3 rounded-xl' : 'px-0 py-2 rounded-xl justify-center'}
                                         ${isActive 
                                             ? "bg-[#1A1A1A] text-white shadow-sm" 
                                             : isDone 
@@ -312,7 +312,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                     </div>
 
                                     {/* Label & Description */}
-                                    <div className={`flex-1 text-left min-w-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
+                                    <div className={`flex-1 text-left min-w-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
                                         <p className={`text-[13px] font-semibold leading-tight truncate ${isActive ? 'text-white' : isDone ? 'text-[#1a1a1a]' : 'text-inherit'}`}>
                                             {step.label}
                                         </p>
@@ -322,7 +322,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                     </div>
 
                                     {/* Step number indicator */}
-                                    <span className={`text-[10px] font-mono shrink-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"} ${isActive ? 'text-white/40' : 'text-black/15'}`}>
+                                    <span className={`text-[10px] font-mono shrink-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"} ${isActive ? 'text-white/40' : 'text-black/15'}`}>
                                         {String(step.number).padStart(2, '0')}
                                     </span>
                                 </button>
@@ -338,16 +338,15 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                         <button
                             onClick={() => {
                                 if (currentSimulationId) {
+                                    sessionStorage.setItem('percura_open_interrogation', '1');
                                     router.push("/simulation-results");
-                                    // Trigger interrogation panel open
-                                    setTimeout(() => window.dispatchEvent(new Event('open-interrogation')), 300);
                                 }
                             }}
                             disabled={!currentSimulationId}
                             title={!isExpanded ? "Interrogation Lab" : undefined}
                             className={`
                                 w-full flex items-center gap-3 transition-all duration-300 group
-                                ${isExpanded ? 'p-3 rounded-xl' : 'p-3 rounded-xl justify-center'}
+                                ${isExpanded ? 'p-3 rounded-xl' : 'px-0 py-2 rounded-xl justify-center'}
                                 ${!currentSimulationId ? "opacity-25 cursor-not-allowed" : "text-black/50 hover:text-[#1a1a1a] hover:bg-black/[0.04]"}
                             `}
                         >
@@ -356,7 +355,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                                 </svg>
                             </div>
-                            <span className={`text-[13px] font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
+                            <span className={`text-[13px] font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
                                 Interrogation Lab
                             </span>
                         </button>
@@ -372,7 +371,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                             title={!isExpanded ? "Past Simulations" : undefined}
                             className={`
                                 w-full flex items-center gap-3 transition-all duration-300
-                                ${isExpanded ? 'p-3 rounded-xl' : 'p-3 rounded-xl justify-center'}
+                                ${isExpanded ? 'p-3 rounded-xl' : 'px-0 py-2 rounded-xl justify-center'}
                                 text-black/40 hover:text-black/70 hover:bg-black/[0.03]
                             `}
                         >
@@ -381,7 +380,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <span className={`flex-1 text-left text-[13px] font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden lg:hidden"}`}>
+                            <span className={`flex-1 text-left text-[13px] font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
                                 Past Simulations
                             </span>
                             {isExpanded && history.length > 0 && (
@@ -458,8 +457,8 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                 </div>
 
                 {/* User Profile Footer */}
-                <div className={`p-3 mt-auto border-t border-black/[0.06] ${isExpanded ? 'px-4' : ''}`}>
-                    <div className={`flex items-center transition-all duration-300 rounded-xl p-2 hover:bg-black/[0.03] ${isExpanded ? 'gap-3' : 'justify-center'}`}>
+                <div className={`p-3 mt-auto border-t border-black/[0.06] ${isExpanded ? 'px-4' : 'px-2'}`}>
+                    <div className={`flex items-center transition-all duration-300 rounded-xl p-2 hover:bg-black/[0.03] ${isExpanded ? 'gap-3 justify-start' : 'justify-center'}`}>
                         <div className="relative shrink-0">
                             {user?.photoURL ? (
                                 <img src={user.photoURL} alt={user.displayName} className="w-9 h-9 rounded-lg border border-black/[0.08] object-cover" />

@@ -3,9 +3,8 @@
 import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 
-export default function DashboardLayout({ children, rightPanel, currentStep }) {
+export default function DashboardLayout({ children, currentStep }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
 
     return (
         <div className="flex min-h-screen bg-white text-[#1a1a1a] font-sans selection:bg-[#E85D3A]/15">
@@ -32,20 +31,6 @@ export default function DashboardLayout({ children, rightPanel, currentStep }) {
                 </div>
 
             </main>
-
-            {/* Right Panel (Chat) */}
-            {isRightPanelOpen && (
-                <div
-                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55]"
-                    onClick={() => setIsRightPanelOpen(false)}
-                />
-            )}
-            <aside className={`
-                fixed top-0 right-0 h-full w-full sm:w-[450px] bg-white border-l border-black/[0.06] z-[60] transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
-                ${isRightPanelOpen ? "translate-x-0" : "translate-x-full"}
-            `}>
-                {rightPanel && React.cloneElement(rightPanel, { onClose: () => setIsRightPanelOpen(false) })}
-            </aside>
         </div>
     );
 }

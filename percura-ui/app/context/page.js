@@ -133,7 +133,7 @@ export default function OntologyContextPage() {
         <DashboardLayout currentStep={2}>
             <div className="relative min-h-screen text-[#1a1a1a] selection:bg-[#E85D3A]/15 overflow-x-hidden pt-6 pb-48">
                 {/* Background */}
-                <div className="absolute inset-0 bg-grid opacity-15 pointer-events-none" />
+                <div className="absolute inset-x-0 top-0 h-full opacity-[0.03] pointer-events-none" style={{ backgroundImage: "radial-gradient(circle, #000 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
                 <div className="absolute top-0 left-0 w-1/2 h-96 bg-gradient-to-br from-orange-50/30 to-transparent pointer-events-none" />
                 
                 <div className="relative z-10 max-w-6xl mx-auto px-6">
@@ -147,7 +147,7 @@ export default function OntologyContextPage() {
                             Market Context Established
                         </h1>
                         <p className="text-black/40 max-w-2xl text-lg leading-relaxed">
-                            Before scanning our neural network for your target personas, we have extracted the foundational market constraints, competitors, and macro trends your startup will face in India.
+                            Before scanning our 1M+ persona database for your target audience, we have extracted the foundational market constraints, competitors, and macro trends your startup will face in India.
                         </p>
                     </div>
 

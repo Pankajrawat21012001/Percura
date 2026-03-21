@@ -262,7 +262,7 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
     }
 
     const renderTabs = () => (
-        <div className="flex items-center gap-1 p-1 bg-black/[0.02] border-b border-white/[0.08]">
+        <div className="flex items-center gap-1 p-1 bg-black/[0.02] border-b border-black/[0.06]">
             {['force', 'entities', 'relations'].map((tab) => (
                 <button
                     key={tab}
