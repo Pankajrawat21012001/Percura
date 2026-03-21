@@ -7,7 +7,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { generateAIResponse } = require('../engine/groqService');
+const { generateTextResponse } = require('../engine/groqService');
 
 router.post('/run', async (req, res) => {
     try {
@@ -101,7 +101,7 @@ Question asked by the researcher: "${question}"
 
 Respond as ${persona.name}:`;
 
-    const result = await generateAIResponse(systemPrompt, userPrompt, 0.7);
+    const result = await generateTextResponse(systemPrompt, userPrompt, 0.7);
     
     if (typeof result === 'string') return result;
     if (result?.response) return result.response;

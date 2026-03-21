@@ -70,7 +70,7 @@ const PATH_TO_STEP = {
 
 export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
     const { user, logOut } = useAuth();
-    const { setCurrentSimulationId, currentSimulationId, setIdea, setSimulationResults, setValidation, reset } = useIdea();
+    const { setCurrentSimulationId, currentSimulationId, setIdea, setSimulationResults, setValidation, setPersonas, setMarketContext, reset } = useIdea();
     const [history, setHistory] = useState([]);
     const [isHovered, setIsHovered] = useState(false);
     const [showChats, setShowChats] = useState(false);
@@ -156,6 +156,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
             personas: sim.results?.personas || [],
             totalMatched: sim.results?.totalMatched || 0,
         });
+        setPersonas(sim.results?.personas || []);
 
         // Mark all steps as accessible for past simulations before navigating
         const allSteps = [1, 2, 3, 4];

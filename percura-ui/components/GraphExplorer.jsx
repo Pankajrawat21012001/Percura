@@ -89,13 +89,13 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
         const nodeIds = new Set(processedNodes.map(n => n.id));
 
         const processedEdges = rawEdges
-            .filter(e => e.source && e.target && nodeIds.has(e.source) && nodeIds.has(e.target))
             .map(e => ({
-                source: e.source,
-                target: e.target,
-                type: e.type,
+                source: e.source || e.source_node_uuid,
+                target: e.target || e.target_node_uuid,
+                type: e.type || e.fact_type || '',
                 rawData: e
-            }));
+            }))
+            .filter(e => e.source && e.target && nodeIds.has(e.source) && nodeIds.has(e.target));
             
         return { nodes: processedNodes, edges: processedEdges };
     }, [graphData]);
@@ -257,6 +257,27 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
             <div className="flex-1 flex flex-col items-center justify-center p-12 text-black/50">
                 <div className="w-10 h-10 rounded-full border-2 border-t-purple-500 border-black/[0.04] animate-spin mb-4" />
                 <span className="text-[11px] uppercase tracking-widest font-black">Synthesizing Neural Graph...</span>
+            </div>
+        );
+    }
+
+    if (!nodes || nodes.length === 0) {
+        return (
+            <div className="flex flex-col h-full w-full bg-[#FAFAFA] items-center justify-center p-12 text-center relative overflow-hidden group">
+                {/* Error/Empty state decor */}
+                <div className="absolute inset-0 bg-grid opacity-5 pointer-events-none" />
+                <div className="w-16 h-16 rounded-2xl bg-black/[0.02] border border-black/[0.04] flex items-center justify-center mb-6 text-black/20 group-hover:scale-110 transition-transform">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 className="text-xl font-bold text-[#1a1a1a] mb-2 font-serif tracking-tight">Graph Synthesis Incomplete</h3>
+                <p className="text-sm text-black/50 max-w-sm leading-relaxed mb-6">
+                    The neural extraction engine could not generate nodes for this market context. This usually happens if the API rate limits were exceeded or the input idea lacked sufficient depth.
+                </p>
+                <div className="text-[10px] uppercase font-mono tracking-widest text-[#E85D3A] bg-[#E85D3A]/8 px-4 py-1.5 rounded-full border border-[#E85D3A]/10">
+                    {error || "0 Nodes Extracted"}
+                </div>
             </div>
         );
     }
