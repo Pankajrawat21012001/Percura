@@ -7,8 +7,10 @@ export default function SimulationReport({ report, reportData }) {
     if (!content) {
         return (
             <div className="bg-white border border-black/[0.08] rounded-3xl p-12 text-center shadow-lg mt-8">
-                <div className="w-16 h-16 rounded-[2rem] bg-[#FAFAFA] border border-black/[0.06] flex items-center justify-center text-2xl mx-auto mb-4 animate-pulse">
-                    📄
+                <div className="w-16 h-16 rounded-[2rem] bg-[#FAFAFA] border border-black/[0.06] flex items-center justify-center mx-auto mb-4 animate-pulse">
+                    <svg className="w-6 h-6 text-black/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
                 </div>
                 <h3 className="text-lg font-bold text-[#1a1a1a] mb-2">Report Not Available</h3>
                 <p className="text-sm text-black/40 font-medium">The deep synthesis report was not generated for this simulation run.</p>
@@ -22,8 +24,10 @@ export default function SimulationReport({ report, reportData }) {
             <div className="absolute top-0 right-0 w-96 h-96 bg-[#E85D3A]/5 blur-[100px] rounded-full pointer-events-none transform translate-x-1/2 -translate-y-1/2" />
 
             <div className="flex items-center gap-4 mb-10 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-[#E85D3A]/10 border border-[#E85D3A]/20 flex items-center justify-center text-2xl">
-                    📊
+                <div className="w-14 h-14 rounded-2xl bg-[#E85D3A]/10 border border-[#E85D3A]/20 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-[#E85D3A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
                 </div>
                 <div>
                     <h2 className="text-2xl font-black text-[#1a1a1a] tracking-tight uppercase">AI Synthesis Report</h2>

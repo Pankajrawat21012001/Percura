@@ -61,25 +61,25 @@ const ToastContainer = ({ toasts, removeToast }) => {
 const ToastItem = ({ type, title, message, onRemove }) => {
     const colors = {
         success: {
-            bg: 'bg-[#0D0D0D]/90',
+            bg: 'bg-white',
             border: 'border-emerald-500/20',
             dot: 'bg-emerald-500',
             icon: 'text-emerald-500',
-            shadow: 'shadow-emerald-500/5'
+            shadow: 'shadow-xl shadow-black/5'
         },
         error: {
-            bg: 'bg-[#0D0D0D]/90',
+            bg: 'bg-white',
             border: 'border-red-500/20',
             dot: 'bg-red-500',
             icon: 'text-red-500',
-            shadow: 'shadow-red-500/5'
+            shadow: 'shadow-xl shadow-black/5'
         },
         info: {
-            bg: 'bg-[#0D0D0D]/90',
-            border: 'border-indigo-500/20',
-            dot: 'bg-indigo-500',
-            icon: 'text-indigo-500',
-            shadow: 'shadow-indigo-500/5'
+            bg: 'bg-white',
+            border: 'border-[#E85D3A]/20',
+            dot: 'bg-[#E85D3A]',
+            icon: 'text-[#E85D3A]',
+            shadow: 'shadow-xl shadow-black/5'
         }
     };
 
@@ -95,11 +95,11 @@ const ToastItem = ({ type, title, message, onRemove }) => {
             <div className={`w-2.5 h-2.5 rounded-full ${config.dot} mt-1.5 shrink-0 shadow-[0_0_10px_currentColor]`} />
             
             <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-black text-white uppercase tracking-wider mb-1">
+                <h4 className="text-sm font-black text-[#1a1a1a] uppercase tracking-wider mb-1">
                     {title}
                 </h4>
                 {message && (
-                    <p className="text-xs text-white/50 font-medium leading-relaxed">
+                    <p className="text-xs text-black/50 font-medium leading-relaxed">
                         {message}
                     </p>
                 )}
@@ -107,7 +107,7 @@ const ToastItem = ({ type, title, message, onRemove }) => {
 
             <button 
                 onClick={onRemove}
-                className="text-white/20 hover:text-white transition-colors p-1"
+                className="text-black/10 hover:text-[#1a1a1a] transition-colors p-1"
             >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />

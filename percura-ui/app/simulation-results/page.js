@@ -9,17 +9,19 @@ import { db } from "../../lib/firebase";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import Button from "../../components/ui/Button";
 import DashboardLayout from "../../components/DashboardLayout";
-import PremiumChatPanel from "../../components/PremiumChatPanel";
-import SimulationTimeline from "../../components/SimulationTimeline";
-import ExecutionTimeline from "../../components/ExecutionTimeline";
+// Removed static import as it was causing double-definition errors during build
+// import PremiumChatPanel from "../../components/PremiumChatPanel";
+// Removed static import: import SimulationTimeline from "../../components/SimulationTimeline";
+// Removed static import: import ExecutionTimeline from "../../components/ExecutionTimeline";
 import SimulationReport from "../../components/SimulationReport";
 import { useToast } from "../../context/ToastContext";
 import API_BASE_URL from "../../lib/apiConfig";
 
-const ShaderPageBackground = dynamic(
-    () => import("../../components/ui/shader-background"),
-    { ssr: false }
-);
+const ExecutionTimeline = dynamic(() => import("../../components/ExecutionTimeline"), { ssr: false });
+const PremiumChatPanel = dynamic(() => import("../../components/PremiumChatPanel"), { ssr: false });
+const SimulationTimeline = dynamic(() => import("../../components/SimulationTimeline"), { ssr: false });
+// Removed unused/missing InteractionGraph component reference causing build failure
+// const InteractionGraph = dynamic(() => import("../../components/InteractionGraph"), { ssr: false });
 
 export default function SimulationResultsPage() {
     const router = useRouter();
@@ -74,6 +76,20 @@ export default function SimulationResultsPage() {
     const topObjections = [...new Set(allObjections)].slice(0, 3);
 
     const graphId = simDoc?.results?.marketContext?.graphId || null;
+    
+    // Check for navigation flag from sidebar to open Interrogation Lab
+    useEffect(() => {
+        if (!loading && typeof window !== "undefined") {
+            const flag = sessionStorage.getItem('percura_open_interrogation');
+            if (flag === '1') {
+                sessionStorage.removeItem('percura_open_interrogation');
+                // Small delay to ensure the page is stable
+                setTimeout(() => {
+                    setIsInterrogationOpen(true);
+                }, 500);
+            }
+        }
+    }, [loading]);
 
     // Listen to the simulation document
     useEffect(() => {
@@ -512,13 +528,11 @@ export default function SimulationResultsPage() {
                             </div>
 
                             <Button 
-                                onClick={() => setIsInterrogationOpen(true)}
-                                variant="primary"
-                                size="sm"
-                                className="flex items-center gap-2 bg-[#E85D3A] hover:bg-[#D14E2E] border-[#E85D3A] hover:border-[#D14E2E] shadow-lg shadow-[#E85D3A]/15"
+                                onClick={() => window.dispatchEvent(new Event('open-interrogation'))}
+                                className="w-full bg-[#1A1A1A] text-white font-black py-5 rounded-2xl flex items-center justify-center gap-3"
                             >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>
-                                Enter Interrogation Lab
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                                ENTER INTERROGATION LAB
                             </Button>
                         </div>
                     </div>
@@ -547,7 +561,7 @@ export default function SimulationResultsPage() {
                     ) : activeTab === "split" ? (
                         /* Split View: Report Left + Timeline Right */
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-8 overflow-y-auto max-h-[calc(100vh-300px)] pr-2">
+                            <div className="space-y-8 overflow-y-auto lg:h-[calc(100vh-180px)] pr-2">
                                 {/* Mini Report */}
                                 <div className="relative z-30">
                                     <div className="bg-white border border-black/[0.08] rounded-2xl p-6 shadow-lg shadow-black/[0.04]">
@@ -576,7 +590,7 @@ export default function SimulationResultsPage() {
                                     <PersonaResultCard key={res.segment_id} result={res} index={i} />
                                 ))}
                             </div>
-                            <div className="overflow-y-auto max-h-[calc(100vh-300px)]">
+                            <div className="overflow-y-auto lg:h-[calc(100vh-180px)]">
                                 <ExecutionTimeline
                                     trace={(() => {
                                         const trace = [];
@@ -803,7 +817,7 @@ export default function SimulationResultsPage() {
 
                             {insightsLoading && !insightData && (
                                 <div className="flex items-center gap-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl p-6 border-dashed animate-pulse">
-                                    <div className="w-8 h-8 rounded-full border-2 border-t-amber-500/80 border-white/5 animate-spin" />
+                                    <div className="w-8 h-8 rounded-full border-2 border-t-amber-500/80 border-black/[0.06] animate-spin" />
                                     <p className="text-[11px] text-black/40">Synthesizing insights from simulation data...</p>
                                 </div>
                             )}
@@ -1102,7 +1116,7 @@ function PersonaResultCard({ result, index }) {
                                     <div className="flex justify-between mb-2">
                                         <span className={`text-[11px] uppercase tracking-[0.2em] font-black ${color} flex items-center gap-1.5`}>
                                             {label}
-                                            <div className="w-3 h-3 rounded-full border border-current/20 flex items-center justify-center text-[8px] cursor-help">?</div>
+                                            <div className="w-3 h-3 rounded-full border border-current/20 flex items-center justify-center text-[10px] cursor-help">?</div>
                                         </span>
                                         <span className="text-[11px] text-black/60 font-mono font-bold">{Math.round(score)}%</span>
                                     </div>
@@ -1175,7 +1189,7 @@ function PersonaResultCard({ result, index }) {
                             <div>
                                 <h4 className="text-[11px] uppercase tracking-[0.2em] text-black/30 font-bold mb-3">Competitive Advantage</h4>
                                 <p className="text-[12px] text-black/60 leading-relaxed font-normal">{tr.competitiveAdvantage || "Not determined"}</p>
-                                <div className="mt-4 pt-4 border-t border-white/5">
+                                <div className="mt-4 pt-4 border-t border-black/[0.06]">
                                     <span className="text-[10px] text-black/25 uppercase tracking-widest font-bold">Predicted Adoption</span>
                                     <p className="text-[11px] text-black/70 font-bold mt-1">{tr.predictedAdoptionPattern || "Unknown"}</p>
                                 </div>

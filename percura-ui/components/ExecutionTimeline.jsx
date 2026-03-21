@@ -23,7 +23,7 @@ export default function ExecutionTimeline({ trace = [], idea = {}, stats = {} })
 
     const statusColor = {
         done: 'text-emerald-400',
-        running: 'text-blue-400 animate-pulse',
+        running: 'text-[#E85D3A] animate-pulse',
         error: 'text-red-400',
         complete: 'text-emerald-400',
     };
@@ -33,7 +33,7 @@ export default function ExecutionTimeline({ trace = [], idea = {}, stats = {} })
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h2 className="text-[11px] uppercase tracking-[0.4em] text-blue-500 font-black mb-1">● Execution Timeline</h2>
+                    <h2 className="text-[11px] uppercase tracking-[0.4em] text-[#E85D3A] font-black mb-1">● Execution Timeline</h2>
                     <p className="text-[11px] text-black/40 uppercase tracking-widest">
                         Segments {stats.segmentCount || '—'}/{stats.segmentCount || '—'} &nbsp;&middot;&nbsp;
                         Elapsed {minutes}m {seconds}s &nbsp;&middot;&nbsp;
