@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import { Suspense } from "react";
@@ -78,24 +79,13 @@ const NavBar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[rgba(0,0,0,0.06)]">
       <div className="max-w-[1400px] mx-auto px-6 h-16 md:h-20 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="3.5" fill="#E85D3A" />
-            {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-              const rad = (angle * Math.PI) / 180;
-              return (
-                <line
-                  key={i}
-                  x1={16 + Math.cos(rad) * 6}
-                  y1={16 + Math.sin(rad) * 6}
-                  x2={16 + Math.cos(rad) * 12}
-                  y2={16 + Math.sin(rad) * 12}
-                  stroke="#E85D3A"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-              );
-            })}
-          </svg>
+          <Image
+            src="/percura-icon.png"
+            alt="Percura"
+            width={28}
+            height={28}
+            className="object-contain"
+          />
           <span className="font-bold text-xl tracking-tight text-[#1A1A1A]">Percura</span>
         </Link>
         
@@ -134,11 +124,11 @@ export default function LandingPage() {
 
       <main className="relative z-10 pt-20">
         {/* ─── 1. HERO SECTION ─── */}
-        <section className="relative w-full max-w-[1400px] mx-auto min-h-[85vh] flex items-center px-6 py-20">
-          <div className="w-full grid lg:grid-cols-3 auto-rows-min gap-10 lg:gap-0 items-center justify-items-center">
+        <section className="relative w-full max-w-[1400px] mx-auto min-h-[85vh] flex px-6 pt-10 pb-20">
+          <div className="w-full grid lg:grid-cols-3 gap-10 lg:gap-0 justify-items-center">
             
             {/* Left Column Text */}
-            <div className="flex flex-col items-start w-full lg:col-span-1 justify-self-start relative z-10 pt-10">
+            <div className="flex flex-col items-start w-full lg:col-span-1 justify-self-start relative z-10 pt-4 self-start">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[rgba(0,0,0,0.06)] bg-white mb-6 shadow-sm">
                 <span className="text-[9px] uppercase font-black text-[#E85D3A] bg-[#E85D3A]/10 px-2 py-0.5 rounded-full tracking-widest">
                   BETA
@@ -156,8 +146,7 @@ export default function LandingPage() {
             </div>
 
             {/* Center 3D Component */}
-            <div className="w-full lg:col-span-1 h-[400px] lg:h-[600px] relative flex justify-center items-center -mx-10 mix-blend-multiply z-0">
-              <div className="absolute inset-x-[-100px] bottom-[-20%] h-[50%] bg-gradient-to-t from-white via-white/80 to-transparent z-[20] pointer-events-none" />
+            <div className="w-full lg:col-span-1 h-[400px] lg:h-[600px] relative flex justify-center items-center -mx-10 mix-blend-multiply z-0 self-center">
               {mounted && (
                 <div className="absolute inset-[-100px] md:inset-[-200px] z-[5]">
                   <Canvas camera={{ position: [0, 0, 7.5], fov: 40 }}>
@@ -174,7 +163,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right Column Text */}
-            <div className="flex flex-col items-start lg:items-end w-full lg:col-span-1 justify-self-end text-left lg:text-right relative z-10 lg:pt-10">
+            <div className="flex flex-col items-start lg:items-end w-full lg:col-span-1 justify-self-end text-left lg:text-right relative z-10 self-end pb-10">
               <h2 className="text-[clamp(2.5rem,4vw,3.5rem)] leading-[0.95] tracking-tighter font-[900] mb-8">
                 with trusted<br />
                 AI Personas.
@@ -368,10 +357,13 @@ const result = await engine.simulate(idea);`}
 
       <footer className="w-full bg-white pt-24 pb-12 px-6 border-t border-[rgba(0,0,0,0.06)] relative z-10">
         <div className="max-w-[1400px] mx-auto flex flex-col items-center text-center">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="mb-8">
-            <circle cx="16" cy="16" r="4" fill="#E85D3A" />
-            <circle cx="16" cy="16" r="10" stroke="#E85D3A" strokeWidth="1" strokeDasharray="4 4" />
-          </svg>
+          <Image
+            src="/percura-icon.png"
+            alt="Percura"
+            width={32}
+            height={32}
+            className="mb-8 object-contain"
+          />
           <h2 className="text-[clamp(1.8rem,3vw,3rem)] font-black tracking-tight mb-8">
             Stop Guessing. Start Validating.
           </h2>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 const SIMULATION_STEPS = [
     "Analyzing your idea",
@@ -68,32 +69,15 @@ export default function LoadingScreen({ message = "Finding matching personas..."
                 {/* Inner glow */}
                 <div className="w-28 h-28 rounded-full bg-[#E85D3A]/5 animate-pulse absolute" />
 
-                {/* Asterisk/flower icon — Casely-style */}
-                <div className="relative z-10">
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="drop-shadow-sm">
-                        {/* Center dot */}
-                        <circle cx="24" cy="24" r="4" fill="#E85D3A" />
-                        {/* Petals */}
-                        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-                            const rad = (angle * Math.PI) / 180;
-                            const x1 = 24 + Math.cos(rad) * 8;
-                            const y1 = 24 + Math.sin(rad) * 8;
-                            const x2 = 24 + Math.cos(rad) * 18;
-                            const y2 = 24 + Math.sin(rad) * 18;
-                            return (
-                                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#E85D3A" strokeWidth="2.5" strokeLinecap="round" opacity={0.7 + (i % 2) * 0.3}>
-                                    <animate attributeName="opacity" values={`${0.4 + (i % 3) * 0.2};1;${0.4 + (i % 3) * 0.2}`} dur={`${1.5 + i * 0.2}s`} repeatCount="indefinite" />
-                                </line>
-                            );
-                        })}
-                        {/* Outer dots */}
-                        {[0, 90, 180, 270].map((angle, i) => {
-                            const rad = (angle * Math.PI) / 180;
-                            const cx = 24 + Math.cos(rad) * 20;
-                            const cy = 24 + Math.sin(rad) * 20;
-                            return <circle key={`dot-${i}`} cx={cx} cy={cy} r="2" fill="#E85D3A" opacity="0.5" />;
-                        })}
-                    </svg>
+                {/* Percura Logo Mark — replaced with image */}
+                <div className="relative z-10 animate-pulse">
+                    <Image
+                        src="/percura-icon.png"
+                        alt="Percura"
+                        width={48}
+                        height={48}
+                        className="drop-shadow-sm object-contain"
+                    />
                 </div>
             </div>
 

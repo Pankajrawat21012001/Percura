@@ -224,7 +224,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
             >
                 {/* Brand Header */}
                 <div className={`h-20 flex items-center border-b border-black/[0.06] ${isExpanded ? 'px-6 justify-between' : 'px-0 justify-center'}`}>
-                    <Link href="/validate" className="flex items-center gap-3 group">
+                    <Link href="/" className="flex items-center gap-3 group">
                         <div className="w-10 h-10 rounded-xl bg-white border border-black/[0.08] flex items-center justify-center shadow-sm group-hover:shadow-md group-hover:scale-105 group-active:scale-95 transition-all duration-300 shrink-0 overflow-hidden">
                             <Image
                                 src="/percura-icon.png"
@@ -244,15 +244,15 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                 </div>
 
                 {/* New Simulation Button */}
-                <div className={`px-3 py-4 flex justify-center`}>
+                <div className={`py-4 flex justify-center ${isExpanded ? 'px-3' : 'px-4'}`}>
                     <button
                         onClick={handleNewSimulation}
                         title={!isExpanded ? "New Simulation" : undefined}
                         className={`
-                            flex items-center gap-3 transition-all duration-300 group
+                            flex items-center transition-all duration-300 group
                             bg-[#1A1A1A] hover:bg-[#333] text-white
                             rounded-xl shadow-sm hover:shadow-md
-                            ${isExpanded ? 'w-full p-3 justify-start' : 'w-10 h-10 p-0 justify-center'}
+                            ${isExpanded ? 'w-full p-3 gap-3 justify-start' : 'w-10 h-10 p-0 gap-0 justify-center'}
                         `}
                     >
                         <div className={`flex items-center justify-center rounded-lg bg-white/15 shrink-0 group-hover:scale-110 transition-transform ${isExpanded ? 'w-7 h-7' : 'w-10 h-10'}`}>
@@ -268,7 +268,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
 
                 {/* Navigation Steps */}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
-                    <nav className={`py-4 space-y-1 ${isExpanded ? 'px-3' : 'px-2'}`}>
+                    <nav className={`py-4 space-y-1 ${isExpanded ? 'px-3' : 'px-4'}`}>
                         {STEPS.map((step, idx) => {
                             const stepNum = step.number;
                             const currentStepNum = PATH_TO_STEP[pathname] || 1;
@@ -284,14 +284,14 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                     disabled={!isAccessible}
                                     title={!isExpanded ? step.label : undefined}
                                     className={`
-                                        w-full flex items-center gap-3 transition-all duration-300 group relative
-                                        ${isExpanded ? 'p-3 rounded-xl' : 'px-0 py-2 rounded-xl justify-center'}
+                                        w-full flex items-center transition-all duration-300 group relative
+                                        ${isExpanded ? 'p-3 gap-3 rounded-xl' : 'p-0 gap-0 h-10 rounded-xl justify-center'}
                                         ${isActive 
                                             ? "bg-[#1A1A1A] text-white shadow-sm" 
                                             : isDone 
                                                 ? "text-[#1a1a1a] hover:bg-black/[0.04] cursor-pointer" 
                                                 : isAccessible
-                                                    ? "text-black/40 hover:bg-black/[0.03] hover:text-black/60 cursor-pointer"
+                                                    ? "text-black/75 hover:bg-black/[0.03] hover:text-black/90 cursor-pointer"
                                                     : "text-black/15 cursor-not-allowed"}
                                     `}
                                 >
@@ -300,7 +300,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                         relative w-9 h-9 flex items-center justify-center rounded-lg shrink-0 transition-all duration-300
                                         ${isActive ? "bg-white/15 text-white" : 
                                           isDone ? "bg-[#E85D3A]/10 text-[#E85D3A] border border-[#E85D3A]/15" : 
-                                          isAccessible ? "bg-black/[0.04] text-black/40 border border-black/[0.06]" :
+                                          isAccessible ? "bg-black/[0.04] text-black/70 border border-black/[0.06]" :
                                           "bg-black/[0.02] text-black/12 border border-black/[0.03]"}
                                     `}>
                                         {isDone ? (
@@ -317,7 +317,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                         <p className={`text-[13px] font-semibold leading-tight truncate ${isActive ? 'text-white' : isDone ? 'text-[#1a1a1a]' : 'text-inherit'}`}>
                                             {step.label}
                                         </p>
-                                        <p className={`text-[10px] mt-0.5 truncate ${isActive ? 'text-white/50' : 'text-black/30'}`}>
+                                        <p className={`text-[10px] mt-0.5 truncate ${isActive ? 'text-white/50' : 'text-black/45'}`}>
                                             {step.description}
                                         </p>
                                     </div>
@@ -335,7 +335,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                     <div className={`mx-4 my-2 border-t border-black/[0.06]`} />
 
                     {/* Interrogation Lab */}
-                    <div className={`py-2 ${isExpanded ? 'px-3' : 'px-2'}`}>
+                    <div className={`py-2 ${isExpanded ? 'px-3' : 'px-4'}`}>
                         <button
                             onClick={() => {
                                 if (currentSimulationId) {
@@ -346,13 +346,13 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                             disabled={!currentSimulationId}
                             title={!isExpanded ? "Interrogation Lab" : undefined}
                             className={`
-                                w-full flex items-center gap-3 transition-all duration-300 group
-                                ${isExpanded ? 'p-3 rounded-xl' : 'px-0 py-2 rounded-xl justify-center'}
-                                ${!currentSimulationId ? "opacity-25 cursor-not-allowed" : "text-black/50 hover:text-[#1a1a1a] hover:bg-black/[0.04]"}
+                                w-full flex items-center transition-all duration-300 group
+                                ${isExpanded ? 'p-3 gap-3 rounded-xl' : 'p-0 gap-0 h-10 rounded-xl justify-center'}
+                                ${!currentSimulationId ? "opacity-25 cursor-not-allowed" : "text-black/75 hover:text-[#1a1a1a] hover:bg-black/[0.04]"}
                             `}
                         >
                             <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-black/[0.03] border border-black/[0.06] shrink-0 group-hover:scale-105 transition-all">
-                                <svg className="w-4.5 h-4.5 text-black/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-4.5 h-4.5 text-black/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                                 </svg>
                             </div>
@@ -366,14 +366,14 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                     <div className={`mx-4 my-2 border-t border-black/[0.06]`} />
 
                     {/* Chat History Toggle */}
-                    <div className={`py-2 ${isExpanded ? 'px-3' : 'px-2'}`}>
+                    <div className={`py-2 ${isExpanded ? 'px-3' : 'px-4'}`}>
                         <button
                             onClick={() => { if (isExpanded) setShowChats(!showChats); }}
                             title={!isExpanded ? "Past Simulations" : undefined}
                             className={`
-                                w-full flex items-center gap-3 transition-all duration-300
-                                ${isExpanded ? 'p-3 rounded-xl' : 'px-0 py-2 rounded-xl justify-center'}
-                                text-black/40 hover:text-black/70 hover:bg-black/[0.03]
+                                w-full flex items-center transition-all duration-300
+                                ${isExpanded ? 'p-3 gap-3 rounded-xl' : 'p-0 gap-0 h-10 rounded-xl justify-center'}
+                                text-black/75 hover:text-black/95 hover:bg-black/[0.03]
                             `}
                         >
                             <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-black/[0.03] border border-black/[0.06] shrink-0">
@@ -458,8 +458,8 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                 </div>
 
                 {/* User Profile Footer */}
-                <div className={`p-3 mt-auto border-t border-black/[0.06] ${isExpanded ? 'px-4' : 'px-2'}`}>
-                    <div className={`flex items-center transition-all duration-300 rounded-xl p-2 hover:bg-black/[0.03] ${isExpanded ? 'gap-3 justify-start' : 'justify-center'}`}>
+                <div className={`p-3 mt-auto border-t border-black/[0.06] ${isExpanded ? 'px-4' : 'px-4'}`}>
+                    <div className={`flex items-center transition-all duration-300 rounded-xl p-2 hover:bg-black/[0.03] ${isExpanded ? 'gap-3 justify-start' : 'p-0 h-10 justify-center'}`}>
                         <div className="relative shrink-0">
                             {user?.photoURL ? (
                                 <img src={user.photoURL} alt={user.displayName} className="w-9 h-9 rounded-lg border border-black/[0.08] object-cover" />
@@ -474,7 +474,7 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                             <p className="text-[12px] font-semibold text-[#1a1a1a] truncate leading-tight">{user?.displayName || "User"}</p>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); logOut(); }}
-                                className="text-[10px] text-black/30 font-semibold uppercase tracking-wider transition-all hover:text-red-500"
+                                className="text-[10px] text-black/50 font-semibold uppercase tracking-wider transition-all hover:text-red-500"
                             >
                                 Sign Out
                             </button>

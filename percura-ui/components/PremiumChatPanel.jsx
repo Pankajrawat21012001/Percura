@@ -998,7 +998,7 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                         }
                                     }}
                                     disabled={surveyLoading || !surveyQuestion.trim() || surveySelectedIds.size === 0}
-                                    className="mt-3 w-full py-3 bg-[#1A1A1A] text-[#1a1a1a] text-xs font-black uppercase tracking-widest rounded-xl hover:bg-[#E85D3A] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="mt-3 w-full py-3 bg-[#1A1A1A] text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-[#E85D3A] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {surveyLoading ? (
                                         <><div className="w-4 h-4 rounded-full border-2 border-t-white border-white/20 animate-spin" /> Surveying {surveySelectedIds.size} personas...</>

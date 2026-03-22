@@ -465,30 +465,34 @@ export default function SimulationResultsPage() {
                         </p>
 
                         {/* Tab Nav & Run Sim Strip */}
-                        <div className="flex justify-between items-center border-b border-black/[0.06] pb-6">
-                            <div className="flex bg-[#FAFAFA] border border-black/[0.08] rounded-xl overflow-hidden">
-                                {["Report", "Split", "Timeline"].map(tab => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => setActiveTab(tab.toLowerCase())}
-                                        className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer ${
-                                            activeTab === tab.toLowerCase()
-                                                ? 'bg-[#1A1A1A] text-white'
-                                                : 'text-black/30 hover:text-black/60 hover:bg-black/[0.03]'
-                                        }`}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
+                        <div className="flex gap-4 items-stretch border-b border-black/[0.06] pb-8">
+                            <div className="flex-1">
+                                <div className="h-full flex bg-[#FAFAFA] border border-black/[0.08] rounded-2xl overflow-hidden p-1">
+                                    {["Report", "Split", "Timeline"].map(tab => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab.toLowerCase())}
+                                            className={`flex-1 px-4 py-3 text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer rounded-xl ${
+                                                activeTab === tab.toLowerCase()
+                                                    ? 'bg-[#1A1A1A] text-white shadow-sm'
+                                                    : 'text-black/30 hover:text-black/60 hover:bg-black/[0.03]'
+                                            }`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <Button 
-                                onClick={() => window.dispatchEvent(new Event('open-interrogation'))}
-                                className="w-full bg-[#1A1A1A] text-white font-black py-5 rounded-2xl flex items-center justify-center gap-3"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
-                                ENTER INTERROGATION LAB
-                            </Button>
+                            <div className="flex-1">
+                                <Button 
+                                    onClick={() => window.dispatchEvent(new Event('open-interrogation'))}
+                                    className="w-full h-full bg-[#1A1A1A] text-white font-black py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-[#333] transition-all"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                                    ENTER INTERROGATION LAB
+                                </Button>
+                            </div>
                         </div>
                     </div>
 
