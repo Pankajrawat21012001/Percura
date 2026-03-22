@@ -35,11 +35,97 @@ const SUGGESTED_QUESTIONS = [
     "What was the biggest risk you saw?",
 ];
 
+// -- HUMAN TYPING SIMULATOR --
+function HumanTypingText({ text, isLatest, onComplete }) {
+    const [displayedText, setDisplayedText] = useState(isLatest ? "" : text);
+    const [isTyping, setIsTyping] = useState(isLatest);
+
+    useEffect(() => {
+        if (!isLatest) {
+            setDisplayedText(text);
+            setIsTyping(false);
+            return;
+        }
+
+        setDisplayedText("");
+        setIsTyping(true);
+        let index = -1; 
+        let timeoutId;
+
+        const typeChar = () => {
+            if (index < text.length) {
+                let delay = 20 + Math.random() * 40; // Base speed: 20-60ms per keystroke
+                
+                if (index === -1) {
+                   delay = 200 + Math.random() * 500; // Initial "read" delay before typing
+                } else {
+                   const char = text.charAt(index);
+                   setDisplayedText(prev => prev + char);
+                   
+                   if (['.', '!', '?'].includes(char)) delay += 400 + Math.random() * 300;
+                   else if ([',', ';'].includes(char)) delay += 200 + Math.random() * 150;
+                   else if (char === ' ') delay += 10 + Math.random() * 30;
+                }
+                
+                index++;
+                if (index <= text.length) {
+                   timeoutId = setTimeout(typeChar, delay);
+                } else {
+                   setIsTyping(false);
+                   if (onComplete) onComplete();
+                }
+            }
+        };
+
+        typeChar();
+        return () => clearTimeout(timeoutId);
+    }, [text, isLatest]);
+
+    return (
+        <span>
+            {displayedText}
+            {isTyping && <span className="inline-block w-1 h-3.5 ml-[2px] bg-black/40 animate-pulse align-middle" />}
+        </span>
+    );
+}
+
 export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
     const { currentSimulationId, idea, simulationResults } = useIdea();
 
     // Chat mode: 'single' or 'panel'
     const [mode, setMode] = useState("single");
+    const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+
+    // Multimodal Voice Text-To-Speech logic
+    const speakText = (text, agent) => {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        let voices = window.speechSynthesis.getVoices();
+        
+        // Derive voice characteristics from agent ID heuristically
+        const seed = parseInt(agent.id.toString().replace(/\D/g, '')) || 0;
+        const isMale = seed % 2 === 0;
+        
+        // Base characteristics
+        utterance.pitch = isMale ? 0.8 : 1.2;
+        utterance.rate = 1.05; // Slightly faster for natural chat
+        
+        // Attempt to find Indian English voices matching the gender
+        const enVoices = voices.filter(v => v.lang.includes('en'));
+        const inVoices = enVoices.filter(v => v.lang.includes('IN'));
+        
+        let selectedVoice = inVoices.length > 0 
+            ? inVoices[seed % inVoices.length] 
+            : enVoices[seed % enVoices.length] || voices[0];
+            
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        }
+        
+        window.speechSynthesis.speak(utterance);
+    };
 
     // Selection state
     const [selectedAgent, setSelectedAgent] = useState(null);
@@ -189,6 +275,10 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                 const data = await res.json();
                 const agentReply = data.reply || "...";
                 const agentName = data.name || selectedAgent.name;
+
+                if (isAudioEnabled) {
+                    speakText(agentReply, selectedAgent);
+                }
 
                 setConversations(prev => ({
                     ...prev,
@@ -448,6 +538,18 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                     ? debateAgents.find((a) => a.id === agent.id)
                                     : panelAgents.find((a) => a.id === agent.id);
 
+                            const stateParams = agent.simState
+                                ? (agent.simState.sentimentScore > 0.7 
+                                    ? { label: "HYPED", color: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20", dot: "bg-emerald-500 shadow-emerald-500/20" }
+                                    : agent.simState.sentimentScore < 0.3 
+                                        ? { label: "SKEPTICAL", color: "bg-[#E85D3A]/10 text-rose-500 border border-[#E85D3A]/20", dot: "bg-[#E85D3A] shadow-[#E85D3A]/20" }
+                                        : { label: "THINKING", color: "bg-amber-400/10 text-amber-600 border border-amber-400/20", dot: "bg-amber-400 shadow-amber-400/20" })
+                                : (agent.state === "ADOPTED" 
+                                    ? { label: "ADOPTED", color: "bg-emerald-500/10 text-emerald-500", dot: "bg-emerald-500 shadow-emerald-500/20" }
+                                    : agent.state === "REJECTED" 
+                                        ? { label: "REJECTED", color: "bg-[#E85D3A]/10 text-rose-500", dot: "bg-[#E85D3A] shadow-[#E85D3A]/20" }
+                                        : { label: agent.state, color: "bg-black/5 text-black/40", dot: "bg-black/20" });
+
                             return (
                                 <div
                                     key={agent.id}
@@ -476,9 +578,9 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                         <p className={`text-[11px] font-medium transition-colors ${isSelected ? "text-white/40" : "text-black/40 group-hover:text-black/50"}`}>{agent.archetype}</p>
                                     </div>
                                     <div className="shrink-0 flex flex-col items-end gap-1.5 self-start pt-0.5">
-                                        <div className={`w-2 h-2 rounded-full mt-1.5 shadow-[0_0_8px_rgba(0,0,0,0.5)] ${agent.state === "ADOPTED" ? "bg-emerald-500 shadow-emerald-500/20" : agent.state === "REJECTED" ? "bg-[#E85D3A] shadow-[#E85D3A]/20" : "bg-white/20"}`} />
-                                        <span className={`text-[11px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md ${agent.state === "ADOPTED" ? "bg-emerald-500/10 text-emerald-400" : agent.state === "REJECTED" ? "bg-[#E85D3A]/10 text-rose-400" : "bg-white/5 text-black/40"}`}>
-                                            {agent.state}
+                                        <div className={`w-2 h-2 rounded-full mt-1.5 shadow-[0_0_8px_rgba(0,0,0,0.5)] ${stateParams.dot}`} />
+                                        <span className={`text-[10px] font-black tracking-widest uppercase px-2 py-0.5 rounded-md ${stateParams.color}`}>
+                                            {stateParams.label}
                                         </span>
                                         {agent.simState && (
                                             <div className="flex items-center gap-1.5 mt-1">
@@ -619,6 +721,24 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                                 <p className="text-[11px] text-black/20 font-bold uppercase tracking-[0.2em]">Select a persona to begin the interview</p>
                             </div>
                         )}
+
+                        {/* Audio Toggle (Visible only in single mode for pure chat experience) */}
+                        {mode === "single" && selectedAgent && (
+                            <button
+                                onClick={() => {
+                                    if (isAudioEnabled) window.speechSynthesis?.cancel();
+                                    setIsAudioEnabled(!isAudioEnabled);
+                                }}
+                                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${isAudioEnabled ? 'bg-[#E85D3A]/10 text-[#E85D3A] shadow-inner shadow-[#E85D3A]/20' : 'bg-black/[0.04] text-black/40 hover:bg-black/10 hover:text-black/60'}`}
+                                title={isAudioEnabled ? "Voice Enabled" : "Voice Disabled"}
+                            >
+                                {isAudioEnabled ? (
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 001.707-.707V4.293a1 1 0 00-1.707-.707L10.293 7.707A1 1 0 019.586 8H7a2 2 0 00-2 2z" /></svg>
+                                ) : (
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clipRule="evenodd" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>
+                                )}
+                            </button>
+                        )}
                     </div>
 
                     {/* Chat Messages */}
@@ -655,8 +775,8 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                             if (msg.sender === "user") {
                                 return (
                                     <div key={i} className="flex justify-end animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                        <div className="max-w-[70%] bg-[#1A1A1A] border border-black/[0.1] rounded-3xl rounded-br-none px-6 py-4 shadow-xl">
-                                            <p className="text-sm text-white leading-relaxed font-bold">{msg.text}</p>
+                                        <div className="max-w-[75%] bg-[#0A84FF] text-white rounded-[1.25rem] rounded-br-[4px] px-4 py-2.5 shadow-sm">
+                                            <p className="text-[15px] leading-snug tracking-tight font-medium whitespace-pre-wrap">{msg.text}</p>
                                         </div>
                                     </div>
                                 );
@@ -664,13 +784,14 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                             if (msg.sender === "ai") {
                                 return (
                                     <div key={i} className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                        <div className="max-w-[85%] space-y-2">
-                                            <div className="flex items-center gap-2 px-1">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-[#E85D3A]/60" />
-                                                <p className="text-[11px] text-black/40 font-black uppercase tracking-[0.2em]">{msg.senderName}</p>
+                                        <div className="max-w-[85%] space-y-1">
+                                            <div className="flex items-center gap-1.5 px-1 ml-1 origin-left scale-90">
+                                                <p className="text-[10px] text-black/40 font-bold tracking-wide">{msg.senderName}</p>
                                             </div>
-                                            <div className="bg-[#FAFAFA] border border-black/[0.08] rounded-3xl rounded-bl-none px-6 py-4">
-                                                <p className="text-sm text-[#1a1a1a] leading-relaxed">{msg.text}</p>
+                                            <div className="bg-[#E9E9EB] text-black rounded-[1.25rem] rounded-bl-[4px] px-4 py-2.5 shadow-sm inline-block">
+                                                <p className="text-[15px] leading-snug tracking-tight font-medium whitespace-pre-wrap">
+                                                    <HumanTypingText text={msg.text} isLatest={i === currentHistory.length - 1} />
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -678,16 +799,17 @@ export default function PremiumChatPanel({ onClose, graphId, deepSimResult }) {
                             }
                             if (msg.sender === "panel") {
                                 return (
-                                    <div key={i} className="space-y-6">
+                                    <div key={i} className="space-y-4">
                                         {msg.replies?.map((r, j) => (
                                             <div key={j} className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${j * 150}ms` }}>
-                                                <div className="max-w-[85%] space-y-2">
-                                                    <div className="flex items-center gap-2 px-1">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#E85D3A]/60" />
-                                                        <p className="text-[11px] text-black/40 font-black uppercase tracking-[0.2em]">{r.name}</p>
+                                                <div className="max-w-[85%] space-y-1">
+                                                    <div className="flex items-center gap-1.5 px-1 ml-1 origin-left scale-90">
+                                                        <p className="text-[10px] text-black/40 font-bold tracking-wide">{r.name}</p>
                                                     </div>
-                                                    <div className="bg-[#FAFAFA] border border-black/[0.08] rounded-3xl rounded-bl-none px-6 py-4">
-                                                        <p className="text-sm text-[#1a1a1a] leading-relaxed">{r.reply}</p>
+                                                    <div className="bg-[#E9E9EB] text-black rounded-[1.25rem] rounded-bl-[4px] px-4 py-2.5 shadow-sm inline-block">
+                                                        <p className="text-[15px] leading-snug tracking-tight font-medium whitespace-pre-wrap">
+                                                            <HumanTypingText text={r.reply} isLatest={i === currentHistory.length - 1} />
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>

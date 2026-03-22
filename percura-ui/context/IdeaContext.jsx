@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 
 const IdeaContext = createContext(null);
 
+const SESSION_KEY = "percura_session_state";
 const STORAGE_KEY = "percura_last_simulation_id";
 
 export function IdeaProvider({ children }) {
@@ -12,32 +13,58 @@ export function IdeaProvider({ children }) {
     const [personas, setPersonas] = useState(null);
     const [simulationResults, setSimulationResults] = useState(null);
     const [selectedSegment, setSelectedSegment] = useState(null);
-    // Stores full selected segments (with personas) for results page
-    // Populated by segment/page.js before navigation
     const [fullSelectedSegments, setFullSelectedSegments] = useState(null);
     const [marketContext, setMarketContext] = useState(null);
+    const [currentSimulationIdRaw, setCurrentSimulationIdRaw] = useState(null);
 
-    // Initialize from localStorage so page refreshes restore the last session
-    const [currentSimulationId, setCurrentSimulationIdRaw] = useState(null);
-
-    // Load from localStorage after mount to avoid hydration mismatch
+    // Rehydrate on mount
     useEffect(() => {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            setCurrentSimulationIdRaw(stored);
+        if (typeof window !== "undefined") {
+            try {
+                const stored = sessionStorage.getItem(SESSION_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed.idea) setIdea(parsed.idea);
+                    if (parsed.validation) setValidation(parsed.validation);
+                    if (parsed.simulationResults) setSimulationResults(parsed.simulationResults);
+                    if (parsed.currentSimulationId) setCurrentSimulationIdRaw(parsed.currentSimulationId);
+                    if (parsed.marketContext) setMarketContext(parsed.marketContext);
+                }
+                
+                // Fallback for currentSimulationId from older localStorage
+                const localId = localStorage.getItem(STORAGE_KEY);
+                if (localId && !stored) {
+                    setCurrentSimulationIdRaw(localId);
+                }
+            } catch (e) {
+                console.error("Failed to rehydrate session state", e);
+            }
         }
     }, []);
 
-    // Wrapper that also saves to localStorage
-    const setCurrentSimulationId = (id) => {
-        setCurrentSimulationIdRaw(id);
+    // Serialize on change
+    useEffect(() => {
         if (typeof window !== "undefined") {
-            if (id) {
-                localStorage.setItem(STORAGE_KEY, id);
+            const stateToSave = {
+                idea,
+                validation,
+                simulationResults,
+                marketContext,
+                currentSimulationId: currentSimulationIdRaw
+            };
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(stateToSave));
+            
+            // Also keep localStorage id in sync
+            if (currentSimulationIdRaw) {
+                localStorage.setItem(STORAGE_KEY, currentSimulationIdRaw);
             } else {
                 localStorage.removeItem(STORAGE_KEY);
             }
         }
+    }, [idea, validation, simulationResults, marketContext, currentSimulationIdRaw]);
+
+    const setCurrentSimulationId = (id) => {
+        setCurrentSimulationIdRaw(id);
     };
 
     const reset = () => {
@@ -48,7 +75,11 @@ export function IdeaProvider({ children }) {
         setSelectedSegment(null);
         setMarketContext(null);
         setFullSelectedSegments(null);
-        setCurrentSimulationId(null);
+        setCurrentSimulationIdRaw(null);
+        if (typeof window !== "undefined") {
+            sessionStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(STORAGE_KEY);
+        }
     };
 
     return (
@@ -61,7 +92,7 @@ export function IdeaProvider({ children }) {
                 selectedSegment, setSelectedSegment,
                 marketContext, setMarketContext,
                 fullSelectedSegments, setFullSelectedSegments,
-                currentSimulationId, setCurrentSimulationId,
+                currentSimulationId: currentSimulationIdRaw, setCurrentSimulationId,
                 reset,
             }}
         >

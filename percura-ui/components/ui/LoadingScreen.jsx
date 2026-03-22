@@ -12,8 +12,9 @@ const SIMULATION_STEPS = [
     "Preparing results"
 ];
 
-export default function LoadingScreen({ message = "Finding matching personas...", customSteps }) {
+export default function LoadingScreen({ message = "Finding matching personas...", customSteps, progress }) {
     const [stepIndex, setStepIndex] = useState(0);
+    const [simulatedProgress, setSimulatedProgress] = useState(15);
     const stepsToUse = customSteps || SIMULATION_STEPS;
 
     useEffect(() => {
@@ -30,8 +31,30 @@ export default function LoadingScreen({ message = "Finding matching personas..."
         };
     }, [stepsToUse.length]);
 
+    useEffect(() => {
+        if (progress !== undefined) return;
+        
+        const simInterval = setInterval(() => {
+            setSimulatedProgress(prev => {
+                if (prev >= 85) return prev;
+                return prev + 1;
+            });
+        }, 800);
+        return () => clearInterval(simInterval);
+    }, [progress]);
+
+    const displayProgress = progress !== undefined ? progress : simulatedProgress;
+
     return (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white">
+            {/* Thin Progress Bar at top */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-black/[0.04]">
+                <div 
+                    className="h-full bg-[#E85D3A] transition-all duration-700 ease-out"
+                    style={{ width: `${displayProgress}%` }}
+                />
+            </div>
+
             {/* Subtle background pattern */}
             <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
 

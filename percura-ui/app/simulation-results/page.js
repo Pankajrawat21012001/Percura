@@ -121,7 +121,27 @@ export default function SimulationResultsPage() {
                     setSimDoc(data);
                     if (data.ideaData) setIdea(data.ideaData);
                     if (data.results?.segmentsWithResults) {
-                        setSimulationResults(data.results.segmentsWithResults);
+                        let finalSegments = data.results.segmentsWithResults;
+                        try {
+                            const lsKey = `percura_segments_${currentSimulationId}`;
+                            const stored = localStorage.getItem(lsKey);
+                            if (stored) {
+                                const parsed = JSON.parse(stored);
+                                finalSegments = finalSegments.map(seg => {
+                                    const matching = parsed.find(p => p.segment_id === seg.segment_id);
+                                    if (matching && matching.personas) {
+                                        return { ...seg, personas: matching.personas };
+                                    }
+                                    return seg;
+                                });
+                            }
+                        } catch (e) {
+                            console.warn("Failed to rehydrate personas", e);
+                        }
+                        setSimulationResults(finalSegments);
+                        if (typeof setFullSelectedSegments === "function") {
+                            setFullSelectedSegments(finalSegments);
+                        }
                     }
                     if (data.results?.deepSimulation) {
                         setDeepSimResult(data.results.deepSimulation);
@@ -268,86 +288,8 @@ export default function SimulationResultsPage() {
         }
     }, [simDoc?.status, results.length]);
 
-    const handleDownloadPDF = async () => {
-        console.log("[PDF] Initializing Text-Only Export...");
-        const { jsPDF } = await import("jspdf");
-        const doc = new jsPDF();
-        let y = 20;
-
-        const addText = (text, size = 11, style = "normal") => {
-            doc.setFontSize(size);
-            doc.setFont("helvetica", style);
-            const lines = doc.splitTextToSize(text, 170);
-            lines.forEach(line => {
-                if (y > 280) {
-                    doc.addPage();
-                    y = 20;
-                }
-                doc.text(line, 20, y);
-                y += (size * 0.4) + 2;
-            });
-            y += 2;
-        };
-
-        const addHeading = (text, size = 14) => {
-            y += 5;
-            addText(text.toUpperCase(), size, "bold");
-            y += 2;
-        };
-
-        // Header
-        addText("PERCURA MARKET VALIDATION REPORT", 18, "bold");
-        addText(`Generated on: ${new Date().toLocaleString()}`, 9);
-        y += 10;
-
-        // Core Idea
-        addHeading("Product Concept");
-        addText(idea?.idea || "No idea text provided.");
-        addText(`Industry: ${idea?.industry || "General"} | Target: ${idea?.targetAudience || "General"}`, 10);
-        
-        // High Level Stats
-        addHeading("Market Fit Statistics");
-        addText(`Total Personas Sampled: ${totalPersonasCount}`);
-        addText(`Simulated Market Adoption: ${adoptionCount} personas (${Math.round(adoptionRate * 100)}%)`);
-        addText(`Rejected / Churned: ${rejectedCount} personas`);
-        addText(`Projected Survival Probability: ${survivalProb}%`);
-
-        // Segment Analysis
-        addHeading("Segment Resonance Analysis");
-        results.forEach((res, i) => {
-            const tr = res.testResult;
-            addText(`${i + 1}. ${res.segment_name}`, 12, "bold");
-            addText(`Verdict: ${tr?.verdict || "N/A"} | Resonance: ${tr?.resonanceScore || 0}% | WTP: ${tr?.willingnessToPay || "N/A"}`, 10);
-            addText(`Voice: "${tr?.verbatimQuote || ""}"`, 10, "italic");
-            addText(`Drivers: ${(tr?.keyDrivers || []).join(", ")}`, 9);
-            addText(`Friction: ${(tr?.frictionPoints || []).join(", ")}`, 9);
-            y += 4;
-        });
-
-        // Insights
-        if (insightData?.insights) {
-            addHeading("AI Synthesis Insights");
-            insightData.insights.forEach((ins, i) => {
-                addText(`${i + 1}. ${ins.title}`, 11, "bold");
-                addText(`Evidence: ${ins.evidence}`, 10);
-                addText(`Analysis: ${ins.analysis}`, 10);
-                y += 2;
-            });
-        }
-
-        // Final Report Text (Markdown stripped)
-        if (deepSimResult?.finalReport) {
-            addHeading("Synthesis Executive Summary");
-            const cleanReport = deepSimResult.finalReport
-                .replace(/#+\s/g, '') // strip headers
-                .replace(/\*\*/g, '') // strip bold
-                .replace(/---/g, ''); // strip dividers
-            addText(cleanReport, 10);
-        }
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-        doc.save(`Percura_Report_${idea?.industry || 'Idea'}_${timestamp}.pdf`);
-        showToast("success", "Export Complete", "Text-only PDF report downloaded successfully.");
+    const handleDownloadPDF = () => {
+        window.print();
     };
 
     const handleRunDeepSim = async () => {
@@ -381,7 +323,7 @@ export default function SimulationResultsPage() {
             const res = await fetch(`${API_BASE_URL}/api/simulation/run`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ idea, segments: cleanedSegments, weeks: 8 }),
+                body: JSON.stringify({ idea: { ...idea, graphId: simDoc?.results?.marketContext?.graphId || null }, segments: cleanedSegments, weeks: 8 }),
             });
             const data = await res.json();
             if (!data.success) throw new Error(data.error || "Simulation failed");
@@ -430,6 +372,18 @@ export default function SimulationResultsPage() {
             currentStep={4}
         >
             <div className="relative min-h-screen text-[#1a1a1a] selection:bg-[#E85D3A]/15 overflow-x-hidden pt-6">
+                <style dangerouslySetInnerHTML={{__html: `
+                    @media print {
+                        /* Hide sidebar */
+                        aside { display: none !important; }
+                        /* Ensure content takes full width without sidebar margin */
+                        body, .min-h-screen { margin-left: 0 !important; background: white !important; }
+                        /* Hide all sticky headers, floating navs, chat panels, etc */
+                        .fixed, .sticky { display: none !important; }
+                        /* Hide our specific export button and backgrounds */
+                        .print-hidden, .bg-grid { display: none !important; }
+                    }
+                `}} />
                 {/* Background */}
                 <div className="absolute inset-0 bg-grid opacity-15 pointer-events-none" />
 
@@ -462,9 +416,10 @@ export default function SimulationResultsPage() {
                             </div>
                             
                             {/* Top Right Action Group */}
-                            <div className="flex items-center gap-2">
-                                <button onClick={handleDownloadPDF} title="Download full PDF report" className="p-2.5 rounded-xl bg-white border border-black/[0.08] text-black/50 hover:text-[#1a1a1a] hover:border-black/15 transition-all">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            <div className="flex items-center gap-2 print-hidden">
+                                <button onClick={handleDownloadPDF} title="Export PDF" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-black/[0.08] text-[11px] font-bold uppercase tracking-widest text-[#E85D3A] hover:bg-[#E85D3A]/5 transition-all w-fit">
+                                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                    Export PDF
                                 </button>
                                 {deepSimResult && (
                                     <>

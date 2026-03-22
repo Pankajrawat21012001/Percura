@@ -16,7 +16,7 @@ import LoadingScreen from "../../components/ui/LoadingScreen";
 export default function SegmentPage() {
     const router = useRouter();
     const { validation, idea, setSimulationResults, setCurrentSimulationId, currentSimulationId } = useIdea();
-    const { user } = useAuth();
+    const { user, signInWithGoogle } = useAuth();
     
     const [selectedSegments, setSelectedSegments] = useState(new Set());
     const [phase, setPhase] = useState("selection"); // "selection", "pulsing", "validated"
@@ -115,7 +115,7 @@ export default function SegmentPage() {
     };
 
     const handleRunPulseTest = async () => {
-        if (!user || selectedSegments.size === 0) return;
+        if (selectedSegments.size === 0) return;
         setPhase("pulsing");
 
         const selectedList = [];
@@ -157,7 +157,20 @@ export default function SegmentPage() {
     };
 
     const finalizeSimulation = async (pResults) => {
-        if (!user || selectedSegments.size === 0) return;
+        if (selectedSegments.size === 0) return;
+
+        let currentUser = user;
+        if (!currentUser) {
+            try {
+                currentUser = await signInWithGoogle();
+            } catch (err) {
+                console.error("Auth aborted. Cannot save results.");
+                setIsSimulating(false);
+                setPhase("selection");
+                return;
+            }
+        }
+
         setIsSimulating(true);
 
         const resultsToUse = pResults || pulseResults;
@@ -186,7 +199,7 @@ export default function SegmentPage() {
         
         try {
             const simulationData = {
-                userId: user.uid,
+                userId: currentUser.uid,
                 ideaData: idea,
                 status: "completed", // Instantly completed because pulse is done
                 timestamp: serverTimestamp(),
@@ -367,7 +380,15 @@ export default function SegmentPage() {
                 </div>
             </div>
 
-            <div className="fixed bottom-12 left-0 w-full flex justify-center px-8 z-40 pointer-events-none">
+            <div className="fixed bottom-12 left-0 w-full flex flex-col items-center justify-center px-8 z-40 pointer-events-none">
+                {!user && (
+                    <div className="mb-3 px-5 py-2.5 bg-white/95 backdrop-blur-md text-[#E85D3A] border border-[#E85D3A]/20 text-[11px] uppercase tracking-widest font-bold rounded-full shadow-lg shadow-[#E85D3A]/5 animate-bounce-slow pointer-events-auto flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Sign in to save your results
+                    </div>
+                )}
                 <div className="max-w-2xl w-full bg-white/95 backdrop-blur-md border border-black/[0.08] rounded-2xl p-4 flex gap-4 pointer-events-auto shadow-xl shadow-black/[0.08]">
                     <Button 
                         onClick={() => router.push("/validate")}

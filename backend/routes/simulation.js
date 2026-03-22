@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { runSimulation } = require('../engine/simulationEngine');
+const { writeSimulationActivityToGraph } = require('../engine/zepService');
 
 // In-memory simulation store (Firestore migration later)
 const simulationStore = new Map();
@@ -26,6 +27,14 @@ router.post('/run', async (req, res) => {
         
         if (projectId) {
             result.projectId = projectId;
+        }
+
+        // Write simulation activity back to Zep graph if graphId is available
+        const graphId = req.body.idea?.graphId || req.body.graphId || null;
+        if (graphId && result.personaFinalStates) {
+            writeSimulationActivityToGraph(graphId, result).catch(err =>
+                console.warn('[ZEP WRITEBACK] Failed, continuing:', err.message)
+            );
         }
 
         // Store in memory

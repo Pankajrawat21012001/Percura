@@ -204,11 +204,14 @@ export default function OntologyContextPage() {
 
                                 <div className="mt-6 flex flex-wrap gap-6 items-center justify-center">
                                     {[
-                                        { label: 'Startup Idea', color: 'bg-[#E85D3A]' },
-                                        { label: 'Competitor', color: 'bg-red-500' },
-                                        { label: 'Market Risk', color: 'bg-amber-500' },
-                                        { label: 'Behavioral Trend', color: 'bg-rose-500' },
-                                        { label: 'Market Entity (Zep)', color: 'bg-indigo-900' }
+                                        { label: 'Startup Idea', color: 'bg-[#FF6B35]' },
+                                        { label: 'Competitor', color: 'bg-[#C5283D]' },
+                                        { label: 'Market Risk', color: 'bg-[#E9724C]' },
+                                        { label: 'Behavioral Trend', color: 'bg-[#f39c12]' },
+                                        { label: 'Pain Point', color: 'bg-[#D63384]' },
+                                        { label: 'Customer Segment', color: 'bg-[#0D6EFD]' },
+                                        { label: 'Pricing Model', color: 'bg-[#198754]' },
+                                        { label: 'Zep Entity', color: 'bg-[#004E89]' },
                                     ].map((l, i) => (
                                         <div key={i} className="flex items-center gap-2">
                                             <div className={`w-2 h-2 rounded-full ${l.color}`} />

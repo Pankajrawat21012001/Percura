@@ -135,6 +135,55 @@ router.post('/data', async (req, res) => {
                 addNode(tId, name.substring(0, 35), 'Trend', { detail });
                 addEdge(tId, ideaId, 'SHAPES', 'SHAPES', name);
             });
+
+            // Pain Points → linked to idea
+            (mc.painPoints || []).forEach((pp, i) => {
+                const name = typeof pp === 'string' ? pp : (pp.name || `Pain Point ${i}`);
+                const ppId = `painpoint_${i}`;
+                addNode(ppId, name.substring(0, 40), 'PainPoint', { detail: name });
+                addEdge(ppId, ideaId, 'EXPERIENCES', 'EXPERIENCES', name);
+            });
+
+            // Customer Segments → linked to idea
+            (mc.customerSegments || []).forEach((seg, i) => {
+                const name = typeof seg === 'string' ? seg : (seg.name || `Segment ${i}`);
+                const csId = `cust_seg_${i}`;
+                addNode(csId, name.substring(0, 40), 'CustomerSegment', { detail: name });
+                addEdge(ideaId, csId, 'TARGETS', 'TARGETS', name);
+            });
+
+            // Pricing Insights → linked to idea
+            (mc.pricingInsights || []).forEach((pi, i) => {
+                const name = typeof pi === 'string' ? pi : (pi.name || `Pricing ${i}`);
+                const piId = `pricing_${i}`;
+                addNode(piId, name.substring(0, 40), 'PricingModel', { detail: name });
+                addEdge(ideaId, piId, 'HAS_PRICING', 'HAS_PRICING', name);
+            });
+
+            // Typed entity nodes from Zep search (entities.competitors, entities.segments, entities.risks)
+            if (mc.entities) {
+                (mc.entities.competitors || []).forEach((ent, i) => {
+                    const entId = `zep_comp_${i}`;
+                    if (!nodeMap[entId]) {
+                        addNode(entId, (ent.name || '').substring(0, 35), 'ZepEntity', { summary: ent.summary || '', labels: (ent.labels || []).join(', ') });
+                        addEdge(ideaId, entId, 'RELATED_TO', 'ZEP_ENTITY', ent.name || '');
+                    }
+                });
+                (mc.entities.segments || []).forEach((ent, i) => {
+                    const entId = `zep_seg_${i}`;
+                    if (!nodeMap[entId]) {
+                        addNode(entId, (ent.name || '').substring(0, 35), 'ZepEntity', { summary: ent.summary || '', labels: (ent.labels || []).join(', ') });
+                        addEdge(ideaId, entId, 'RELATED_TO', 'ZEP_ENTITY', ent.name || '');
+                    }
+                });
+                (mc.entities.risks || []).forEach((ent, i) => {
+                    const entId = `zep_risk_${i}`;
+                    if (!nodeMap[entId]) {
+                        addNode(entId, (ent.name || '').substring(0, 35), 'ZepEntity', { summary: ent.summary || '', labels: (ent.labels || []).join(', ') });
+                        addEdge(ideaId, entId, 'RELATED_TO', 'ZEP_ENTITY', ent.name || '');
+                    }
+                });
+            }
         }
 
         // Convert to output arrays

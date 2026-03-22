@@ -378,14 +378,17 @@ const result = await engine.simulate(idea);`}
           <Link href="/validate" className="bg-[#1A1A1A] text-white px-8 py-4 rounded-full text-[13px] font-bold tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-transform">
             START FOR FREE
           </Link>
+          <p className="mt-4 text-[11px] font-semibold text-black/40 tracking-wide uppercase">
+            Free tier · 3 simulations/month · No credit card required
+          </p>
           
           <div className="w-full flex flex-col md:flex-row justify-between items-center mt-32 pt-8 border-t border-[rgba(0,0,0,0.06)] text-xs font-bold text-black/40">
             <span>© 2026 Percura Inc.</span>
             <div className="flex flex-wrap justify-center gap-8 mt-6 md:mt-0">
-              <a href="#" className="hover:text-black transition-colors">Twitter</a>
-              <a href="#" className="hover:text-black transition-colors">LinkedIn</a>
-              <a href="#" className="hover:text-black transition-colors">Terms</a>
-              <a href="#" className="hover:text-black transition-colors">Privacy</a>
+              <a href="https://twitter.com/percura_ai" target="_blank" rel="noopener noreferrer" className="hover:text-black transition-colors">Twitter</a>
+              <a href="https://linkedin.com/company/percura" target="_blank" rel="noopener noreferrer" className="hover:text-black transition-colors">LinkedIn</a>
+              <Link href="/terms" className="hover:text-black transition-colors">Terms</Link>
+              <Link href="/privacy" className="hover:text-black transition-colors">Privacy</Link>
             </div>
           </div>
         </div>

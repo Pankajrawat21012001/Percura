@@ -13,11 +13,14 @@ const COLOR_PALETTE = [
     '#f39c12', // Trend — amber
     '#7B2D8E', // Verdict — purple
     '#004E89', // ZepEntity — navy
+    '#D63384', // PainPoint — magenta
+    '#0D6EFD', // CustomerSegment — bright blue
+    '#198754', // PricingModel — teal-green
     '#9b59b6', // fallback 1
     '#27ae60', // fallback 2
 ];
 
-const TYPE_ORDER = ['Idea', 'Segment', 'Persona', 'Competitor', 'Risk', 'Trend', 'Verdict', 'ZepEntity'];
+const TYPE_ORDER = ['Idea', 'Segment', 'Persona', 'Competitor', 'Risk', 'Trend', 'Verdict', 'ZepEntity', 'PainPoint', 'CustomerSegment', 'PricingModel'];
 
 function getColor(type) {
     const idx = TYPE_ORDER.indexOf(type);
@@ -187,7 +190,7 @@ export default function GraphExplorer({ graphId, idea, segments, marketContext, 
                 .on('end', dragended));
 
         nodeLayer.append('circle')
-            .attr('r', 12)
+            .attr('r', d => d.type === 'Idea' ? 16 : 13)
             .attr('fill', d => getColor(d.type))
             .attr('stroke', '#000')
             .attr('stroke-width', 2)
