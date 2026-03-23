@@ -69,7 +69,7 @@ const PATH_TO_STEP = {
 };
 
 export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
-    const { user, logOut } = useAuth();
+    const { user, logOut, signInWithGoogle } = useAuth();
     const { setCurrentSimulationId, currentSimulationId, setIdea, setSimulationResults, setValidation, setPersonas, setMarketContext, reset } = useIdea();
     const [history, setHistory] = useState([]);
     const [isHovered, setIsHovered] = useState(false);
@@ -465,19 +465,28 @@ export default function Sidebar({ isOpen, setIsOpen, currentStep }) {
                                 <img src={user.photoURL} alt={user.displayName} className="w-9 h-9 rounded-lg border border-black/[0.08] object-cover" />
                             ) : (
                                 <div className="w-9 h-9 rounded-lg bg-[#1A1A1A] border border-black/[0.08] flex items-center justify-center text-white text-sm font-bold uppercase">
-                                    {user?.displayName?.[0] || "U"}
+                                    {user?.displayName?.[0] || "?"}
                                 </div>
                             )}
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
+                            {user && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />}
                         </div>
                         <div className={`flex-1 min-w-0 transition-all duration-300 ${isExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden pointer-events-none lg:hidden"}`}>
-                            <p className="text-[12px] font-semibold text-[#1a1a1a] truncate leading-tight">{user?.displayName || "User"}</p>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); logOut(); }}
-                                className="text-[10px] text-black/50 font-semibold uppercase tracking-wider transition-all hover:text-red-500"
-                            >
-                                Sign Out
-                            </button>
+                            <p className="text-[12px] font-semibold text-[#1a1a1a] truncate leading-tight">{user?.displayName || "Guest"}</p>
+                            {user ? (
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); logOut(); }}
+                                    className="text-[10px] text-black/50 font-semibold uppercase tracking-wider transition-all hover:text-red-500"
+                                >
+                                    Sign Out
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); signInWithGoogle(); }}
+                                    className="text-[10px] text-[#E85D3A] font-bold uppercase tracking-wider transition-all hover:text-[#D14E2E]"
+                                >
+                                    Sign In
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
